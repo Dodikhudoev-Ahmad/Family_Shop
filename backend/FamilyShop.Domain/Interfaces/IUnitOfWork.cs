@@ -7,6 +7,7 @@ public interface IUnitOfWork
     IOrderRepository Orders { get; }
     IUserRepository Users { get; }
     IRefreshTokenRepository RefreshTokens { get; }
+    IReviewRepository Reviews { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

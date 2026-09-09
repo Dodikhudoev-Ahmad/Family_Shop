@@ -15,6 +15,7 @@ public record ProductFilterDto(
     int? CategoryId,
     decimal? MinPrice,
     decimal? MaxPrice,
+    string? Search = null,
     ProductSortBy SortBy = ProductSortBy.Newest,
     int Page = 1,
     int PageSize = 8);
