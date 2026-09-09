@@ -3,19 +3,21 @@ import { Link, NavLink } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useCategories } from '../../context/CategoriesContext';
 import { useAuth } from '../../context/AuthContext';
+import { useFavorites } from '../../context/FavoritesContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { MobileMenu } from './MobileMenu';
+import { SearchOverlay } from '../Search/SearchOverlay';
 import './Header.css';
 
 export function Header() {
   const [isCompact, setIsCompact] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
   const isDesktop = useMediaQuery('(min-width: 1025px)');
   const { totalItems, bump, openCart } = useCart();
   const { categories } = useCategories();
   const { user, logout } = useAuth();
+  const { favoriteIds } = useFavorites();
 
   useEffect(() => {
     const onScroll = () => setIsCompact(window.scrollY > 100);
@@ -55,29 +57,13 @@ export function Header() {
         )}
 
         <div className="header__actions">
-          {isDesktop && (
-            <div className={`header__search ${isSearchOpen ? 'is-open' : ''}`}>
-              <input
-                type="search"
-                placeholder="Поиск товаров..."
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                aria-label="Поиск товаров"
-              />
-              <button
-                className="header__icon-btn"
-                aria-label="Поиск"
-                onClick={() => setIsSearchOpen((v) => !v)}
-              >
-                <SearchIcon />
-              </button>
-            </div>
-          )}
-          {!isDesktop && (
-            <button className="header__icon-btn" aria-label="Поиск">
-              <SearchIcon />
-            </button>
-          )}
+          <button
+            className="header__icon-btn"
+            aria-label="Поиск"
+            onClick={() => setIsSearchOpen(true)}
+          >
+            <SearchIcon />
+          </button>
 
           {isDesktop &&
             (user ? (
@@ -96,6 +82,11 @@ export function Header() {
               </Link>
             ))}
 
+          <Link to="/favorites" className="header__icon-btn header__fav-btn" aria-label="Избранное">
+            <HeartIcon />
+            {favoriteIds.length > 0 && <span className="header__cart-count">{favoriteIds.length}</span>}
+          </Link>
+
           <button className="header__icon-btn header__cart-btn" aria-label="Корзина" onClick={openCart}>
             <CartIcon />
             {totalItems > 0 && (
@@ -108,6 +99,7 @@ export function Header() {
       </div>
 
       <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </header>
   );
 }
@@ -134,6 +126,19 @@ function LogoutIcon() {
     <svg width="19" height="19" viewBox="0 0 20 20" fill="none">
       <path d="M8 3H4.5A1.5 1.5 0 0 0 3 4.5v11A1.5 1.5 0 0 0 4.5 17H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
       <path d="M13 14l4-4-4-4M17 10H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function HeartIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path
+        d="M10 17.5s-7-4.35-7-9.5A4 4 0 0 1 10 5.5 4 4 0 0 1 17 8c0 5.15-7 9.5-7 9.5z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
