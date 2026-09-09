@@ -106,7 +106,7 @@ public class AuthService : IAuthService
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var response = new AuthResponseDto(user.Id, user.Email.Value, user.Name, accessToken);
+        var response = new AuthResponseDto(user.Id, user.Email.Value, user.Name, user.Role.ToString(), accessToken);
         return new AuthResult(response, refreshToken);
     }
 }
