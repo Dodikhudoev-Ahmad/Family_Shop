@@ -19,6 +19,8 @@ export interface ProductDto {
   images: string[];
   createdAt: string;
   isBestseller: boolean;
+  averageRating: number;
+  reviewCount: number;
 }
 
 export interface CategoryDto {
