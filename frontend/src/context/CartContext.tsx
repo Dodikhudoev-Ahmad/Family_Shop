@@ -51,20 +51,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = (product: Product, size: string, quantity = 1) => {
     const key = `${product.id}__${size}`;
+    const existing = lines.find((l) => l.key === key);
+    const cappedQuantity = Math.min((existing?.quantity ?? 0) + quantity, product.stock) - (existing?.quantity ?? 0);
+
+    if (cappedQuantity <= 0) {
+      showToast(`Доступно только ${product.stock} шт «${product.name}»`, 'error');
+      return;
+    }
+
     setLines((prev) => {
-      const existing = prev.find((l) => l.key === key);
       if (existing) {
-        return prev.map((l) => (l.key === key ? { ...l, quantity: l.quantity + quantity } : l));
+        return prev.map((l) => (l.key === key ? { ...l, quantity: l.quantity + cappedQuantity } : l));
       }
-      return [...prev, { key, product, size, quantity }];
+      return [...prev, { key, product, size, quantity: cappedQuantity }];
     });
     setBump((b) => b + 1);
-    showToast(`«${product.name}» добавлен в корзину`);
+    showToast(
+      cappedQuantity < quantity
+        ? `Доступно только ${product.stock} шт — добавлено ${cappedQuantity}`
+        : `«${product.name}» добавлен в корзину`
+    );
   };
 
   const updateQuantity = (key: string, quantity: number) => {
     setLines((prev) =>
-      quantity <= 0 ? prev.filter((l) => l.key !== key) : prev.map((l) => (l.key === key ? { ...l, quantity } : l))
+      quantity <= 0
+        ? prev.filter((l) => l.key !== key)
+        : prev.map((l) => (l.key === key ? { ...l, quantity: Math.min(quantity, l.product.stock) } : l))
     );
   };
 

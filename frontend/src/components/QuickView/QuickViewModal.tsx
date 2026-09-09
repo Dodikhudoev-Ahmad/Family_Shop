@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useQuickView } from '../../context/QuickViewContext';
 import { useCart } from '../../context/CartContext';
 import { useToast } from '../../context/ToastContext';
-import { formatPrice } from '../ProductCard/ProductCard';
+import { formatPrice } from '../../utils/formatPrice';
+import { isLowStock, isOutOfStock } from '../../utils/stock';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import { Button } from '../Button/Button';
 import { FadeImage } from '../FadeImage/FadeImage';
@@ -18,6 +19,9 @@ export function QuickViewModal() {
   useLockBodyScroll(!!product);
 
   if (!product) return null;
+
+  const outOfStock = isOutOfStock(product.stock);
+  const lowStock = isLowStock(product.stock);
 
   const handleAdd = () => {
     if (!selectedSize) {
@@ -46,6 +50,7 @@ export function QuickViewModal() {
               {formatPrice(product.discountPrice ?? product.price)}
             </span>
           </div>
+          {lowStock && <span className="quick-view__stock-warning">Осталось {product.stock} шт</span>}
           <p className="quick-view__desc">{product.description}</p>
 
           <div className="quick-view__sizes">
@@ -61,8 +66,8 @@ export function QuickViewModal() {
           </div>
 
           <div className="quick-view__actions">
-            <Button variant="primary" size="lg" onClick={handleAdd}>
-              В корзину
+            <Button variant="primary" size="lg" onClick={handleAdd} disabled={outOfStock}>
+              {outOfStock ? 'Нет в наличии' : 'В корзину'}
             </Button>
             <Link to={`/product/${product.id}`} onClick={close}>
               <Button variant="ghost">Подробнее о товаре</Button>

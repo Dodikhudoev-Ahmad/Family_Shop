@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
-import { formatPrice } from '../ProductCard/ProductCard';
+import { formatPrice } from '../../utils/formatPrice';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import { Button } from '../Button/Button';
 import './CartDrawer.css';
@@ -45,7 +45,11 @@ export function CartDrawer() {
                           −
                         </button>
                         <span>{line.quantity}</span>
-                        <button onClick={() => updateQuantity(line.key, line.quantity + 1)} aria-label="Увеличить">
+                        <button
+                          onClick={() => updateQuantity(line.key, line.quantity + 1)}
+                          disabled={line.quantity >= line.product.stock}
+                          aria-label="Увеличить"
+                        >
                           +
                         </button>
                       </div>

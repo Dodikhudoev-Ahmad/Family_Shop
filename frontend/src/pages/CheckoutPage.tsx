@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { formatPrice } from '../components/ProductCard/ProductCard';
+import { formatPrice } from '../utils/formatPrice';
 import { Button } from '../components/Button/Button';
 import { ApiError, createOrder, type ApiDeliveryMethod } from '../lib/api';
 import type { DeliveryDetails, DeliveryMethod } from '../types/order';

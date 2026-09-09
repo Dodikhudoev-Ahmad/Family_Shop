@@ -5,7 +5,7 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useProducts } from '../context/ProductsContext';
 import { ProductCard } from '../components/ProductCard/ProductCard';
 import { Button } from '../components/Button/Button';
-import { formatPrice } from '../components/ProductCard/ProductCard';
+import { formatPrice } from '../utils/formatPrice';
 import { ApiError, fetchOrders, type ApiOrderStatus, type OrderDto } from '../lib/api';
 import './AccountPage.css';
 
