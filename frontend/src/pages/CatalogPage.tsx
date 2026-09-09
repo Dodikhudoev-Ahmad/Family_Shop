@@ -5,6 +5,9 @@ import { useCategories } from '../context/CategoriesContext';
 import { ProductCard } from '../components/ProductCard/ProductCard';
 import { ProductCardSkeleton } from '../components/ProductCard/ProductCardSkeleton';
 import { FilterPanel, type Filters } from '../components/Filters/FilterPanel';
+import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
+import { useSeo } from '../hooks/useSeo';
+import { SITE_NAME } from '../data/seo';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 import { fetchProductsPage } from '../lib/api';
 import { mapProduct } from '../lib/mappers';
@@ -28,6 +31,13 @@ export function CatalogPage() {
   const { categories } = useCategories();
   const { products: allProducts, isLoading: isCatalogLoading, error: catalogError } = useProducts();
   const activeCategory = categories.find((c) => c.slug === slug) ?? null;
+
+  useSeo({
+    title: activeCategory ? `${activeCategory.name} — ${SITE_NAME}` : `Каталог — ${SITE_NAME}`,
+    description: activeCategory
+      ? `Каталог «${activeCategory.name}» в интернет-магазине ${SITE_NAME}: широкий выбор, актуальные цены и быстрая доставка по Казахстану.`
+      : `Весь каталог одежды ${SITE_NAME} — женское, мужское, детское, обувь и сумки. Быстрая доставка по Казахстану.`,
+  });
 
   const shoesBagsNumericId = useMemo(() => {
     const id = categories.find((c) => c.slug === 'shoes-bags')?.id;
@@ -189,6 +199,9 @@ export function CatalogPage() {
 
   return (
     <div className="catalog container">
+      {activeCategory && (
+        <Breadcrumbs items={[{ label: 'Главная', href: '/' }, { label: activeCategory.name }]} />
+      )}
       <div className="catalog__header">
         <h1 className="catalog__title">{activeCategory?.name ?? 'Каталог'}</h1>
         <div className="catalog__toolbar">

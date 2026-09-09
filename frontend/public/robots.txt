@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /account
+Disallow: /checkout
+Disallow: /login
+Disallow: /favorites
+
+Sitemap: https://familyshop.example/sitemap.xml
