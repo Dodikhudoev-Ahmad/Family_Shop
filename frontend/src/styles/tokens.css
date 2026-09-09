@@ -15,6 +15,8 @@
   --color-border: #E5E2DE;
   --color-error: #C1544B;
   --color-success: #5A8A6B;
+  --color-warning: #B5811F;
+  --color-info: #4F6F8F;
   --color-white: #FFFFFF;
 
   /* Типографика */
@@ -48,4 +50,44 @@
   --shadow-md: 0 8px 24px rgba(26, 26, 26, 0.10);
   --shadow-lg: 0 16px 48px rgba(26, 26, 26, 0.16);
   --container-width: 1280px;
+}
+
+/* Тёмная тема */
+:root[data-theme='dark'] {
+  --color-bg: #16151A;
+  --color-bg-secondary: #201F26;
+
+  --color-text: #F0EEEC;
+  --color-text-secondary: #9C9994;
+
+  --color-accent: #D08F68;
+  --color-accent-hover: #E0A17C;
+
+  --color-border: #322F36;
+  --color-error: #D97468;
+  --color-success: #7BAE8C;
+  --color-warning: #D9A24B;
+  --color-info: #7B9BC0;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.36);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.48);
+}
+
+/* Админка сохраняет светлую тему независимо от темы основного сайта */
+.admin-layout {
+  --color-bg: #FFFFFF;
+  --color-bg-secondary: #F7F5F3;
+  --color-text: #1A1A1A;
+  --color-text-secondary: #8A8A8A;
+  --color-accent: #C17A54;
+  --color-accent-hover: #A8663F;
+  --color-border: #E5E2DE;
+  --color-error: #C1544B;
+  --color-success: #5A8A6B;
+  --color-warning: #B5811F;
+  --color-info: #4F6F8F;
+  --shadow-sm: 0 2px 8px rgba(26, 26, 26, 0.06);
+  --shadow-md: 0 8px 24px rgba(26, 26, 26, 0.10);
+  --shadow-lg: 0 16px 48px rgba(26, 26, 26, 0.16);
 }
