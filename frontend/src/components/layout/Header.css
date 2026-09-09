@@ -162,35 +162,6 @@
   justify-content: center;
 }
 
-.header__search {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.header__search input {
-  width: 0;
-  opacity: 0;
-  padding: 0;
-  border: none;
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  transition: width var(--transition-base), opacity var(--transition-base), padding var(--transition-base);
-}
-
-.header__search.is-open input {
-  width: 220px;
-  opacity: 1;
-  padding: 10px var(--space-3);
-  margin-right: var(--space-1);
-}
-
-.header__search input:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: -2px;
-}
-
 @media (max-width: 1024px) {
   .header {
     height: 64px;
