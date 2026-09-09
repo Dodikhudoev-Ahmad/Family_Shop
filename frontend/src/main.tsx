@@ -12,23 +12,26 @@ import { CartProvider } from './context/CartContext'
 import { FavoritesProvider } from './context/FavoritesContext'
 import { AuthProvider } from './context/AuthContext'
 import { QuickViewProvider } from './context/QuickViewContext'
+import { ThemeProvider } from './context/ThemeContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ToastProvider>
-      <CategoriesProvider>
-        <ProductsProvider>
-          <AuthProvider>
-            <FavoritesProvider>
-              <CartProvider>
-                <QuickViewProvider>
-                  <App />
-                </QuickViewProvider>
-              </CartProvider>
-            </FavoritesProvider>
-          </AuthProvider>
-        </ProductsProvider>
-      </CategoriesProvider>
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <CategoriesProvider>
+          <ProductsProvider>
+            <AuthProvider>
+              <FavoritesProvider>
+                <CartProvider>
+                  <QuickViewProvider>
+                    <App />
+                  </QuickViewProvider>
+                </CartProvider>
+              </FavoritesProvider>
+            </AuthProvider>
+          </ProductsProvider>
+        </CategoriesProvider>
+      </ToastProvider>
+    </ThemeProvider>
   </StrictMode>,
 )
