@@ -28,7 +28,7 @@ export interface CategoryDto {
   parentCategoryId: number | null;
 }
 
-export type ProductSortBy = 0 | 1 | 2; // 0=Newest, 1=PriceAsc, 2=PriceDesc
+export type ProductSortBy = 0 | 1 | 2 | 3; // 0=Newest, 1=PriceAsc, 2=PriceDesc, 3=Popular
 
 export interface PagedResult<T> {
   items: T[];

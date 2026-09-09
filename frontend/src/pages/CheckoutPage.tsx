@@ -61,7 +61,10 @@ export function CheckoutPage() {
 
   const handleContinue = (e: FormEvent) => {
     e.preventDefault();
-    if (validateStep1()) setStep(2);
+    if (validateStep1()) {
+      setStep(2);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleConfirm = async () => {
@@ -226,7 +229,14 @@ export function CheckoutPage() {
           {submitError && <span className="checkout__error checkout__submit-error">{submitError}</span>}
 
           <div className="checkout__summary-actions">
-            <Button variant="secondary" onClick={() => setStep(1)} disabled={isSubmitting}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setStep(1);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              disabled={isSubmitting}
+            >
               Назад
             </Button>
             <Button variant="primary" size="lg" onClick={handleConfirm} disabled={isSubmitting}>
