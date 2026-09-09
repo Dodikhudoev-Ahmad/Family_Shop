@@ -64,16 +64,18 @@
 }
 
 .mobile-menu__link {
-  font-size: 22px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 500;
   font-family: var(--font-heading);
+  letter-spacing: 0.02em;
   color: var(--color-text);
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--color-border);
 }
 
 .mobile-menu__link--secondary {
-  font-size: 16px;
+  font-size: 15px;
+  letter-spacing: 0.01em;
   color: var(--color-text-secondary);
   border-bottom: none;
 }
