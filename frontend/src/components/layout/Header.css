@@ -29,6 +29,7 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   transition: font-size var(--transition-base);
+  flex-shrink: 0;
 }
 
 .header--compact .header__logo {
@@ -70,6 +71,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  flex-shrink: 0;
 }
 
 .header__icon-btn {
@@ -167,9 +169,31 @@
     height: 64px;
   }
 
+  .header__inner {
+    gap: var(--space-2);
+  }
+
   .header__logo {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .header__logo {
+    font-size: 17px;
+  }
+
+  .header__actions {
+    gap: var(--space-1);
+  }
+
+  .header__icon-btn {
+    width: 36px;
+    height: 36px;
   }
 }
