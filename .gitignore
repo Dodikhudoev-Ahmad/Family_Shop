@@ -1,0 +1,24 @@
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Backend
+backend/**/bin/
+backend/**/obj/
+backend/**/appsettings.*.local.json
+backend/**/secrets.json
+
+# Secrets / environment
+*.env
+.env
+.env.*
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Claude Code local state
+.claude/

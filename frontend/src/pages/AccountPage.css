@@ -1,0 +1,177 @@
+.account {
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-8);
+}
+
+.account__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-6);
+}
+
+.account__greeting {
+  color: var(--color-text-secondary);
+  margin-top: var(--space-1);
+}
+
+.account__section {
+  margin-top: var(--space-6);
+}
+
+.account__section-title {
+  font-size: 18px;
+  margin-bottom: var(--space-4);
+}
+
+.account__empty {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.account__favorites-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4) var(--space-3);
+}
+
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.order-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.order-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.order-card__id {
+  font-weight: 700;
+}
+
+.order-status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+}
+
+.order-status--delivered {
+  background: rgba(90, 138, 107, 0.14);
+  color: var(--color-success);
+}
+
+.order-status--shipped {
+  background: rgba(193, 122, 84, 0.14);
+  color: var(--color-accent);
+}
+
+.order-status--processing {
+  background: rgba(138, 138, 138, 0.14);
+  color: var(--color-text-secondary);
+}
+
+.order-status--cancelled {
+  background: rgba(193, 84, 75, 0.14);
+  color: var(--color-error);
+}
+
+.order-card__meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-top: var(--space-2);
+}
+
+.order-card__items {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.order-card__thumb {
+  width: 48px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.auth-form {
+  max-width: 400px;
+  margin: var(--space-6) auto;
+}
+
+.auth-form__tabs {
+  position: relative;
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-5);
+}
+
+.auth-form__tab {
+  flex: 1;
+  padding: var(--space-3) 0;
+  background: none;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.auth-form__tab.is-active {
+  color: var(--color-text);
+}
+
+.auth-form__tab-indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 50%;
+  height: 2px;
+  background: var(--color-accent);
+  transition: transform var(--transition-base);
+}
+
+.auth-form__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.auth-form__hint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.auth-form__server-error {
+  text-align: center;
+}
+
+@media (max-width: 1024px) {
+  .account__favorites-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .account__favorites-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account__header {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+}

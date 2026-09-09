@@ -1,0 +1,204 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  transition: height var(--transition-base), box-shadow var(--transition-base);
+}
+
+.header--compact {
+  height: var(--header-height-compact);
+  box-shadow: var(--shadow-sm);
+}
+
+.header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.header__logo {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  transition: font-size var(--transition-base);
+}
+
+.header--compact .header__logo {
+  font-size: 17px;
+}
+
+.header__nav {
+  display: flex;
+  gap: var(--space-5);
+}
+
+.header__nav-link {
+  position: relative;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  padding: var(--space-2) 0;
+}
+
+.header__nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1.5px;
+  width: 100%;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--transition-base);
+}
+
+.header__nav-link:hover::after,
+.header__nav-link.is-active::after {
+  transform: scaleX(1);
+}
+
+.header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.header__icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), transform var(--transition-fast), color var(--transition-fast);
+}
+
+.header__icon-btn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-accent);
+}
+
+.header__login-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  padding: 0 var(--space-2);
+  white-space: nowrap;
+}
+
+.header__login-link:hover {
+  color: var(--color-accent);
+}
+
+.header__account {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.header__account-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-2);
+  color: var(--color-text);
+}
+
+.header__account-link:hover {
+  color: var(--color-accent);
+}
+
+.header__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.header__account-name {
+  font-size: 14px;
+  font-weight: 600;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header__cart-count {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header__search {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.header__search input {
+  width: 0;
+  opacity: 0;
+  padding: 0;
+  border: none;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  transition: width var(--transition-base), opacity var(--transition-base), padding var(--transition-base);
+}
+
+.header__search.is-open input {
+  width: 220px;
+  opacity: 1;
+  padding: 10px var(--space-3);
+  margin-right: var(--space-1);
+}
+
+.header__search input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+@media (max-width: 1024px) {
+  .header {
+    height: 64px;
+  }
+
+  .header__logo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}

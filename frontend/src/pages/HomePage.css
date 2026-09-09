@@ -1,0 +1,110 @@
+.hero {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.hero__tile {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-bg-secondary);
+  cursor: pointer;
+}
+
+.hero__tile img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-slow);
+}
+
+.hero__tile:hover img {
+  transform: scale(1.05);
+}
+
+.hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(26, 26, 26, 0.05) 30%, rgba(26, 26, 26, 0.55) 100%);
+  transition: background var(--transition-slow);
+}
+
+.hero__tile:hover .hero__overlay {
+  background: linear-gradient(180deg, rgba(26, 26, 26, 0.12) 30%, rgba(26, 26, 26, 0.68) 100%);
+}
+
+.hero__content {
+  position: absolute;
+  left: var(--space-4);
+  bottom: var(--space-4);
+  color: var(--color-white);
+}
+
+.hero__title {
+  font-size: 28px;
+  color: var(--color-white);
+}
+
+.hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.hero__arrow {
+  transition: transform var(--transition-base);
+}
+
+.hero__tile:hover .hero__arrow {
+  transform: translateX(4px);
+}
+
+.home-section {
+  margin-top: var(--space-7);
+}
+
+.home-section__title {
+  font-size: 22px;
+  margin-bottom: var(--space-4);
+}
+
+.home__error {
+  margin-top: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: rgba(193, 84, 75, 0.1);
+  color: var(--color-error);
+  font-size: 14px;
+}
+
+.home__skeleton-row {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.home__skeleton-row > * {
+  flex: 0 0 240px;
+}
+
+@media (max-width: 1024px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero__tile {
+    aspect-ratio: 16 / 10;
+  }
+
+  .home-section {
+    margin-top: var(--space-6);
+  }
+}
