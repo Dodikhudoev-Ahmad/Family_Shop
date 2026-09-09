@@ -29,6 +29,7 @@ public class ProductService : IProductService
             filter.CategoryId,
             filter.MinPrice,
             filter.MaxPrice,
+            filter.Search,
             sortOrder,
             filter.Page,
             filter.PageSize,
@@ -44,5 +45,5 @@ public class ProductService : IProductService
     }
 
     private static ProductDto ToDto(Domain.Entities.Product p) =>
-        new(p.Id, p.Name, p.Description, p.Price.Amount, p.DiscountPrice?.Amount, p.Stock, p.CategoryId, p.Gender, p.Images, p.CreatedAt, p.IsBestseller);
+        new(p.Id, p.Name, p.Description, p.Price.Amount, p.DiscountPrice?.Amount, p.Stock, p.CategoryId, p.Gender, p.Images, p.CreatedAt, p.IsBestseller, p.AverageRating, p.ReviewCount);
 }

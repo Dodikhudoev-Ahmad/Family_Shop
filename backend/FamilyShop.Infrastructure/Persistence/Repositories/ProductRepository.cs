@@ -16,6 +16,7 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
         int? categoryId,
         decimal? minPrice,
         decimal? maxPrice,
+        string? search,
         ProductSortOrder sortOrder,
         int page,
         int pageSize,
@@ -43,6 +44,16 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
         {
             var max = new Money(maxPrice.Value);
             query = query.Where(p => (p.DiscountPrice ?? p.Price) <= max);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            // Escape LIKE wildcards in user input so a literal "%" or "_" in the query
+            // doesn't act as a wildcard - '\' is the escape char passed to ILIKE below.
+            var pattern = $"%{search.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_")}%";
+            query = query.Where(p =>
+                EF.Functions.ILike(p.Name, pattern, "\\") ||
+                EF.Functions.ILike(p.Description, pattern, "\\"));
         }
 
         // Skip/Take requires a fully deterministic ORDER BY - ties on the primary key
