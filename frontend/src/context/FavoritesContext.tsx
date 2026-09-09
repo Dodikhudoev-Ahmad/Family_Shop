@@ -32,11 +32,9 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   const isFavorite = (id: string) => favoriteIds.includes(id);
 
   const toggleFavorite = (id: string, name: string) => {
-    setFavoriteIds((prev) => {
-      const has = prev.includes(id);
-      showToast(has ? `«${name}» удалён из избранного` : `«${name}» добавлен в избранное`, 'info');
-      return has ? prev.filter((f) => f !== id) : [...prev, id];
-    });
+    const has = favoriteIds.includes(id);
+    setFavoriteIds((prev) => (has ? prev.filter((f) => f !== id) : [...prev, id]));
+    showToast(has ? `«${name}» удалён из избранного` : `«${name}» добавлен в избранное`, 'info');
   };
 
   return (
