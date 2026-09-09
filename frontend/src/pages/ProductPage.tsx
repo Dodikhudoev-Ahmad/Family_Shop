@@ -2,12 +2,19 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { Gender } from '../types/product';
 import { useProducts } from '../context/ProductsContext';
-import { formatPrice } from '../components/ProductCard/ProductCard';
+import { useCategories } from '../context/CategoriesContext';
+import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
+import { useSeo } from '../hooks/useSeo';
+import { SITE_NAME, truncateDescription } from '../data/seo';
+import { formatPrice } from '../utils/formatPrice';
+import { isLowStock, isOutOfStock } from '../utils/stock';
 import { ProductCard } from '../components/ProductCard/ProductCard';
 import { Slider } from '../components/Slider/Slider';
 import { Accordion } from '../components/Accordion/Accordion';
 import { Button } from '../components/Button/Button';
 import { FadeImage } from '../components/FadeImage/FadeImage';
+import { StarRating } from '../components/StarRating/StarRating';
+import { ProductReviews } from '../components/Reviews/ProductReviews';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useToast } from '../context/ToastContext';
@@ -16,6 +23,7 @@ import './ProductPage.css';
 export function ProductPage() {
   const { id } = useParams();
   const { products, isLoading } = useProducts();
+  const { categories } = useCategories();
   const product = products.find((p) => p.id === id);
   const { addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -24,6 +32,13 @@ export function ProductPage() {
   const [activeImage, setActiveImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+
+  useSeo({
+    title: product ? `${product.name} — ${SITE_NAME}` : SITE_NAME,
+    description: product ? truncateDescription(product.description) : 'Товар не найден.',
+    image: product?.images[0],
+    type: 'product',
+  });
 
   if (isLoading) {
     return <div className="container product-page__not-found">Загрузка...</div>;
@@ -39,7 +54,10 @@ export function ProductPage() {
   }
 
   const related = products.filter((p) => p.categoryId === product.categoryId && p.id !== product.id).slice(0, 8);
+  const productCategory = categories.find((c) => c.id === product.categoryId);
   const favorite = isFavorite(product.id);
+  const outOfStock = isOutOfStock(product.stock);
+  const lowStock = isLowStock(product.stock);
 
   const handleAddToCart = () => {
     if (!selectedSize) {
@@ -51,6 +69,13 @@ export function ProductPage() {
 
   return (
     <div className="container product-page">
+      <Breadcrumbs
+        items={[
+          { label: 'Главная', href: '/' },
+          ...(productCategory ? [{ label: productCategory.name, href: `/catalog/${productCategory.slug}` }] : []),
+          { label: product.name },
+        ]}
+      />
       <div className="product-page__layout">
         <div className="product-page__gallery">
           <div className="product-page__main-image">
@@ -73,12 +98,22 @@ export function ProductPage() {
         <div className="product-page__details">
           <span className="product-page__category">{categoryLabel(product.gender)}</span>
           <h1 className="product-page__name">{product.name}</h1>
+          {product.reviewCount > 0 && (
+            <div className="product-page__rating">
+              <StarRating value={product.averageRating} size="sm" />
+              <span>
+                {product.averageRating.toFixed(1)} · {product.reviewCount} отзыв(ов)
+              </span>
+            </div>
+          )}
           <div className="product-page__price">
             {product.discountPrice && <span className="product-page__price-old">{formatPrice(product.price)}</span>}
             <span className={product.discountPrice ? 'product-page__price-new' : ''}>
               {formatPrice(product.discountPrice ?? product.price)}
             </span>
           </div>
+          {lowStock && <span className="product-page__stock-warning">Осталось {product.stock} шт</span>}
+          {outOfStock && <span className="product-page__stock-warning product-page__stock-warning--out">Нет в наличии</span>}
 
           <div className="product-page__block">
             <span className="product-page__block-title">Размер</span>
@@ -95,22 +130,34 @@ export function ProductPage() {
             </div>
           </div>
 
-          <div className="product-page__block">
-            <span className="product-page__block-title">Количество</span>
-            <div className="quantity-stepper">
-              <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label="Уменьшить количество">
-                −
-              </button>
-              <span>{quantity}</span>
-              <button onClick={() => setQuantity((q) => q + 1)} aria-label="Увеличить количество">
-                +
-              </button>
+          {!outOfStock && (
+            <div className="product-page__block">
+              <span className="product-page__block-title">Количество</span>
+              <div className="quantity-stepper">
+                <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label="Уменьшить количество">
+                  −
+                </button>
+                <span>{quantity}</span>
+                <button
+                  onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
+                  disabled={quantity >= product.stock}
+                  aria-label="Увеличить количество"
+                >
+                  +
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="product-page__actions">
-            <Button variant="primary" size="lg" className="product-page__add-btn" onClick={handleAddToCart}>
-              В корзину
+            <Button
+              variant="primary"
+              size="lg"
+              className="product-page__add-btn"
+              onClick={handleAddToCart}
+              disabled={outOfStock}
+            >
+              {outOfStock ? 'Нет в наличии' : 'В корзину'}
             </Button>
             <button
               className={`product-page__fav-btn ${favorite ? 'is-active' : ''}`}
@@ -134,6 +181,8 @@ export function ProductPage() {
           </div>
         </div>
       </div>
+
+      <ProductReviews productId={Number(product.id)} />
 
       {related.length > 0 && (
         <section className="product-page__related">

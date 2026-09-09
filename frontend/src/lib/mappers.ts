@@ -24,5 +24,7 @@ export function mapProduct(dto: ProductDto, shoesBagsCategoryId: number | null):
     sizes: dto.categoryId === shoesBagsCategoryId ? SHOE_SIZES : CLOTHING_SIZES,
     isBestseller: dto.isBestseller,
     createdAt: dto.createdAt,
+    averageRating: dto.averageRating,
+    reviewCount: dto.reviewCount,
   };
 }

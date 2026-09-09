@@ -20,4 +20,6 @@ export interface Product {
   isNew?: boolean;
   isBestseller?: boolean;
   createdAt: string;
+  averageRating: number;
+  reviewCount: number;
 }
