@@ -1,3 +1,4 @@
+import { formatPrice } from '../../utils/formatPrice';
 import './PriceRangeSlider.css';
 
 interface PriceRangeSliderProps {
@@ -13,8 +14,8 @@ export function PriceRangeSlider({ min, max, value, onChange }: PriceRangeSlider
   return (
     <div className="price-slider">
       <div className="price-slider__values">
-        <span>{from.toLocaleString('ru-RU')} ₽</span>
-        <span>{to.toLocaleString('ru-RU')} ₽</span>
+        <span>{formatPrice(from)}</span>
+        <span>{formatPrice(to)}</span>
       </div>
       <div className="price-slider__track">
         <input

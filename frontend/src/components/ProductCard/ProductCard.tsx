@@ -3,6 +3,9 @@ import type { Product } from '../../types/product';
 import { useFavorites } from '../../context/FavoritesContext';
 import { useQuickView } from '../../context/QuickViewContext';
 import { FadeImage } from '../FadeImage/FadeImage';
+import { StarRating } from '../StarRating/StarRating';
+import { formatPrice } from '../../utils/formatPrice';
+import { isLowStock, isOutOfStock } from '../../utils/stock';
 import './ProductCard.css';
 
 interface ProductCardProps {
@@ -16,16 +19,22 @@ export function ProductCard({ product }: ProductCardProps) {
   const discountPercent = product.discountPrice
     ? Math.round((1 - product.discountPrice / product.price) * 100)
     : null;
+  const outOfStock = isOutOfStock(product.stock);
+  const lowStock = isLowStock(product.stock);
 
   return (
-    <div className="product-card">
+    <div className={`product-card ${outOfStock ? 'is-out-of-stock' : ''}`}>
       <Link to={`/product/${product.id}`} className="product-card__media">
         <FadeImage src={product.images[0]} alt={product.name} loading="lazy" />
         {product.images[1] && (
           <FadeImage src={product.images[1]} alt="" className="product-card__media-alt" loading="lazy" />
         )}
 
-        {discountPercent && <span className="product-card__badge">−{discountPercent}%</span>}
+        {outOfStock ? (
+          <span className="product-card__badge product-card__badge--out">Нет в наличии</span>
+        ) : (
+          discountPercent && <span className="product-card__badge">−{discountPercent}%</span>
+        )}
 
         <button
           className={`product-card__fav product-card__fav--mobile ${favorite ? 'is-active' : ''}`}
@@ -64,13 +73,22 @@ export function ProductCard({ product }: ProductCardProps) {
 
       <Link to={`/product/${product.id}`} className="product-card__info">
         <span className="product-card__category">{categoryLabel(product.gender)}</span>
-        <span className="product-card__name">{product.name}</span>
+        <span className="product-card__name" title={product.name}>
+          {product.name}
+        </span>
+        {product.reviewCount > 0 && (
+          <span className="product-card__rating">
+            <StarRating value={product.averageRating} size="sm" />
+            <span className="product-card__rating-count">({product.reviewCount})</span>
+          </span>
+        )}
         <span className="product-card__price">
           {product.discountPrice && <span className="product-card__price-old">{formatPrice(product.price)}</span>}
           <span className={product.discountPrice ? 'product-card__price-new' : ''}>
             {formatPrice(product.discountPrice ?? product.price)}
           </span>
         </span>
+        {lowStock && <span className="product-card__stock-warning">Осталось {product.stock} шт</span>}
       </Link>
     </div>
   );
@@ -85,10 +103,6 @@ function categoryLabel(gender: Product['gender']) {
     case 'kids':
       return 'Детское';
   }
-}
-
-export function formatPrice(value: number) {
-  return `${value.toLocaleString('ru-RU')} ₽`;
 }
 
 function HeartIcon({ filled }: { filled: boolean }) {

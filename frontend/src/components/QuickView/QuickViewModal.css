@@ -74,6 +74,13 @@
   color: var(--color-accent);
 }
 
+.quick-view__stock-warning {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-accent);
+  margin-top: var(--space-1);
+}
+
 .quick-view__desc {
   margin-top: var(--space-3);
   font-size: 14px;

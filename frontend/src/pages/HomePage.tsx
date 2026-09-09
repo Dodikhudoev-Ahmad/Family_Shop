@@ -6,6 +6,8 @@ import { ProductCardSkeleton } from '../components/ProductCard/ProductCardSkelet
 import { Slider } from '../components/Slider/Slider';
 import { Reveal } from '../components/Reveal';
 import { FadeImage } from '../components/FadeImage/FadeImage';
+import { useSeo } from '../hooks/useSeo';
+import { DEFAULT_DESCRIPTION, DEFAULT_TITLE } from '../data/seo';
 import './HomePage.css';
 
 const heroTiles = [
@@ -15,6 +17,7 @@ const heroTiles = [
 ] as const;
 
 export function HomePage() {
+  useSeo({ title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION });
   const { products, isLoading, error } = useProducts();
 
   const newest = [...products].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 8);

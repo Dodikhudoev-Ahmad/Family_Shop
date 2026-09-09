@@ -58,7 +58,7 @@
 .catalog__grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-4) var(--space-3);
+  gap: var(--space-5) var(--space-4);
 }
 
 .catalog__empty {
