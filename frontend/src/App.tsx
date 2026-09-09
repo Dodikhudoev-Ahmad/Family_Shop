@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import { AdminRoute } from './components/AdminRoute/AdminRoute';
+import { ScrollToTop } from './components/ScrollToTop/ScrollToTop';
 import { HomePage } from './pages/HomePage';
 import { CatalogPage } from './pages/CatalogPage';
 import { ProductPage } from './pages/ProductPage';
@@ -14,6 +15,7 @@ import { AdminOrdersPage } from './pages/admin/AdminOrdersPage';
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route
           path="/admin/orders"
