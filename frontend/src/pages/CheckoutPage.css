@@ -1,0 +1,234 @@
+.checkout {
+  max-width: 640px;
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-8);
+}
+
+.checkout__empty {
+  padding: var(--space-8) 0;
+  text-align: center;
+}
+
+.checkout__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.checkout__step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.checkout__step.is-active {
+  color: var(--color-text);
+}
+
+.checkout__step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  transition: background-color var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+}
+
+.checkout__step.is-active .checkout__step-num {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-white);
+}
+
+.checkout__progress-line {
+  flex: 1;
+  height: 2px;
+  background: var(--color-border);
+  position: relative;
+}
+
+.checkout__progress-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--color-accent);
+  transition: width var(--transition-slow);
+}
+
+.checkout__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.checkout__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.checkout__field label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.checkout__field input {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  font-size: 14px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.checkout__field input:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.checkout__field input.has-error {
+  border-color: var(--color-error);
+}
+
+.checkout__error {
+  font-size: 12px;
+  color: var(--color-error);
+  animation: toast-in var(--transition-fast);
+}
+
+.checkout__submit-error {
+  text-align: center;
+}
+
+.delivery-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.delivery-card {
+  text-align: left;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-bg);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.delivery-card:hover {
+  border-color: var(--color-accent);
+}
+
+.delivery-card.is-selected {
+  border-color: var(--color-accent);
+  background: var(--color-bg-secondary);
+}
+
+.delivery-card__title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.delivery-card__desc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.checkout__submit {
+  margin-top: var(--space-2);
+}
+
+.checkout__summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.checkout__summary-block h4 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.checkout__summary-block p {
+  font-size: 14px;
+}
+
+.checkout__summary-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  padding: var(--space-1) 0;
+}
+
+.checkout__summary-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 18px;
+  font-weight: 700;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+}
+
+.checkout__summary-actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.checkout__summary-actions .btn--primary {
+  flex: 1;
+}
+
+.checkout-success {
+  max-width: 480px;
+  text-align: center;
+  padding: var(--space-8) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.checkout-success__icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-success);
+  color: var(--color-white);
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-3);
+}
+
+.checkout-success__number {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-accent);
+  margin: var(--space-2) 0;
+}
+
+.checkout-success__note {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 480px) {
+  .delivery-options {
+    grid-template-columns: 1fr;
+  }
+}

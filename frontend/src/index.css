@@ -1,0 +1,15 @@
+#root {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
+
+.app-shell main {
+  flex: 1;
+}

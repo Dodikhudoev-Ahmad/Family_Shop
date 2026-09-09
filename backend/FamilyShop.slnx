@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="FamilyShop.Api/FamilyShop.Api.csproj" />
+  <Project Path="FamilyShop.Application/FamilyShop.Application.csproj" />
+  <Project Path="FamilyShop.Domain/FamilyShop.Domain.csproj" />
+  <Project Path="FamilyShop.Infrastructure/FamilyShop.Infrastructure.csproj" />
+</Solution>

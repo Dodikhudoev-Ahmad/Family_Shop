@@ -1,0 +1,15 @@
+.product-card-skeleton__media {
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-md);
+}
+
+.product-card-skeleton__line {
+  height: 14px;
+  margin-top: var(--space-2);
+  width: 80%;
+}
+
+.product-card-skeleton__line--sm {
+  width: 40%;
+  height: 10px;
+}
