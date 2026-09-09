@@ -88,6 +88,7 @@ export interface ProductQuery {
   categoryId?: number;
   minPrice?: number;
   maxPrice?: number;
+  search?: string;
   sortBy?: ProductSortBy;
   page?: number;
   pageSize?: number;
@@ -99,6 +100,7 @@ function buildProductParams(query: ProductQuery): URLSearchParams {
   if (query.categoryId !== undefined) params.set('categoryId', String(query.categoryId));
   if (query.minPrice !== undefined) params.set('minPrice', String(query.minPrice));
   if (query.maxPrice !== undefined) params.set('maxPrice', String(query.maxPrice));
+  if (query.search !== undefined) params.set('search', query.search);
   if (query.sortBy !== undefined) params.set('sortBy', String(query.sortBy));
   if (query.page !== undefined) params.set('page', String(query.page));
   if (query.pageSize !== undefined) params.set('pageSize', String(query.pageSize));
@@ -125,10 +127,13 @@ export function fetchCategories(): Promise<CategoryDto[]> {
   return apiFetch<CategoryDto[]>('/categories');
 }
 
+export type ApiUserRole = 'Customer' | 'Admin';
+
 export interface AuthResponseDto {
   userId: number;
   email: string;
   name: string;
+  role: ApiUserRole;
   accessToken: string;
 }
 
@@ -207,4 +212,118 @@ export function createOrder(request: CreateOrderRequest): Promise<OrderDto> {
 
 export function fetchOrders(): Promise<OrderDto[]> {
   return apiFetch<OrderDto[]>('/orders');
+}
+
+/** 0=Newest, 1=Oldest - matches backend OrderSortBy. */
+export type AdminOrderSortBy = 0 | 1;
+
+export interface AdminOrderDto {
+  id: number;
+  status: ApiOrderStatus;
+  totalPrice: number;
+  createdAt: string;
+  contactName: string;
+  contactPhone: string;
+  deliveryMethod: ApiDeliveryMethod;
+  city: string | null;
+  address: string | null;
+  itemsCount: number;
+  items: OrderItemDto[];
+}
+
+export interface OrderStatsDto {
+  ordersToday: number;
+  revenueToday: number;
+  newOrdersCount: number;
+  totalOrders: number;
+}
+
+export interface AdminOrderQuery {
+  status?: ApiOrderStatus;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+  sortBy?: AdminOrderSortBy;
+  page?: number;
+  pageSize?: number;
+}
+
+function buildAdminOrderParams(query: AdminOrderQuery): URLSearchParams {
+  const params = new URLSearchParams();
+  if (query.status !== undefined) params.set('status', String(query.status));
+  if (query.dateFrom !== undefined) params.set('dateFrom', query.dateFrom);
+  if (query.dateTo !== undefined) params.set('dateTo', query.dateTo);
+  if (query.search !== undefined) params.set('search', query.search);
+  if (query.sortBy !== undefined) params.set('sortBy', String(query.sortBy));
+  if (query.page !== undefined) params.set('page', String(query.page));
+  if (query.pageSize !== undefined) params.set('pageSize', String(query.pageSize));
+  return params;
+}
+
+export function fetchAdminOrders(query: AdminOrderQuery = {}): Promise<PagedResult<AdminOrderDto>> {
+  const qs = buildAdminOrderParams(query).toString();
+  return apiFetch<PagedResult<AdminOrderDto>>(`/admin/orders${qs ? `?${qs}` : ''}`);
+}
+
+export function fetchAdminOrderStats(): Promise<OrderStatsDto> {
+  return apiFetch<OrderStatsDto>('/admin/orders/stats');
+}
+
+export function updateAdminOrderStatus(id: number, status: ApiOrderStatus): Promise<AdminOrderDto> {
+  return apiFetch<AdminOrderDto>(`/admin/orders/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
+/** 0=Newest, 1=HighestRating, 2=LowestRating - matches backend ReviewSortBy. */
+export type ReviewSortBy = 0 | 1 | 2;
+
+export interface ReviewDto {
+  id: number;
+  userId: number;
+  userName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+export interface ReviewSummaryDto {
+  averageRating: number;
+  reviewCount: number;
+  ratingCounts: Record<number, number>;
+}
+
+export interface ReviewQuery {
+  sortBy?: ReviewSortBy;
+  page?: number;
+  pageSize?: number;
+}
+
+export function fetchProductReviews(productId: number, query: ReviewQuery = {}): Promise<PagedResult<ReviewDto>> {
+  const params = new URLSearchParams();
+  if (query.sortBy !== undefined) params.set('sortBy', String(query.sortBy));
+  if (query.page !== undefined) params.set('page', String(query.page));
+  if (query.pageSize !== undefined) params.set('pageSize', String(query.pageSize));
+  const qs = params.toString();
+  return apiFetch<PagedResult<ReviewDto>>(`/products/${productId}/reviews${qs ? `?${qs}` : ''}`);
+}
+
+export function fetchReviewSummary(productId: number): Promise<ReviewSummaryDto> {
+  return apiFetch<ReviewSummaryDto>(`/products/${productId}/reviews/summary`);
+}
+
+export function fetchMyReview(productId: number): Promise<ReviewDto | null> {
+  return apiFetch<ReviewDto | null>(`/products/${productId}/reviews/mine`);
+}
+
+export function createReview(productId: number, rating: number, comment: string): Promise<ReviewDto> {
+  return apiFetch<ReviewDto>(`/products/${productId}/reviews`, {
+    method: 'POST',
+    body: JSON.stringify({ rating, comment }),
+  });
+}
+
+export function deleteMyReview(productId: number): Promise<void> {
+  return apiFetch<void>(`/products/${productId}/reviews`, { method: 'DELETE' });
 }
