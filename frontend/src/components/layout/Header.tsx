@@ -4,6 +4,7 @@ import { useCart } from '../../context/CartContext';
 import { useCategories } from '../../context/CategoriesContext';
 import { useAuth } from '../../context/AuthContext';
 import { useFavorites } from '../../context/FavoritesContext';
+import { useTheme } from '../../context/ThemeContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { MobileMenu } from './MobileMenu';
 import { SearchOverlay } from '../Search/SearchOverlay';
@@ -18,6 +19,7 @@ export function Header() {
   const { categories } = useCategories();
   const { user, logout } = useAuth();
   const { favoriteIds } = useFavorites();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const onScroll = () => setIsCompact(window.scrollY > 100);
@@ -63,6 +65,14 @@ export function Header() {
             onClick={() => setIsSearchOpen(true)}
           >
             <SearchIcon />
+          </button>
+
+          <button
+            className="header__icon-btn"
+            aria-label={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
+            onClick={toggleTheme}
+          >
+            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </button>
 
           {isDesktop &&
@@ -117,6 +127,33 @@ function SearchIcon() {
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
       <circle cx="9" cy="9" r="6.5" stroke="currentColor" strokeWidth="1.6" />
       <path d="M18 18L14 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SunIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="4" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M10 1.5v2M10 16.5v2M18.5 10h-2M3.5 10h-2M15.66 4.34l-1.42 1.42M5.76 14.24l-1.42 1.42M15.66 15.66l-1.42-1.42M5.76 5.76 4.34 4.34"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path
+        d="M17 11.5A7 7 0 0 1 8.5 3a7 7 0 1 0 8.5 8.5z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
