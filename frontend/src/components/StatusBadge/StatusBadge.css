@@ -1,0 +1,45 @@
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.status-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-badge--created {
+  background: rgba(193, 122, 84, 0.14);
+  color: var(--color-accent);
+}
+
+.status-badge--processing {
+  background: rgba(201, 143, 43, 0.15);
+  color: var(--color-warning);
+}
+
+.status-badge--shipped {
+  background: rgba(91, 122, 153, 0.14);
+  color: var(--color-info);
+}
+
+.status-badge--delivered {
+  background: rgba(90, 138, 107, 0.14);
+  color: var(--color-success);
+}
+
+.status-badge--cancelled {
+  background: rgba(138, 138, 138, 0.14);
+  color: var(--color-text-secondary);
+}

@@ -1,12 +1,13 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useToast } from './ToastContext';
-import { loginRequest, logoutRequest, registerRequest, silentRefresh } from '../lib/api';
+import { loginRequest, logoutRequest, registerRequest, silentRefresh, type ApiUserRole } from '../lib/api';
 import { onAccessTokenChange, setAccessToken } from '../lib/authToken';
 
 interface AuthUser {
   id: number;
   email: string;
   name: string;
+  role: ApiUserRole;
 }
 
 interface AuthContextValue {
@@ -41,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((data) => {
         if (cancelled || !data) return;
         setAccessToken(data.accessToken);
-        setUser({ id: data.userId, email: data.email, name: data.name });
+        setUser({ id: data.userId, email: data.email, name: data.name, role: data.role });
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -54,14 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const data = await loginRequest(email, password);
     setAccessToken(data.accessToken);
-    setUser({ id: data.userId, email: data.email, name: data.name });
+    setUser({ id: data.userId, email: data.email, name: data.name, role: data.role });
     showToast('Вы успешно вошли в аккаунт');
   };
 
   const register = async (email: string, password: string, name: string) => {
     const data = await registerRequest(email, password, name);
     setAccessToken(data.accessToken);
-    setUser({ id: data.userId, email: data.email, name: data.name });
+    setUser({ id: data.userId, email: data.email, name: data.name, role: data.role });
     showToast('Аккаунт создан, добро пожаловать!');
   };
 
