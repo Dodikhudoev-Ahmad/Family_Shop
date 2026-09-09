@@ -19,19 +19,20 @@ public class ProductsController : ControllerBase
         _productService = productService;
     }
 
-    /// <summary>Список товаров с фильтрацией по полу, категории и цене, сортировкой и пагинацией.</summary>
+    /// <summary>Список товаров с фильтрацией по полу, категории, цене и поисковой строке (name/description), сортировкой и пагинацией.</summary>
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResult<ProductDto>>>> GetProducts(
         [FromQuery] Gender? gender,
         [FromQuery] int? categoryId,
         [FromQuery] decimal? minPrice,
         [FromQuery] decimal? maxPrice,
+        [FromQuery] string? search,
         [FromQuery] ProductSortBy sortBy = ProductSortBy.Newest,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 8,
         CancellationToken cancellationToken = default)
     {
-        var filter = new ProductFilterDto(gender, categoryId, minPrice, maxPrice, sortBy, page, pageSize);
+        var filter = new ProductFilterDto(gender, categoryId, minPrice, maxPrice, search, sortBy, page, pageSize);
         var result = await _productService.GetProductsAsync(filter, cancellationToken);
         return Ok(ApiResponse<PagedResult<ProductDto>>.Ok(result));
     }
