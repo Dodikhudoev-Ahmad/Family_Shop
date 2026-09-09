@@ -11,7 +11,7 @@
 
 .toast {
   background: var(--color-text);
-  color: var(--color-white);
+  color: var(--color-bg);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
