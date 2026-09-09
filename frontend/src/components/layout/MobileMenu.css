@@ -1,7 +1,7 @@
 .mobile-menu__overlay {
   position: fixed;
   inset: 0;
-  background: rgba(26, 26, 26, 0.5);
+  background: rgba(0, 0, 0, 0.45);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition-base);
@@ -15,21 +15,22 @@
 
 .mobile-menu {
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(320px, 85vw);
-  background: var(--color-bg);
+  inset: 0;
+  width: 100%;
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   z-index: 201;
-  transform: translateX(100%);
-  transition: transform var(--transition-slow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-base);
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-lg);
 }
 
 .mobile-menu.is-open {
-  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .mobile-menu__header {
@@ -38,6 +39,7 @@
   justify-content: space-between;
   padding: var(--space-4);
   border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
 }
 
 .mobile-menu__title {
@@ -61,6 +63,7 @@
   flex-direction: column;
   padding: var(--space-4);
   gap: var(--space-4);
+  overflow-y: auto;
 }
 
 .mobile-menu__link {
@@ -71,6 +74,9 @@
   color: var(--color-text);
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--color-border);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 320ms ease, transform 320ms ease;
 }
 
 .mobile-menu__link--secondary {
@@ -88,3 +94,19 @@ button.mobile-menu__link--secondary {
   font-family: inherit;
   padding: 0;
 }
+
+.mobile-menu.is-open .mobile-menu__link {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mobile-menu.is-open .mobile-menu__link:nth-child(1) { transition-delay: 80ms; }
+.mobile-menu.is-open .mobile-menu__link:nth-child(2) { transition-delay: 130ms; }
+.mobile-menu.is-open .mobile-menu__link:nth-child(3) { transition-delay: 180ms; }
+.mobile-menu.is-open .mobile-menu__link:nth-child(4) { transition-delay: 230ms; }
+.mobile-menu.is-open .mobile-menu__link:nth-child(5) { transition-delay: 280ms; }
+.mobile-menu.is-open .mobile-menu__link:nth-child(6) { transition-delay: 330ms; }
+.mobile-menu.is-open .mobile-menu__link:nth-child(7) { transition-delay: 380ms; }
+.mobile-menu.is-open .mobile-menu__link:nth-child(8) { transition-delay: 430ms; }
+.mobile-menu.is-open .mobile-menu__link:nth-child(9) { transition-delay: 480ms; }
+.mobile-menu.is-open .mobile-menu__link:nth-child(10) { transition-delay: 530ms; }
