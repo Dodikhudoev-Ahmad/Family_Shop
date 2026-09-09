@@ -13,4 +13,6 @@ public record ProductDto(
     Gender Gender,
     List<string> Images,
     DateTime CreatedAt,
-    bool IsBestseller);
+    bool IsBestseller,
+    decimal AverageRating,
+    int ReviewCount);

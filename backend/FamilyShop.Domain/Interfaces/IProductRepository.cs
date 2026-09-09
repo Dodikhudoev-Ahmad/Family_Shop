@@ -17,6 +17,7 @@ public interface IProductRepository : IRepository<Product>
         int? categoryId,
         decimal? minPrice,
         decimal? maxPrice,
+        string? search,
         ProductSortOrder sortOrder,
         int page,
         int pageSize,

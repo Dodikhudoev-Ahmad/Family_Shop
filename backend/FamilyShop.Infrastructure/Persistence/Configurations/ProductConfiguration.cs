@@ -22,6 +22,9 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .HasForeignKey(p => p.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Property(p => p.AverageRating).HasColumnType("decimal(3,2)").HasDefaultValue(0m);
+        builder.Property(p => p.ReviewCount).HasDefaultValue(0);
+
         builder.HasIndex(p => p.CategoryId);
         builder.HasIndex(p => p.Gender);
     }

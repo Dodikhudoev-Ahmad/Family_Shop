@@ -14,6 +14,7 @@ public static class DependencyInjection
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IReviewService, ReviewService>();
 
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
 
