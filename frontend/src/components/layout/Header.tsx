@@ -55,6 +55,9 @@ export function Header() {
                 {c.name}
               </NavLink>
             ))}
+            <NavLink to="/about" className={({ isActive }) => `header__nav-link ${isActive ? 'is-active' : ''}`}>
+              О нас
+            </NavLink>
           </nav>
         )}
 
@@ -78,9 +81,13 @@ export function Header() {
           {isDesktop &&
             (user ? (
               <div className="header__account">
-                <Link to="/account" className="header__account-link" aria-label="Личный кабинет">
+                <Link
+                  to={user.role === 'Admin' ? '/admin/orders' : '/account'}
+                  className="header__account-link"
+                  aria-label={user.role === 'Admin' ? 'Администратор' : 'Личный кабинет'}
+                >
                   <span className="header__avatar">{user.name.charAt(0).toUpperCase()}</span>
-                  <span className="header__account-name">{user.name}</span>
+                  <span className="header__account-name">{user.role === 'Admin' ? 'Администратор' : user.name}</span>
                 </Link>
                 <button className="header__icon-btn" aria-label="Выйти" onClick={logout}>
                   <LogoutIcon />
