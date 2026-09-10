@@ -3,6 +3,7 @@ import { AdminLayout } from '../../components/AdminLayout/AdminLayout';
 import { StatusBadge, ORDER_STATUS_INFO, ALLOWED_NEXT_STATUSES } from '../../components/StatusBadge/StatusBadge';
 import { useToast } from '../../context/ToastContext';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { formatPrice } from '../../utils/formatPrice';
 import {
   ApiError,
@@ -51,7 +52,8 @@ export function AdminOrdersPage() {
   const [dateTo, setDateTo] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [view, setView] = useState<ViewMode>('table');
+  const isMobile = useMediaQuery('(max-width: 767px)');
+  const [view, setView] = useState<ViewMode>(() => (isMobile ? 'cards' : 'table'));
   const [page, setPage] = useState(1);
 
   const [orders, setOrders] = useState<AdminOrderDto[] | null>(null);
