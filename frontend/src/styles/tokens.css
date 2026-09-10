@@ -74,20 +74,9 @@
   --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.48);
 }
 
-/* Админка сохраняет светлую тему независимо от темы основного сайта */
-.admin-layout {
-  --color-bg: #FFFFFF;
-  --color-bg-secondary: #F7F5F3;
-  --color-text: #1A1A1A;
-  --color-text-secondary: #8A8A8A;
-  --color-accent: #C17A54;
-  --color-accent-hover: #A8663F;
-  --color-border: #E5E2DE;
-  --color-error: #C1544B;
-  --color-success: #5A8A6B;
-  --color-warning: #B5811F;
-  --color-info: #4F6F8F;
-  --shadow-sm: 0 2px 8px rgba(26, 26, 26, 0.06);
-  --shadow-md: 0 8px 24px rgba(26, 26, 26, 0.10);
-  --shadow-lg: 0 16px 48px rgba(26, 26, 26, 0.16);
+/* Админка следует общей теме сайта (переключается своим ThemeToggle в шапке).
+   Вторичный текст усилен по контрасту в светлой теме — на карточках метрик и в
+   таблице заказов --color-text-secondary (#8A8A8A на белом, ~3:1) не проходил WCAG AA. */
+:root[data-theme='light'] .admin-layout {
+  --color-text-secondary: #5A5754;
 }
