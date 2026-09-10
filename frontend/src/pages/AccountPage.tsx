@@ -20,6 +20,10 @@ export function AccountPage() {
     return <Navigate to="/login" replace />;
   }
 
+  if (user.role === 'Admin') {
+    return <Navigate to="/admin/orders" replace />;
+  }
+
   return (
     <div className="container account">
       <div className="account__header">

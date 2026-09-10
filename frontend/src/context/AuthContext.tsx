@@ -14,8 +14,8 @@ interface AuthContextValue {
   user: AuthUser | null;
   /** True while restoring a session from the refresh cookie on first load. */
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
+  register: (email: string, password: string, name: string) => Promise<AuthUser>;
   logout: () => void;
 }
 
@@ -55,15 +55,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const data = await loginRequest(email, password);
     setAccessToken(data.accessToken);
-    setUser({ id: data.userId, email: data.email, name: data.name, role: data.role });
+    const loggedInUser = { id: data.userId, email: data.email, name: data.name, role: data.role };
+    setUser(loggedInUser);
     showToast('Вы успешно вошли в аккаунт');
+    return loggedInUser;
   };
 
   const register = async (email: string, password: string, name: string) => {
     const data = await registerRequest(email, password, name);
     setAccessToken(data.accessToken);
-    setUser({ id: data.userId, email: data.email, name: data.name, role: data.role });
+    const registeredUser = { id: data.userId, email: data.email, name: data.name, role: data.role };
+    setUser(registeredUser);
     showToast('Аккаунт создан, добро пожаловать!');
+    return registeredUser;
   };
 
   const logout = () => {
