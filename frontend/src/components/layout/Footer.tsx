@@ -23,6 +23,11 @@ export function Footer() {
                 </Link>
               </li>
             ))}
+            <li>
+              <Link to="/about" className="footer__link">
+                О нас
+              </Link>
+            </li>
           </ul>
         </div>
 

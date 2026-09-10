@@ -30,10 +30,17 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               {c.name}
             </Link>
           ))}
+          <Link to="/about" className="mobile-menu__link" onClick={onClose}>
+            О нас
+          </Link>
           {user ? (
             <>
-              <Link to="/account" className="mobile-menu__link mobile-menu__link--secondary" onClick={onClose}>
-                {user.name}
+              <Link
+                to={user.role === 'Admin' ? '/admin/orders' : '/account'}
+                className="mobile-menu__link mobile-menu__link--secondary"
+                onClick={onClose}
+              >
+                {user.role === 'Admin' ? 'Администратор' : user.name}
               </Link>
               <button
                 className="mobile-menu__link mobile-menu__link--secondary"
