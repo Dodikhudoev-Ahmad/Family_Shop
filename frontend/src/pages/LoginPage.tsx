@@ -18,7 +18,8 @@ export function LoginPage() {
   const { user, isLoading, login, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string } | null)?.from ?? '/account';
+  const from = (location.state as { from?: string } | null)?.from;
+  const target = user?.role === 'Admin' ? '/admin/orders' : from ?? '/account';
   const [tab, setTab] = useState<'login' | 'register'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -34,7 +35,7 @@ export function LoginPage() {
   const isValid = !emailError && !passwordError && !nameError && email && password && (tab === 'login' || name);
 
   if (!isLoading && user) {
-    return <Navigate to={from} replace />;
+    return <Navigate to={target} replace />;
   }
 
   const switchTab = (next: 'login' | 'register') => {
@@ -50,9 +51,8 @@ export function LoginPage() {
     if (!isValid) return;
     setIsSubmitting(true);
     try {
-      if (tab === 'login') await login(email, password);
-      else await register(email, password, name);
-      navigate(from, { replace: true });
+      const loggedInUser = tab === 'login' ? await login(email, password) : await register(email, password, name);
+      navigate(loggedInUser.role === 'Admin' ? '/admin/orders' : from ?? '/account', { replace: true });
     } catch (err) {
       setServerError(err instanceof ApiError ? err.message : 'Что-то пошло не так. Попробуйте ещё раз.');
     } finally {
