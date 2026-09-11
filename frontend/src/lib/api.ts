@@ -1,4 +1,4 @@
-import type { ApiResponse, CategoryDto, PagedResult, ProductDto, ProductSortBy } from '../types/api';
+import type { ApiGender, ApiResponse, CategoryDto, PagedResult, ProductDto, ProductSortBy } from '../types/api';
 import { getAccessToken, setAccessToken } from './authToken';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5280/api/v1';
@@ -13,7 +13,7 @@ export class ApiError extends Error {
 async function rawFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const token = getAccessToken();
   const headers = new Headers(options.headers);
-  if (options.body !== undefined && !headers.has('Content-Type')) {
+  if (options.body !== undefined && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
   if (token) {
@@ -326,4 +326,52 @@ export function createReview(productId: number, rating: number, comment: string)
 
 export function deleteMyReview(productId: number): Promise<void> {
   return apiFetch<void>(`/products/${productId}/reviews`, { method: 'DELETE' });
+}
+
+export interface ProductUpsertRequest {
+  name: string;
+  description: string;
+  price: number;
+  discountPrice: number | null;
+  stock: number;
+  categoryId: number;
+  gender: ApiGender;
+  images: string[];
+  isBestseller: boolean;
+}
+
+export function createAdminProduct(request: ProductUpsertRequest): Promise<ProductDto> {
+  return apiFetch<ProductDto>('/admin/products', { method: 'POST', body: JSON.stringify(request) });
+}
+
+export function updateAdminProduct(id: number, request: ProductUpsertRequest): Promise<ProductDto> {
+  return apiFetch<ProductDto>(`/admin/products/${id}`, { method: 'PUT', body: JSON.stringify(request) });
+}
+
+export function deleteAdminProduct(id: number): Promise<void> {
+  return apiFetch<void>(`/admin/products/${id}`, { method: 'DELETE' });
+}
+
+export async function uploadAdminProductImage(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiFetch<string>('/admin/products/images', { method: 'POST', body: formData });
+}
+
+export interface CategoryUpsertRequest {
+  name: string;
+  slug: string;
+  parentCategoryId: number | null;
+}
+
+export function createAdminCategory(request: CategoryUpsertRequest): Promise<CategoryDto> {
+  return apiFetch<CategoryDto>('/admin/categories', { method: 'POST', body: JSON.stringify(request) });
+}
+
+export function updateAdminCategory(id: number, request: CategoryUpsertRequest): Promise<CategoryDto> {
+  return apiFetch<CategoryDto>(`/admin/categories/${id}`, { method: 'PUT', body: JSON.stringify(request) });
+}
+
+export function deleteAdminCategory(id: number): Promise<void> {
+  return apiFetch<void>(`/admin/categories/${id}`, { method: 'DELETE' });
 }
