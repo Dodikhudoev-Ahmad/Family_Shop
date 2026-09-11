@@ -198,7 +198,7 @@ export function AdminOrdersPage() {
           </div>
         </div>
 
-        {error && <p className="admin-orders__error">{error}</p>}
+        {error && <p className="admin-page-error">{error}</p>}
 
         {!error && isLoading && (view === 'table' ? <TableSkeleton /> : <CardsSkeleton />)}
 
@@ -224,7 +224,7 @@ export function AdminOrdersPage() {
               />
             )}
 
-            <div className="admin-orders__pagination">
+            <div className="admin-pagination">
               <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                 Назад
               </button>
@@ -246,7 +246,7 @@ export function AdminOrdersPage() {
 
 function StatsRow({ stats, error }: { stats: OrderStatsDto | null; error: boolean }) {
   if (error) {
-    return <p className="admin-orders__error">Не удалось загрузить метрики.</p>;
+    return <p className="admin-page-error">Не удалось загрузить метрики.</p>;
   }
 
   const cards = [
