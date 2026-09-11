@@ -99,4 +99,9 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
 
         return (todaysTotals.Count, todaysTotals.Sum(m => m.Amount), newOrdersCount, totalOrders);
     }
+
+    public Task<bool> HasItemsForProductAsync(int productId, CancellationToken cancellationToken = default)
+    {
+        return Context.Set<OrderItem>().AnyAsync(i => i.ProductId == productId, cancellationToken);
+    }
 }

@@ -22,4 +22,6 @@ public interface IProductRepository : IRepository<Product>
         int page,
         int pageSize,
         CancellationToken cancellationToken = default);
+
+    Task<bool> AnyByCategoryIdAsync(int categoryId, CancellationToken cancellationToken = default);
 }

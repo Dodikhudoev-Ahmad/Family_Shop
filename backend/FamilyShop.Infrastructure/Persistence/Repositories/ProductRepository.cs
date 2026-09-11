@@ -77,4 +77,9 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
 
         return (items, totalCount);
     }
+
+    public Task<bool> AnyByCategoryIdAsync(int categoryId, CancellationToken cancellationToken = default)
+    {
+        return DbSet.AnyAsync(p => p.CategoryId == categoryId, cancellationToken);
+    }
 }

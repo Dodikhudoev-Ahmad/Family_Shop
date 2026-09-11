@@ -6,6 +6,7 @@ using FamilyShop.Domain.Interfaces;
 using FamilyShop.Infrastructure.Persistence;
 using FamilyShop.Infrastructure.Persistence.Repositories;
 using FamilyShop.Infrastructure.Security;
+using FamilyShop.Infrastructure.Storage;
 
 namespace FamilyShop.Infrastructure;
 
@@ -27,6 +28,7 @@ public static class DependencyInjection
 
         services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddScoped<IImageStorageService, LocalImageStorageService>();
 
         return services;
     }

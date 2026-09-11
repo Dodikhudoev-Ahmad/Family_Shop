@@ -26,4 +26,6 @@ public interface IOrderRepository : IRepository<Order>
 
     Task<(int OrdersToday, decimal RevenueToday, int NewOrdersCount, int TotalOrders)> GetStatsAsync(
         CancellationToken cancellationToken = default);
+
+    Task<bool> HasItemsForProductAsync(int productId, CancellationToken cancellationToken = default);
 }

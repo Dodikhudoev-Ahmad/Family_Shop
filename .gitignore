@@ -9,6 +9,8 @@ backend/**/bin/
 backend/**/obj/
 backend/**/appsettings.*.local.json
 backend/**/secrets.json
+backend/FamilyShop.Api/wwwroot/uploads/products/*
+!backend/FamilyShop.Api/wwwroot/uploads/products/.gitkeep
 
 # Secrets / environment
 *.env
