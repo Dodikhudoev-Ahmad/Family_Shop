@@ -26,6 +26,16 @@ type ViewMode = 'table' | 'cards';
 const GENDER_LABEL: Record<ApiGender, string> = { 0: 'Мужское', 1: 'Женское', 2: 'Детское' };
 const GENDER_OPTIONS: ApiGender[] = [0, 1, 2];
 
+// Categories "Женское"/"Мужское"/"Детское" already say who the product is for, so Gender
+// there would just duplicate the category - only categories with no gender of their own
+// (e.g. "Обувь и сумки") need the field shown so an admin can set it explicitly.
+const CATEGORY_SLUG_TO_GENDER: Partial<Record<string, ApiGender>> = { women: 1, men: 0, kids: 2 };
+
+function impliedGender(categories: CategoryDto[], categoryId: string): ApiGender | undefined {
+  const category = categories.find((c) => String(c.id) === categoryId);
+  return category ? CATEGORY_SLUG_TO_GENDER[category.slug] : undefined;
+}
+
 interface ImageSlot {
   id: string;
   previewUrl: string;
@@ -134,7 +144,9 @@ export function AdminProductsPage() {
   const categoryById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
   const openCreate = () => {
-    setForm(emptyForm(categories[0] ? String(categories[0].id) : ''));
+    const defaultCategoryId = categories[0] ? String(categories[0].id) : '';
+    const form = emptyForm(defaultCategoryId);
+    setForm({ ...form, gender: impliedGender(categories, defaultCategoryId) ?? form.gender });
     setFieldErrors({});
     setFormErrors([]);
     setDrawerOpen(true);
@@ -198,7 +210,7 @@ export function AdminProductsPage() {
       discountPrice: form.discountPrice ? Number(form.discountPrice) : null,
       stock: Number(form.stock),
       categoryId: Number(form.categoryId),
-      gender: form.gender,
+      gender: impliedGender(categories, form.categoryId) ?? form.gender,
       images: form.images.filter((img) => img.url).map((img) => img.url!),
       isBestseller: form.isBestseller,
     };
@@ -499,6 +511,7 @@ function ProductFormDrawer({
   onClose: () => void;
 }) {
   useLockBodyScroll(open);
+  const categoryGender = impliedGender(categories, form.categoryId);
 
   return (
     <>
@@ -536,10 +549,18 @@ function ProductFormDrawer({
               </Field>
 
               <div className="admin-form-row">
-                <Field label="Категория" error={fieldErrors.categoryId}>
+                <Field label="Категория" error={fieldErrors.categoryId} fullWidth={categoryGender !== undefined}>
                   <select
                     value={form.categoryId}
-                    onChange={(e) => setForm((prev) => ({ ...prev, categoryId: e.target.value }))}
+                    onChange={(e) => {
+                      const categoryId = e.target.value;
+                      const nextGender = impliedGender(categories, categoryId);
+                      setForm((prev) => ({
+                        ...prev,
+                        categoryId,
+                        gender: nextGender ?? prev.gender,
+                      }));
+                    }}
                   >
                     <option value="">Выберите категорию</option>
                     {categories.map((c) => (
@@ -550,18 +571,20 @@ function ProductFormDrawer({
                   </select>
                 </Field>
 
-                <Field label="Пол">
-                  <select
-                    value={form.gender}
-                    onChange={(e) => setForm((prev) => ({ ...prev, gender: Number(e.target.value) as ApiGender }))}
-                  >
-                    {GENDER_OPTIONS.map((g) => (
-                      <option key={g} value={g}>
-                        {GENDER_LABEL[g]}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
+                {categoryGender === undefined && (
+                  <Field label="Пол">
+                    <select
+                      value={form.gender}
+                      onChange={(e) => setForm((prev) => ({ ...prev, gender: Number(e.target.value) as ApiGender }))}
+                    >
+                      {GENDER_OPTIONS.map((g) => (
+                        <option key={g} value={g}>
+                          {GENDER_LABEL[g]}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
               </div>
 
               <div className="admin-form-row">
@@ -640,9 +663,19 @@ function ProductFormDrawer({
   );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
+function Field({
+  label,
+  error,
+  fullWidth,
+  children,
+}: {
+  label: string;
+  error?: string;
+  fullWidth?: boolean;
+  children: ReactNode;
+}) {
   return (
-    <label className={`admin-form-field ${error ? 'has-error' : ''}`}>
+    <label className={`admin-form-field ${error ? 'has-error' : ''} ${fullWidth ? 'is-full' : ''}`}>
       <span>{label}</span>
       {children}
       {error && <span className="admin-form-field__error">{error}</span>}

@@ -208,6 +208,10 @@
   gap: var(--space-3);
 }
 
+.admin-form-row .admin-form-field.is-full {
+  grid-column: 1 / -1;
+}
+
 .admin-form-field__label-standalone {
   font-size: 13px;
   font-weight: 600;
