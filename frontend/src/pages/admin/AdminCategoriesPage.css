@@ -1,0 +1,104 @@
+@import './AdminShared.css';
+
+.admin-categories__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.admin-categories__header h1 {
+  font-size: 26px;
+}
+
+.admin-categories__header p {
+  color: var(--color-text-secondary);
+  margin-top: var(--space-1);
+  font-size: 14px;
+}
+
+.admin-categories__add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--color-text);
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform var(--transition-fast), opacity var(--transition-fast);
+}
+
+.admin-categories__add:hover {
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
+
+.admin-categories__add--empty {
+  margin-top: var(--space-4);
+}
+
+.admin-categories__name {
+  font-weight: 600;
+}
+
+.admin-categories__slug {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.admin-categories__row-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.admin-categories__delete {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-error);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.admin-categories__delete:hover {
+  border-color: var(--color-error);
+  background: color-mix(in srgb, var(--color-error) 8%, transparent);
+}
+
+@media (max-width: 1024px) {
+  .admin-table-wrap {
+    overflow-x: auto;
+  }
+
+  .admin-table {
+    min-width: 560px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-categories__header {
+    flex-direction: column;
+  }
+
+  .admin-categories__header h1 {
+    font-size: 22px;
+  }
+
+  .admin-categories__add {
+    width: 100%;
+    justify-content: center;
+  }
+}
