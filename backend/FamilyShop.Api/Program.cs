@@ -155,6 +155,8 @@ app.Use(async (context, next) =>
 
 app.UseCors("Frontend");
 
+app.UseStaticFiles();
+
 app.UseRateLimiter();
 
 app.UseAuthentication();

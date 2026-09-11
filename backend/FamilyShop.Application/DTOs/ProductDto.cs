@@ -16,3 +16,14 @@ public record ProductDto(
     bool IsBestseller,
     decimal AverageRating,
     int ReviewCount);
+
+public record ProductUpsertDto(
+    string Name,
+    string Description,
+    decimal Price,
+    decimal? DiscountPrice,
+    int Stock,
+    int CategoryId,
+    Gender Gender,
+    List<string> Images,
+    bool IsBestseller);
