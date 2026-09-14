@@ -53,6 +53,12 @@ async function refreshAccessToken(): Promise<boolean> {
 }
 
 async function parseEnvelope<T>(res: Response): Promise<T> {
+  // The rate limiter rejects requests before they reach our controllers, so a 429 body
+  // isn't our JSON envelope - handle it separately with a message people can act on.
+  if (res.status === 429) {
+    throw new ApiError('Слишком много попыток. Попробуйте снова через минуту.');
+  }
+
   let json: ApiResponse<T>;
   try {
     json = (await res.json()) as ApiResponse<T>;
