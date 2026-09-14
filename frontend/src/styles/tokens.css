@@ -5,7 +5,10 @@
 
   /* Текст */
   --color-text: #1A1A1A;
-  --color-text-secondary: #8A8A8A;
+  /* #8A8A8A на белом даёт ~3:1 и не проходит WCAG AA для обычного текста (нужно
+     4.5:1) — усилено до #5A5754 (~7.2:1), это же значение раньше было точечно
+     включено только для .admin-layout. */
+  --color-text-secondary: #5A5754;
 
   /* Акцент */
   --color-accent: #C17A54;
@@ -72,11 +75,4 @@
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.28);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.36);
   --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.48);
-}
-
-/* Админка следует общей теме сайта (переключается своим ThemeToggle в шапке).
-   Вторичный текст усилен по контрасту в светлой теме — на карточках метрик и в
-   таблице заказов --color-text-secondary (#8A8A8A на белом, ~3:1) не проходил WCAG AA. */
-:root[data-theme='light'] .admin-layout {
-  --color-text-secondary: #5A5754;
 }
