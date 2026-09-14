@@ -1,4 +1,4 @@
-namespace FamilyShop.Api.Common;
+namespace Api.Common;
 
 public class ApiResponse<T>
 {

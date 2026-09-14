@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using FamilyShop.Domain.Entities;
-using FamilyShop.Domain.Interfaces;
+using Domain.Entities;
+using Domain.Interfaces;
 
-namespace FamilyShop.Infrastructure.Persistence.Repositories;
+namespace Infrastructure.Persistence.Repositories;
 
 public class CategoryRepository : RepositoryBase<Category>, ICategoryRepository
 {

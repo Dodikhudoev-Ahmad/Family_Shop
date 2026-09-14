@@ -1,4 +1,4 @@
-namespace FamilyShop.Domain.Entities;
+namespace Domain.Entities;
 
 public class Category
 {

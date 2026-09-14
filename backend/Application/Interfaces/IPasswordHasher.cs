@@ -1,4 +1,4 @@
-namespace FamilyShop.Application.Interfaces;
+namespace Application.Interfaces;
 
 public interface IPasswordHasher
 {

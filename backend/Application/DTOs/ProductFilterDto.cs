@@ -1,6 +1,6 @@
-using FamilyShop.Domain.Entities;
+using Domain.Entities;
 
-namespace FamilyShop.Application.DTOs;
+namespace Application.DTOs;
 
 public enum ProductSortBy
 {

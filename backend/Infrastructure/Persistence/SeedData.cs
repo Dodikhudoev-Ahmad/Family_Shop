@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using FamilyShop.Application.Interfaces;
-using FamilyShop.Domain.Entities;
-using FamilyShop.Domain.ValueObjects;
+using Application.Interfaces;
+using Domain.Entities;
+using Domain.ValueObjects;
 
-namespace FamilyShop.Infrastructure.Persistence;
+namespace Infrastructure.Persistence;
 
 public static class SeedData
 {

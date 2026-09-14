@@ -4,10 +4,10 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using FamilyShop.Application.Interfaces;
-using FamilyShop.Domain.Entities;
+using Application.Interfaces;
+using Domain.Entities;
 
-namespace FamilyShop.Infrastructure.Security;
+namespace Infrastructure.Security;
 
 public class JwtTokenGenerator : IJwtTokenGenerator
 {

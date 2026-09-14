@@ -1,4 +1,4 @@
-namespace FamilyShop.Domain.ValueObjects;
+namespace Domain.ValueObjects;
 
 public readonly record struct Money
 {

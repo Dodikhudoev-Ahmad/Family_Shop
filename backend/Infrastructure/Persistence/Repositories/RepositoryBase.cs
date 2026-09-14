@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using FamilyShop.Domain.Interfaces;
+using Domain.Interfaces;
 
-namespace FamilyShop.Infrastructure.Persistence.Repositories;
+namespace Infrastructure.Persistence.Repositories;
 
 public abstract class RepositoryBase<TEntity> : IRepository<TEntity> where TEntity : class
 {

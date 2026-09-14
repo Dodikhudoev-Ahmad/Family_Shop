@@ -1,10 +1,10 @@
-using FamilyShop.Application.Common;
-using FamilyShop.Application.DTOs;
-using FamilyShop.Application.Interfaces;
-using FamilyShop.Domain.Entities;
-using FamilyShop.Domain.Interfaces;
+using Application.Common;
+using Application.DTOs;
+using Application.Interfaces;
+using Domain.Entities;
+using Domain.Interfaces;
 
-namespace FamilyShop.Application.Services;
+namespace Application.Services;
 
 public class CategoryService : ICategoryService
 {

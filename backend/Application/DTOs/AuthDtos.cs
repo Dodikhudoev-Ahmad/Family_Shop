@@ -1,4 +1,4 @@
-namespace FamilyShop.Application.DTOs;
+namespace Application.DTOs;
 
 public record RegisterRequestDto(string Email, string Password, string Name);
 

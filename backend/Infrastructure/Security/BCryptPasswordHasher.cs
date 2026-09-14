@@ -1,6 +1,6 @@
-using FamilyShop.Application.Interfaces;
+using Application.Interfaces;
 
-namespace FamilyShop.Infrastructure.Security;
+namespace Infrastructure.Security;
 
 public class BCryptPasswordHasher : IPasswordHasher
 {

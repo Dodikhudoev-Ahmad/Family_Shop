@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using FamilyShop.Api.Common;
-using FamilyShop.Application.DTOs;
-using FamilyShop.Application.Interfaces;
+using Api.Common;
+using Application.DTOs;
+using Application.Interfaces;
 
-namespace FamilyShop.Api.Controllers;
+namespace Api.Controllers;
 
 /// <summary>Регистрация, вход и обновление токенов.</summary>
 [ApiController]

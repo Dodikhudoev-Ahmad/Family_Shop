@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace FamilyShop.Application.Common;
+namespace Application.Common;
 
 public static class TokenHasher
 {

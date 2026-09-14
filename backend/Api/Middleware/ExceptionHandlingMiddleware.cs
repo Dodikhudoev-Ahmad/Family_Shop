@@ -1,8 +1,8 @@
 using System.Net;
 using System.Text.Json;
-using FamilyShop.Api.Common;
+using Api.Common;
 
-namespace FamilyShop.Api.Middleware;
+namespace Api.Middleware;
 
 public class ExceptionHandlingMiddleware
 {

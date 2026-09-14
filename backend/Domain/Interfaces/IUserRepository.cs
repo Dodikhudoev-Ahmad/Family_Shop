@@ -1,6 +1,6 @@
-using FamilyShop.Domain.Entities;
+using Domain.Entities;
 
-namespace FamilyShop.Domain.Interfaces;
+namespace Domain.Interfaces;
 
 public interface IUserRepository : IRepository<User>
 {

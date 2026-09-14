@@ -1,10 +1,10 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using FamilyShop.Application.Interfaces;
-using FamilyShop.Application.Services;
-using FamilyShop.Application.Validators;
+using Application.Interfaces;
+using Application.Services;
+using Application.Validators;
 
-namespace FamilyShop.Application;
+namespace Application;
 
 public static class DependencyInjection
 {

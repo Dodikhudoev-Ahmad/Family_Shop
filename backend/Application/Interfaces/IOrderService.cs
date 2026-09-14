@@ -1,8 +1,8 @@
-using FamilyShop.Application.Common;
-using FamilyShop.Application.DTOs;
-using FamilyShop.Domain.Entities;
+using Application.Common;
+using Application.DTOs;
+using Domain.Entities;
 
-namespace FamilyShop.Application.Interfaces;
+namespace Application.Interfaces;
 
 public interface IOrderService
 {
