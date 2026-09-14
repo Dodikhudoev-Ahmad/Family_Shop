@@ -1,14 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using FamilyShop.Application.Interfaces;
-using FamilyShop.Domain.Interfaces;
-using FamilyShop.Infrastructure.Persistence;
-using FamilyShop.Infrastructure.Persistence.Repositories;
-using FamilyShop.Infrastructure.Security;
-using FamilyShop.Infrastructure.Storage;
+using Application.Interfaces;
+using Domain.Interfaces;
+using Infrastructure.Persistence;
+using Infrastructure.Persistence.Repositories;
+using Infrastructure.Security;
+using Infrastructure.Storage;
 
-namespace FamilyShop.Infrastructure;
+namespace Infrastructure;
 
 public static class DependencyInjection
 {

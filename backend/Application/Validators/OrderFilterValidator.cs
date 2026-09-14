@@ -1,7 +1,7 @@
 using FluentValidation;
-using FamilyShop.Application.DTOs;
+using Application.DTOs;
 
-namespace FamilyShop.Application.Validators;
+namespace Application.Validators;
 
 public class OrderFilterValidator : AbstractValidator<OrderFilterDto>
 {

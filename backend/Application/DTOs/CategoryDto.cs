@@ -1,4 +1,4 @@
-namespace FamilyShop.Application.DTOs;
+namespace Application.DTOs;
 
 public record CategoryDto(int Id, string Name, string Slug, int? ParentCategoryId);
 

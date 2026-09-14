@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using FamilyShop.Domain.Entities;
+using Domain.Entities;
 
-namespace FamilyShop.Infrastructure.Persistence.Configurations;
+namespace Infrastructure.Persistence.Configurations;
 
 public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
 {

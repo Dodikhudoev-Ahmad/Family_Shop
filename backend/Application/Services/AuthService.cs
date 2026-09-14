@@ -1,12 +1,12 @@
 using Microsoft.Extensions.Logging;
-using FamilyShop.Application.Common;
-using FamilyShop.Application.DTOs;
-using FamilyShop.Application.Interfaces;
-using FamilyShop.Domain.Entities;
-using FamilyShop.Domain.Interfaces;
-using FamilyShop.Domain.ValueObjects;
+using Application.Common;
+using Application.DTOs;
+using Application.Interfaces;
+using Domain.Entities;
+using Domain.Interfaces;
+using Domain.ValueObjects;
 
-namespace FamilyShop.Application.Services;
+namespace Application.Services;
 
 public class AuthService : IAuthService
 {

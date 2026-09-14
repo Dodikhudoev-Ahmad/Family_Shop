@@ -4,12 +4,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using FamilyShop.Api.Filters;
-using FamilyShop.Api.Middleware;
-using FamilyShop.Application;
-using FamilyShop.Infrastructure;
-using FamilyShop.Infrastructure.Persistence;
-using FamilyShop.Infrastructure.Security;
+using Api.Filters;
+using Api.Middleware;
+using Application;
+using Infrastructure;
+using Infrastructure.Persistence;
+using Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -134,7 +134,7 @@ if (app.Environment.IsDevelopment())
 
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var passwordHasher = scope.ServiceProvider.GetRequiredService<FamilyShop.Application.Interfaces.IPasswordHasher>();
+    var passwordHasher = scope.ServiceProvider.GetRequiredService<Application.Interfaces.IPasswordHasher>();
     await SeedData.SeedAsync(db, passwordHasher);
 }
 else

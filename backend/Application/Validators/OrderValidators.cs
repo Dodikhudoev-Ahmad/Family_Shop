@@ -1,8 +1,8 @@
 using FluentValidation;
-using FamilyShop.Application.DTOs;
-using FamilyShop.Domain.Entities;
+using Application.DTOs;
+using Domain.Entities;
 
-namespace FamilyShop.Application.Validators;
+namespace Application.Validators;
 
 public class CreateOrderRequestValidator : AbstractValidator<CreateOrderRequestDto>
 {

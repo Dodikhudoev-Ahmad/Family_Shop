@@ -1,9 +1,9 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using FamilyShop.Api.Common;
+using Api.Common;
 
-namespace FamilyShop.Api.Filters;
+namespace Api.Filters;
 
 public class ValidationFilter : IAsyncActionFilter
 {

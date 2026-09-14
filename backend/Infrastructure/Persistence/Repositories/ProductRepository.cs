@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using FamilyShop.Domain.Entities;
-using FamilyShop.Domain.Interfaces;
-using FamilyShop.Domain.ValueObjects;
+using Domain.Entities;
+using Domain.Interfaces;
+using Domain.ValueObjects;
 
-namespace FamilyShop.Infrastructure.Persistence.Repositories;
+namespace Infrastructure.Persistence.Repositories;
 
 public class ProductRepository : RepositoryBase<Product>, IProductRepository
 {

@@ -1,7 +1,7 @@
-using FamilyShop.Application.Common;
-using FamilyShop.Application.DTOs;
+using Application.Common;
+using Application.DTOs;
 
-namespace FamilyShop.Application.Interfaces;
+namespace Application.Interfaces;
 
 public interface IReviewService
 {

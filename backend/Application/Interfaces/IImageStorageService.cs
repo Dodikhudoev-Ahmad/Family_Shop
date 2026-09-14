@@ -1,6 +1,6 @@
-using FamilyShop.Application.Common;
+using Application.Common;
 
-namespace FamilyShop.Application.Interfaces;
+namespace Application.Interfaces;
 
 public interface IImageStorageService
 {

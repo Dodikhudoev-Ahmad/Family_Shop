@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Hosting;
-using FamilyShop.Application.Common;
-using FamilyShop.Application.Interfaces;
+using Application.Common;
+using Application.Interfaces;
 
-namespace FamilyShop.Infrastructure.Storage;
+namespace Infrastructure.Storage;
 
 public class LocalImageStorageService : IImageStorageService
 {

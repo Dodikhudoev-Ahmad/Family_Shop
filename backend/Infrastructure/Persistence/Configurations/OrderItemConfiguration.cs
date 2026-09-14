@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using FamilyShop.Domain.Entities;
-using FamilyShop.Domain.ValueObjects;
+using Domain.Entities;
+using Domain.ValueObjects;
 
-namespace FamilyShop.Infrastructure.Persistence.Configurations;
+namespace Infrastructure.Persistence.Configurations;
 
 public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
 {

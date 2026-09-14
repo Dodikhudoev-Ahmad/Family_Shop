@@ -1,4 +1,4 @@
-namespace FamilyShop.Application.Common;
+namespace Application.Common;
 
 public class Result<T>
 {

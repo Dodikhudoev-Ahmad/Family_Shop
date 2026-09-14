@@ -1,6 +1,6 @@
-using FamilyShop.Domain.Entities;
+using Domain.Entities;
 
-namespace FamilyShop.Application.DTOs;
+namespace Application.DTOs;
 
 public record CreateOrderItemDto(int ProductId, int Quantity, string? Size);
 

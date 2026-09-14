@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using FamilyShop.Domain.Entities;
+using Domain.Entities;
 
-namespace FamilyShop.Infrastructure.Persistence;
+namespace Infrastructure.Persistence;
 
 public class AppDbContext : DbContext
 {

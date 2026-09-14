@@ -1,6 +1,6 @@
-using FamilyShop.Domain.ValueObjects;
+using Domain.ValueObjects;
 
-namespace FamilyShop.Domain.Entities;
+namespace Domain.Entities;
 
 public enum UserRole
 {

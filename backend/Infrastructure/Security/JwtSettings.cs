@@ -1,4 +1,4 @@
-namespace FamilyShop.Infrastructure.Security;
+namespace Infrastructure.Security;
 
 public class JwtSettings
 {

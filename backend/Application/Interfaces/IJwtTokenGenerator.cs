@@ -1,6 +1,6 @@
-using FamilyShop.Domain.Entities;
+using Domain.Entities;
 
-namespace FamilyShop.Application.Interfaces;
+namespace Application.Interfaces;
 
 public interface IJwtTokenGenerator
 {

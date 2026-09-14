@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using FamilyShop.Api.Common;
-using FamilyShop.Application.Common;
-using FamilyShop.Application.DTOs;
-using FamilyShop.Application.Interfaces;
-using FamilyShop.Domain.Entities;
+using Api.Common;
+using Application.Common;
+using Application.DTOs;
+using Application.Interfaces;
+using Domain.Entities;
 
-namespace FamilyShop.Api.Controllers;
+namespace Api.Controllers;
 
 /// <summary>Товары каталога.</summary>
 [ApiController]

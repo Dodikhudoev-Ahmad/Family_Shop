@@ -1,7 +1,7 @@
-using FamilyShop.Domain.Interfaces;
-using FamilyShop.Infrastructure.Persistence.Repositories;
+using Domain.Interfaces;
+using Infrastructure.Persistence.Repositories;
 
-namespace FamilyShop.Infrastructure.Persistence;
+namespace Infrastructure.Persistence;
 
 public class UnitOfWork : IUnitOfWork
 {

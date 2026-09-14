@@ -1,4 +1,4 @@
-namespace FamilyShop.Domain.Interfaces;
+namespace Domain.Interfaces;
 
 public interface IUnitOfWork
 {
