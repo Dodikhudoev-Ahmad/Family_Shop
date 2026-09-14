@@ -3,6 +3,7 @@ import { AdminLayout } from '../../components/AdminLayout/AdminLayout';
 import { ConfirmDialog } from '../../components/ConfirmDialog/ConfirmDialog';
 import { useToast } from '../../context/ToastContext';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { slugify } from '../../utils/slugify';
 import {
   ApiError,
@@ -13,6 +14,8 @@ import {
 } from '../../lib/api';
 import type { CategoryDto } from '../../types/api';
 import './AdminCategoriesPage.css';
+
+type ViewMode = 'table' | 'cards';
 
 interface FormState {
   id: number | null;
@@ -30,6 +33,9 @@ export function AdminCategoriesPage() {
   const [categories, setCategories] = useState<CategoryDto[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const isMobile = useMediaQuery('(max-width: 767px)');
+  const [view, setView] = useState<ViewMode>(() => (isMobile ? 'cards' : 'table'));
 
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -134,14 +140,24 @@ export function AdminCategoriesPage() {
             <h1>Категории</h1>
             <p>Разделы каталога Family Shop</p>
           </div>
-          <button className="admin-categories__add" onClick={openCreate}>
-            <PlusIcon /> Добавить категорию
-          </button>
+          <div className="admin-categories__header-actions">
+            <div className="admin-orders__view-toggle">
+              <button className={view === 'table' ? 'is-active' : ''} onClick={() => setView('table')} aria-label="Табличный вид">
+                <TableIcon />
+              </button>
+              <button className={view === 'cards' ? 'is-active' : ''} onClick={() => setView('cards')} aria-label="Карточный вид">
+                <GridIcon />
+              </button>
+            </div>
+            <button className="admin-categories__add" onClick={openCreate}>
+              <PlusIcon /> Добавить категорию
+            </button>
+          </div>
         </header>
 
         {error && <p className="admin-page-error">{error}</p>}
 
-        {!error && isLoading && <CategoriesSkeleton />}
+        {!error && isLoading && (view === 'table' ? <CategoriesSkeleton /> : <CategoriesCardsSkeleton />)}
 
         {!error && !isLoading && categories !== null && categories.length === 0 && (
           <div className="admin-empty">
@@ -157,39 +173,47 @@ export function AdminCategoriesPage() {
         )}
 
         {!error && !isLoading && categories !== null && categories.length > 0 && (
-          <div className="admin-table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Название</th>
-                  <th>Адрес (slug)</th>
-                  <th>Родительская категория</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {categories.map((category) => (
-                  <tr key={category.id}>
-                    <td className="admin-categories__name">{category.name}</td>
-                    <td>
-                      <code className="admin-categories__slug">{category.slug}</code>
-                    </td>
-                    <td>{categories.find((c) => c.id === category.parentCategoryId)?.name ?? '—'}</td>
-                    <td>
-                      <div className="admin-categories__row-actions">
-                        <button className="admin-table__expand" onClick={() => openEdit(category)}>
-                          Изменить
-                        </button>
-                        <button className="admin-categories__delete" onClick={() => setPendingDelete(category)}>
-                          Удалить
-                        </button>
-                      </div>
-                    </td>
+          view === 'table' ? (
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Название</th>
+                    <th>Адрес (slug)</th>
+                    <th>Родительская категория</th>
+                    <th />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {categories.map((category) => (
+                    <tr key={category.id}>
+                      <td className="admin-categories__name">{category.name}</td>
+                      <td>
+                        <code className="admin-categories__slug">{category.slug}</code>
+                      </td>
+                      <td>{categories.find((c) => c.id === category.parentCategoryId)?.name ?? '—'}</td>
+                      <td>
+                        <div className="admin-categories__row-actions">
+                          <button className="admin-table__expand" onClick={() => openEdit(category)}>
+                            Изменить
+                          </button>
+                          <button className="admin-categories__delete" onClick={() => setPendingDelete(category)}>
+                            Удалить
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <CategoriesCards
+              categories={categories}
+              onEdit={openEdit}
+              onDelete={setPendingDelete}
+            />
+          )
         )}
       </div>
 
@@ -330,6 +354,74 @@ function CategoryFormModal({
         </form>
       </div>
     </div>
+  );
+}
+
+function CategoriesCards({
+  categories,
+  onEdit,
+  onDelete,
+}: {
+  categories: CategoryDto[];
+  onEdit: (category: CategoryDto) => void;
+  onDelete: (category: CategoryDto) => void;
+}) {
+  return (
+    <div className="admin-cards">
+      {categories.map((category) => (
+        <div key={category.id} className="admin-category-card">
+          <div className="admin-category-card__top">
+            <span className="admin-category-card__name">{category.name}</span>
+            <code className="admin-categories__slug">{category.slug}</code>
+          </div>
+          <div className="admin-category-card__parent">
+            Родительская категория: {categories.find((c) => c.id === category.parentCategoryId)?.name ?? '—'}
+          </div>
+          <div className="admin-category-card__actions">
+            <button className="admin-table__expand" onClick={() => onEdit(category)}>
+              Изменить
+            </button>
+            <button className="admin-categories__delete" onClick={() => onDelete(category)}>
+              Удалить
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CategoriesCardsSkeleton() {
+  return (
+    <div className="admin-cards">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="admin-category-card">
+          <span className="skeleton" style={{ height: 18, width: '60%', marginBottom: 12 }} />
+          <span className="skeleton" style={{ height: 14, width: '80%', marginBottom: 8 }} />
+          <span className="skeleton" style={{ height: 14, width: '40%' }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TableIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="2" y="3" width="12" height="10" rx="1" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M2 7h12M6 3v10" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
+  );
+}
+
+function GridIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+      <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+      <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+      <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
   );
 }
 
