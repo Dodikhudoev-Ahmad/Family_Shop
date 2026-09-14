@@ -22,6 +22,7 @@ public class AuthController : ControllerBase
 
     /// <summary>Регистрация нового пользователя.</summary>
     [HttpPost("register")]
+    [EnableRateLimiting("auth-register")]
     public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Register(RegisterRequestDto request, CancellationToken cancellationToken)
     {
         var result = await _authService.RegisterAsync(request, cancellationToken);
@@ -50,6 +51,7 @@ public class AuthController : ControllerBase
 
     /// <summary>Обновление access-токена по refresh-токену из httpOnly cookie (с ротацией).</summary>
     [HttpPost("refresh")]
+    [EnableRateLimiting("auth-refresh")]
     public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Refresh(CancellationToken cancellationToken)
     {
         if (!Request.Cookies.TryGetValue(RefreshTokenCookie, out var refreshToken) || string.IsNullOrEmpty(refreshToken))
