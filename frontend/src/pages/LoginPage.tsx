@@ -63,6 +63,11 @@ export function LoginPage() {
   return (
     <div className="container account">
       <div className="auth-form">
+        {from === '/checkout' && (
+          <p className="auth-form__context-note">
+            Войдите или зарегистрируйтесь, чтобы оформить заказ — корзина сохранена.
+          </p>
+        )}
         <div className="auth-form__tabs">
           <button className={`auth-form__tab ${tab === 'login' ? 'is-active' : ''}`} onClick={() => switchTab('login')}>
             Войти

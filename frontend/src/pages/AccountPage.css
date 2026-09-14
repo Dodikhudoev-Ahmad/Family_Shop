@@ -112,6 +112,16 @@
   margin: var(--space-6) auto;
 }
 
+.auth-form__context-note {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  font-size: 13.5px;
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+}
+
 .auth-form__tabs {
   position: relative;
   display: flex;
