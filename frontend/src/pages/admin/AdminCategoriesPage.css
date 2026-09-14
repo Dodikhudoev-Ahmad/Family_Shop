@@ -18,6 +18,13 @@
   font-size: 14px;
 }
 
+.admin-categories__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
 .admin-categories__add {
   display: flex;
   align-items: center;
@@ -78,14 +85,46 @@
   background: color-mix(in srgb, var(--color-error) 8%, transparent);
 }
 
-@media (max-width: 1024px) {
-  .admin-table-wrap {
-    overflow-x: auto;
-  }
+/* Cards view */
 
-  .admin-table {
-    min-width: 560px;
-  }
+.admin-category-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+.admin-category-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.admin-category-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.admin-category-card__name {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.admin-category-card__parent {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-category-card__actions {
+  display: flex;
+  gap: var(--space-2);
 }
 
 @media (max-width: 480px) {
@@ -95,6 +134,10 @@
 
   .admin-categories__header h1 {
     font-size: 22px;
+  }
+
+  .admin-categories__header-actions {
+    width: 100%;
   }
 
   .admin-categories__add {
