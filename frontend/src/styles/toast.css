@@ -47,7 +47,9 @@
      the way they do on desktop (e.g. "Оформить заказ" in the cart drawer,
      which spans the same width) — anchor to the top instead. */
   .toast-stack {
-    top: var(--space-3);
+    /* Below the compact header, not flush against it - otherwise it sits on
+       top of the header's own icons (search, cart, menu). */
+    top: calc(var(--header-height-compact) + var(--space-2));
     bottom: auto;
     left: var(--space-3);
     right: var(--space-3);
