@@ -5,6 +5,7 @@ import { useCategories } from '../context/CategoriesContext';
 import { ProductCard } from '../components/ProductCard/ProductCard';
 import { ProductCardSkeleton } from '../components/ProductCard/ProductCardSkeleton';
 import { FilterPanel, type Filters } from '../components/Filters/FilterPanel';
+import { FilterPanelSkeleton } from '../components/Filters/FilterPanelSkeleton';
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 import { useSeo } from '../hooks/useSeo';
 import { SITE_NAME } from '../data/seo';
@@ -219,7 +220,11 @@ export function CatalogPage() {
 
       <div className="catalog__layout">
         <aside className="catalog__sidebar">
-          <FilterPanel filters={filters} onChange={setFilters} availableSizes={availableSizes} priceBounds={priceBounds} />
+          {isCatalogLoading ? (
+            <FilterPanelSkeleton />
+          ) : (
+            <FilterPanel filters={filters} onChange={setFilters} availableSizes={availableSizes} priceBounds={priceBounds} />
+          )}
         </aside>
 
         <div className="catalog__content">
@@ -254,7 +259,11 @@ export function CatalogPage() {
             &times;
           </button>
         </div>
-        <FilterPanel filters={filters} onChange={setFilters} availableSizes={availableSizes} priceBounds={priceBounds} />
+        {isCatalogLoading ? (
+          <FilterPanelSkeleton />
+        ) : (
+          <FilterPanel filters={filters} onChange={setFilters} availableSizes={availableSizes} priceBounds={priceBounds} />
+        )}
         <button className="btn btn--primary btn--lg catalog__sheet-apply" onClick={() => setIsFilterSheetOpen(false)}>
           Показать {visibleProducts.length}{hasMore ? '+' : ''} товаров
         </button>
