@@ -16,7 +16,7 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 1025px)');
   const { totalItems, bump, openCart } = useCart();
-  const { categories } = useCategories();
+  const { categories, isLoading: isCategoriesLoading } = useCategories();
   const { user, logout } = useAuth();
   const { favoriteIds } = useFavorites();
   const { theme, toggleTheme } = useTheme();
@@ -46,15 +46,19 @@ export function Header() {
 
         {isDesktop && (
           <nav className="header__nav" aria-label="Категории">
-            {categories.map((c) => (
-              <NavLink
-                key={c.id}
-                to={`/catalog/${c.slug}`}
-                className={({ isActive }) => `header__nav-link ${isActive ? 'is-active' : ''}`}
-              >
-                {c.name}
-              </NavLink>
-            ))}
+            {isCategoriesLoading ? (
+              <HeaderNavSkeleton />
+            ) : (
+              categories.map((c) => (
+                <NavLink
+                  key={c.id}
+                  to={`/catalog/${c.slug}`}
+                  className={({ isActive }) => `header__nav-link ${isActive ? 'is-active' : ''}`}
+                >
+                  {c.name}
+                </NavLink>
+              ))
+            )}
             <NavLink to="/about" className={({ isActive }) => `header__nav-link ${isActive ? 'is-active' : ''}`}>
               О нас
             </NavLink>
@@ -118,6 +122,18 @@ export function Header() {
       <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
       <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </header>
+  );
+}
+
+function HeaderNavSkeleton() {
+  // Widths approximate the real category labels (Женское/Мужское/Детское/Обувь и сумки)
+  // so there's no layout shift once the real links pop in.
+  return (
+    <>
+      {[62, 68, 66, 108].map((w, i) => (
+        <span key={i} className="skeleton header__nav-skeleton-item" style={{ width: w }} />
+      ))}
+    </>
   );
 }
 
