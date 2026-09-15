@@ -1,4 +1,6 @@
-@import './AdminShared.css';
+/* Shared building blocks (.admin-drawer, tables, pagination, etc.) are imported once via
+   AdminLayout.css, which every admin page renders through — importing them again here would
+   duplicate the rules and let load order decide which copy of a shared class wins. */
 
 .admin-categories__header {
   display: flex;
