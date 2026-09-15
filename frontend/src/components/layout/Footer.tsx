@@ -42,7 +42,7 @@ export function Footer() {
 
         <div className="footer__col">
           <h4 className="footer__heading">Соцсети</h4>
-          <ul className="footer__list footer__list--row">
+          <ul className="footer__list">
             <li>
               <a className="footer__link" href="#" onClick={(e) => e.preventDefault()}>
                 Instagram
