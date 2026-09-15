@@ -1,6 +1,7 @@
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -53,6 +54,15 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Keep the multipart/form parser's cap in sync with AdminProductsController's
+// MaxImageSizeBytes — the controller's [RequestSizeLimit] already caps the Kestrel request
+// body for that endpoint, but without this the form parser would still buffer up to its
+// 128MB default before the controller gets a chance to reject an oversized file.
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 5 * 1024 * 1024;
+});
 
 // Authentication / Authorization (JWT, roles via claims)
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings();
