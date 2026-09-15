@@ -52,9 +52,10 @@
 }
 
 .admin-products__category-filter {
+  min-width: 200px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 9px 12px;
+  padding: 9px 14px;
   font-size: 13px;
   background: var(--color-bg);
   color: var(--color-text);
