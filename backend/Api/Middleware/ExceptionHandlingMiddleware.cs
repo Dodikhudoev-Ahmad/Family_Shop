@@ -23,7 +23,13 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception while processing {Method} {Path}", context.Request.Method, context.Request.Path);
+            var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "anonymous";
+            _logger.LogError(
+                ex,
+                "Unhandled exception while processing {Method} {Path} for user {UserId}",
+                context.Request.Method,
+                context.Request.Path,
+                userId);
 
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
