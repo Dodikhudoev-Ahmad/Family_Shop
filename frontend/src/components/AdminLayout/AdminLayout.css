@@ -1,3 +1,8 @@
+/* Imported once here (rather than separately by each admin page's own CSS) so the shared
+   drawer/table/pagination rules always load before page-specific overrides — otherwise each
+   page duplicating this @import fights over which copy of e.g. .admin-drawer wins the cascade. */
+@import '../../pages/admin/AdminShared.css';
+
 .admin-layout {
   min-height: 100vh;
   background: var(--color-bg-secondary);
