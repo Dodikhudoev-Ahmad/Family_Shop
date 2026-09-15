@@ -23,7 +23,7 @@
   --color-white: #FFFFFF;
 
   /* Типографика */
-  --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'Fraunces', Georgia, serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Отступы */
