@@ -201,6 +201,13 @@
 @media (max-width: 767px) {
   .admin-body {
     flex-direction: column;
+    /* .admin-body's align-items: flex-start (set for the row layout, to top-align the
+       sidebar and main content instead of stretching them to equal height) governs the
+       CROSS axis — which becomes horizontal once flex-direction flips to column here. Left
+       as flex-start, .admin-main would size to its content's max-content width (e.g. a wide
+       table forcing min-width) instead of the container's width, overflowing the page
+       horizontally. Restoring stretch keeps .admin-main pinned to full width. */
+    align-items: stretch;
   }
 
   .admin-sidebar {
