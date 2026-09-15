@@ -200,4 +200,14 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// Minimal liveness/readiness probe for the hosting platform (Render/Railway) to detect a dead
+// container and restart it — no dedicated health-check package needed for a single DB check.
+app.MapGet("/health", async (AppDbContext db, CancellationToken cancellationToken) =>
+{
+    var canConnect = await db.Database.CanConnectAsync(cancellationToken);
+    return canConnect
+        ? Results.Ok(new { status = "healthy" })
+        : Results.Json(new { status = "unhealthy" }, statusCode: StatusCodes.Status503ServiceUnavailable);
+});
+
 app.Run();
