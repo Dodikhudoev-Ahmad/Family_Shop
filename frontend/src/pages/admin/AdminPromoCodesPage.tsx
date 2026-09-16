@@ -162,8 +162,11 @@ export function AdminPromoCodesPage() {
       discountValue,
       minOrderAmount: form.minOrderAmount ? Number(form.minOrderAmount) : null,
       maxDiscountAmount: form.discountType === 0 && form.maxDiscountAmount ? Number(form.maxDiscountAmount) : null,
-      validFrom: new Date(`${form.validFrom}T00:00:00`).toISOString(),
-      validUntil: new Date(`${form.validUntil}T23:59:59`).toISOString(),
+      // Send the picked calendar date as-is, anchored to UTC, instead of routing it
+      // through `new Date(...)` — that would interpret it as local time and shift the
+      // date by the admin's UTC offset once serialized back with toISOString().
+      validFrom: `${form.validFrom}T00:00:00.000Z`,
+      validUntil: `${form.validUntil}T23:59:59.999Z`,
       usageLimit: form.usageLimit ? Number(form.usageLimit) : null,
       isActive: form.isActive,
     };
