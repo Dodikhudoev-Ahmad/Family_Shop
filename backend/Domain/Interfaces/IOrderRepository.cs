@@ -28,4 +28,6 @@ public interface IOrderRepository : IRepository<Order>
         CancellationToken cancellationToken = default);
 
     Task<bool> HasItemsForProductAsync(int productId, CancellationToken cancellationToken = default);
+
+    Task<bool> AnyByPromoCodeIdAsync(int promoCodeId, CancellationToken cancellationToken = default);
 }

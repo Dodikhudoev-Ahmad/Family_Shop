@@ -107,4 +107,9 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
     {
         return Context.Set<OrderItem>().AnyAsync(i => i.ProductId == productId, cancellationToken);
     }
+
+    public Task<bool> AnyByPromoCodeIdAsync(int promoCodeId, CancellationToken cancellationToken = default)
+    {
+        return DbSet.AnyAsync(o => o.PromoCodeId == promoCodeId, cancellationToken);
+    }
 }
