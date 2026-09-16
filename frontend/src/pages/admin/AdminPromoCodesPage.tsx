@@ -34,6 +34,14 @@ interface FormState {
   isActive: boolean;
 }
 
+function todayDateInput(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 const EMPTY_FORM: FormState = {
   id: null,
   code: '',
@@ -41,7 +49,7 @@ const EMPTY_FORM: FormState = {
   discountValue: '',
   minOrderAmount: '',
   maxDiscountAmount: '',
-  validFrom: new Date().toISOString().slice(0, 10),
+  validFrom: todayDateInput(),
   validUntil: '',
   usageLimit: '',
   isActive: true,
