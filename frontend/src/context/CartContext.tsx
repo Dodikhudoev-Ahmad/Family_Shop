@@ -50,6 +50,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [promoError, setPromoError] = useState<string | null>(null);
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const appliedForSubtotal = useRef<number | null>(null);
+  const promoRequestId = useRef(0);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -124,18 +125,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const trimmed = code.trim();
     if (!trimmed) return;
 
+    const requestId = ++promoRequestId.current;
     setIsApplyingPromo(true);
     setPromoError(null);
     try {
       const result = await validatePromoCode(trimmed, totalPrice);
+      if (promoRequestId.current !== requestId) return;
       setPromo(result);
       appliedForSubtotal.current = totalPrice;
     } catch (err) {
+      if (promoRequestId.current !== requestId) return;
       setPromo(null);
       appliedForSubtotal.current = null;
       setPromoError(err instanceof ApiError ? err.message : 'Не удалось применить промокод.');
     } finally {
-      setIsApplyingPromo(false);
+      if (promoRequestId.current === requestId) setIsApplyingPromo(false);
     }
   };
 
