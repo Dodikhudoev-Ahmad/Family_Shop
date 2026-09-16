@@ -10,7 +10,8 @@ public record CreateOrderRequestDto(
     string ContactPhone,
     DeliveryMethod DeliveryMethod,
     string? City,
-    string? Address);
+    string? Address,
+    string? PromoCode = null);
 
 public record OrderItemDto(int ProductId, string ProductName, string? ProductImage, int Quantity, decimal Price, string? Size);
 
@@ -24,7 +25,9 @@ public record OrderDto(
     DeliveryMethod DeliveryMethod,
     string? City,
     string? Address,
-    List<OrderItemDto> Items);
+    List<OrderItemDto> Items,
+    string? PromoCode = null,
+    decimal DiscountAmount = 0);
 
 public enum OrderSortBy
 {
@@ -52,7 +55,9 @@ public record AdminOrderDto(
     string? City,
     string? Address,
     int ItemsCount,
-    List<OrderItemDto> Items);
+    List<OrderItemDto> Items,
+    string? PromoCode = null,
+    decimal DiscountAmount = 0);
 
 public record UpdateOrderStatusRequestDto(OrderStatus Status);
 
