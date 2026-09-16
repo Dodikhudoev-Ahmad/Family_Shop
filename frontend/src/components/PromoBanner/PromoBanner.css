@@ -16,6 +16,10 @@
   box-shadow: var(--shadow-md);
 }
 
+.promo-banner__card--fallback {
+  background: linear-gradient(135deg, var(--color-banner-fallback-from) 0%, var(--color-banner-fallback-to) 100%);
+}
+
 .promo-banner__overlay {
   position: absolute;
   inset: 0;
