@@ -1,0 +1,88 @@
+.promo-banner {
+  margin-top: var(--space-5);
+}
+
+.promo-banner__card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  padding: var(--space-6) var(--space-5);
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+  background-size: cover;
+  background-position: center;
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  box-shadow: var(--shadow-md);
+}
+
+.promo-banner__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(26, 26, 26, 0.55) 10%, rgba(26, 26, 26, 0.15) 70%);
+}
+
+.promo-banner__content {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+}
+
+.promo-banner__title {
+  font-family: var(--font-heading);
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--color-white);
+  line-height: 1.15;
+}
+
+.promo-banner__subtitle {
+  margin-top: var(--space-2);
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.promo-banner__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-white);
+  color: var(--color-white);
+  font-weight: 600;
+  font-size: 14px;
+  transition: transform var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.promo-banner__cta:hover {
+  background: var(--color-white);
+  color: var(--color-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.promo-banner__arrow {
+  transition: transform var(--transition-base);
+}
+
+.promo-banner__cta:hover .promo-banner__arrow {
+  transform: translateX(4px);
+}
+
+@media (max-width: 767px) {
+  .promo-banner__card {
+    padding: var(--space-5) var(--space-4);
+    min-height: 180px;
+  }
+
+  .promo-banner__title {
+    font-size: 26px;
+  }
+
+  .promo-banner__subtitle {
+    font-size: 14px;
+  }
+}
