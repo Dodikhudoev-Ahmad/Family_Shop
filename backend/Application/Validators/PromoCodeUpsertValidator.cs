@@ -8,9 +8,13 @@ public class PromoCodeUpsertValidator : AbstractValidator<PromoCodeUpsertDto>
 {
     public PromoCodeUpsertValidator()
     {
+        // The service uppercases the code before saving (PromoCodeService.CreatePromoCodeAsync),
+        // so validation must accept lowercase input too - otherwise a lowercase code sent
+        // directly to the API (not through the admin form, which already uppercases on input)
+        // is rejected even though the service would have normalized it just fine.
         RuleFor(x => x.Code).NotEmpty().MaximumLength(50)
-            .Matches("^[A-Z0-9]+$")
-            .WithMessage("Промокод может содержать только заглавные латинские буквы и цифры.");
+            .Matches("^[A-Za-z0-9]+$")
+            .WithMessage("Промокод может содержать только латинские буквы и цифры.");
 
         RuleFor(x => x.DiscountType).IsInEnum();
 
