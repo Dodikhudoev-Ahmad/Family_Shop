@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../utils/formatPrice';
 import { Button } from '../components/Button/Button';
+import { PromoCodeInput } from '../components/PromoCodeInput/PromoCodeInput';
 import { ApiError, createOrder, type ApiDeliveryMethod } from '../lib/api';
 import type { DeliveryDetails, DeliveryMethod } from '../types/order';
 import './CheckoutPage.css';
@@ -21,7 +22,7 @@ const initialDetails: DeliveryDetails = {
 const DELIVERY_METHOD_TO_API: Record<DeliveryMethod, ApiDeliveryMethod> = { courier: 0, pickup: 1 };
 
 export function CheckoutPage() {
-  const { lines, totalPrice, clearCart } = useCart();
+  const { lines, totalPrice, finalTotal, promo, clearCart } = useCart();
   const { user, isLoading: isAuthLoading } = useAuth();
   const [step, setStep] = useState<Step>(1);
   const [details, setDetails] = useState<DeliveryDetails>(initialDetails);
@@ -82,6 +83,7 @@ export function CheckoutPage() {
         deliveryMethod: DELIVERY_METHOD_TO_API[details.method],
         city: details.method === 'courier' ? details.city : undefined,
         address: details.method === 'courier' ? details.address : undefined,
+        promoCode: promo?.code,
       });
       clearCart();
       setOrderNumber(`FS-${order.id}`);
@@ -221,9 +223,21 @@ export function CheckoutPage() {
             ))}
           </div>
 
+          <div className="checkout__summary-block">
+            <h4>Промокод</h4>
+            <PromoCodeInput />
+          </div>
+
           <div className="checkout__summary-total">
             <span>Итого</span>
-            <span>{formatPrice(totalPrice)}</span>
+            {promo ? (
+              <span className="checkout__summary-total-value">
+                <span className="checkout__summary-total-old">{formatPrice(totalPrice)}</span>
+                {formatPrice(finalTotal)}
+              </span>
+            ) : (
+              <span>{formatPrice(totalPrice)}</span>
+            )}
           </div>
 
           {submitError && <span className="checkout__error checkout__submit-error">{submitError}</span>}

@@ -184,6 +184,20 @@
   padding-top: var(--space-3);
 }
 
+.checkout__summary-total-value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  color: var(--color-success);
+}
+
+.checkout__summary-total-old {
+  color: var(--color-text-secondary);
+  text-decoration: line-through;
+  font-weight: 400;
+  font-size: 0.8em;
+}
+
 .checkout__summary-actions {
   display: flex;
   gap: var(--space-3);

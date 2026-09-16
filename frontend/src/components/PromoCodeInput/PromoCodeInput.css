@@ -1,0 +1,109 @@
+.promo-code {
+  margin: var(--space-3) 0;
+}
+
+.promo-code__row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.promo-code__row input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.promo-code__row input::placeholder {
+  text-transform: none;
+}
+
+.promo-code__row input.has-error {
+  border-color: var(--color-error);
+}
+
+.promo-code__apply {
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-accent);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.promo-code__apply:hover:not(:disabled) {
+  background: var(--color-accent);
+  color: var(--color-white);
+}
+
+.promo-code__apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.promo-code__error {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-error);
+  font-size: 0.82rem;
+}
+
+.promo-code--applied {
+  padding: var(--space-3);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
+}
+
+.promo-code__applied-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.promo-code__applied-text {
+  color: var(--color-success);
+  font-size: 0.9rem;
+}
+
+.promo-code__remove {
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.promo-code__totals {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.promo-code__old-total {
+  color: var(--color-text-secondary);
+  text-decoration: line-through;
+  font-size: 0.9rem;
+}
+
+.promo-code__new-total {
+  color: var(--color-success);
+  font-weight: 700;
+  font-size: 1.05rem;
+}

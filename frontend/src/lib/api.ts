@@ -201,6 +201,8 @@ export interface OrderDto {
   city: string | null;
   address: string | null;
   items: OrderItemDto[];
+  promoCode: string | null;
+  discountAmount: number;
 }
 
 export interface CreateOrderRequest {
@@ -210,6 +212,7 @@ export interface CreateOrderRequest {
   deliveryMethod: ApiDeliveryMethod;
   city?: string;
   address?: string;
+  promoCode?: string;
 }
 
 export function createOrder(request: CreateOrderRequest): Promise<OrderDto> {
@@ -235,6 +238,8 @@ export interface AdminOrderDto {
   address: string | null;
   itemsCount: number;
   items: OrderItemDto[];
+  promoCode: string | null;
+  discountAmount: number;
 }
 
 export interface OrderStatsDto {
@@ -380,4 +385,113 @@ export function updateAdminCategory(id: number, request: CategoryUpsertRequest):
 
 export function deleteAdminCategory(id: number): Promise<void> {
   return apiFetch<void>(`/admin/categories/${id}`, { method: 'DELETE' });
+}
+
+/** 0=Percentage, 1=FixedAmount - matches backend PromoCodeDiscountType. */
+export type ApiPromoCodeDiscountType = 0 | 1;
+
+export interface PromoCodeDto {
+  id: number;
+  code: string;
+  discountType: ApiPromoCodeDiscountType;
+  discountValue: number;
+  minOrderAmount: number | null;
+  maxDiscountAmount: number | null;
+  validFrom: string;
+  validUntil: string;
+  usageLimit: number | null;
+  usageCount: number;
+  isActive: boolean;
+}
+
+export interface PromoCodeUpsertRequest {
+  code: string;
+  discountType: ApiPromoCodeDiscountType;
+  discountValue: number;
+  minOrderAmount: number | null;
+  maxDiscountAmount: number | null;
+  validFrom: string;
+  validUntil: string;
+  usageLimit: number | null;
+  isActive: boolean;
+}
+
+export interface PromoCodeApplicationDto {
+  promoCodeId: number;
+  code: string;
+  discountType: ApiPromoCodeDiscountType;
+  discountValue: number;
+  discountAmount: number;
+  finalTotal: number;
+}
+
+export function validatePromoCode(code: string, orderSubtotal: number): Promise<PromoCodeApplicationDto> {
+  return apiFetch<PromoCodeApplicationDto>('/promo-codes/validate', {
+    method: 'POST',
+    body: JSON.stringify({ code, orderSubtotal }),
+  });
+}
+
+export function fetchAdminPromoCodes(page = 1, pageSize = 10): Promise<PagedResult<PromoCodeDto>> {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  return apiFetch<PagedResult<PromoCodeDto>>(`/admin/promo-codes?${params.toString()}`);
+}
+
+export function createAdminPromoCode(request: PromoCodeUpsertRequest): Promise<PromoCodeDto> {
+  return apiFetch<PromoCodeDto>('/admin/promo-codes', { method: 'POST', body: JSON.stringify(request) });
+}
+
+export function updateAdminPromoCode(id: number, request: PromoCodeUpsertRequest): Promise<PromoCodeDto> {
+  return apiFetch<PromoCodeDto>(`/admin/promo-codes/${id}`, { method: 'PUT', body: JSON.stringify(request) });
+}
+
+export function deleteAdminPromoCode(id: number): Promise<void> {
+  return apiFetch<void>(`/admin/promo-codes/${id}`, { method: 'DELETE' });
+}
+
+export interface PromoBannerDto {
+  id: number;
+  title: string;
+  subtitle: string | null;
+  buttonText: string | null;
+  buttonLink: string | null;
+  imageUrl: string | null;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface PromoBannerUpsertRequest {
+  title: string;
+  subtitle: string | null;
+  buttonText: string | null;
+  buttonLink: string | null;
+  imageUrl: string | null;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export function fetchActivePromoBanners(): Promise<PromoBannerDto[]> {
+  return apiFetch<PromoBannerDto[]>('/promo-banners/active');
+}
+
+export function fetchAdminPromoBanners(): Promise<PromoBannerDto[]> {
+  return apiFetch<PromoBannerDto[]>('/admin/promo-banners');
+}
+
+export function createAdminPromoBanner(request: PromoBannerUpsertRequest): Promise<PromoBannerDto> {
+  return apiFetch<PromoBannerDto>('/admin/promo-banners', { method: 'POST', body: JSON.stringify(request) });
+}
+
+export function updateAdminPromoBanner(id: number, request: PromoBannerUpsertRequest): Promise<PromoBannerDto> {
+  return apiFetch<PromoBannerDto>(`/admin/promo-banners/${id}`, { method: 'PUT', body: JSON.stringify(request) });
+}
+
+export function deleteAdminPromoBanner(id: number): Promise<void> {
+  return apiFetch<void>(`/admin/promo-banners/${id}`, { method: 'DELETE' });
+}
+
+export async function uploadAdminPromoBannerImage(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiFetch<string>('/admin/products/images', { method: 'POST', body: formData });
 }

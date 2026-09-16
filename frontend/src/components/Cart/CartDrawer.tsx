@@ -3,10 +3,11 @@ import { useCart } from '../../context/CartContext';
 import { formatPrice } from '../../utils/formatPrice';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import { Button } from '../Button/Button';
+import { PromoCodeInput } from '../PromoCodeInput/PromoCodeInput';
 import './CartDrawer.css';
 
 export function CartDrawer() {
-  const { lines, isOpen, closeCart, updateQuantity, removeItem, totalPrice } = useCart();
+  const { lines, isOpen, closeCart, updateQuantity, removeItem, totalPrice, promo, finalTotal } = useCart();
   useLockBodyScroll(isOpen);
 
   return (
@@ -63,9 +64,17 @@ export function CartDrawer() {
             </ul>
 
             <div className="cart-drawer__footer">
+              <PromoCodeInput />
               <div className="cart-drawer__total">
                 <span>Итого</span>
-                <span>{formatPrice(totalPrice)}</span>
+                {promo ? (
+                  <span className="cart-drawer__total-value">
+                    <span className="cart-drawer__total-old">{formatPrice(totalPrice)}</span>
+                    {formatPrice(finalTotal)}
+                  </span>
+                ) : (
+                  <span>{formatPrice(totalPrice)}</span>
+                )}
               </div>
               <Link to="/checkout" onClick={closeCart}>
                 <Button variant="primary" size="lg" className="cart-drawer__checkout-btn">
