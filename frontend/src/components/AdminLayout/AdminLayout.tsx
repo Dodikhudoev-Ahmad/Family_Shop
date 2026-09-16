@@ -8,6 +8,8 @@ const NAV_ITEMS = [
   { to: '/admin/orders', label: 'Заказы', icon: OrdersIcon },
   { to: '/admin/products', label: 'Товары', icon: ProductsIcon },
   { to: '/admin/categories', label: 'Категории', icon: CategoriesIcon },
+  { to: '/admin/promo-codes', label: 'Промокоды', icon: PromoCodesIcon },
+  { to: '/admin/promo-banners', label: 'Промо-баннеры', icon: PromoBannersIcon },
 ];
 
 export function AdminLayout({ children }: { children: ReactNode }) {
@@ -119,6 +121,24 @@ function CategoriesIcon() {
       <rect x="11" y="3" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.5" />
       <rect x="3" y="11" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.5" />
       <rect x="11" y="11" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function PromoCodesIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+      <path d="M2.5 9 9.5 2h8v8l-7 7-7-7Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <circle cx="13.5" cy="6.5" r="1.3" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
+  );
+}
+
+function PromoBannersIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+      <rect x="2.5" y="4.5" width="15" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M5.5 14.5 9 10l2.5 2.5L15 8.5l1.5 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

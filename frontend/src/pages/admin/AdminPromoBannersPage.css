@@ -1,0 +1,23 @@
+/* Shared building blocks (.admin-table, .admin-cards, .admin-modal, .admin-dropzone, etc.)
+   come from AdminLayout.css, which every admin page renders through - only page-specific
+   classes live here, same convention as AdminCategoriesPage.css. */
+
+.admin-promo-banners__thumb {
+  width: 64px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  display: block;
+}
+
+.admin-promo-banners__thumb--empty {
+  background: var(--color-bg-secondary);
+  border: 1px dashed var(--color-border);
+}
+
+.admin-promo-banners__subtitle {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  margin-top: 2px;
+}

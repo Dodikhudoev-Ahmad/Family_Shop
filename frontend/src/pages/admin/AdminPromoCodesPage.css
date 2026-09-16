@@ -1,0 +1,34 @@
+/* Shared building blocks (.admin-table, .admin-cards, .admin-modal, .admin-form-field, etc.)
+   come from AdminLayout.css, which every admin page renders through - only page-specific
+   classes live here, same convention as AdminCategoriesPage.css. */
+
+.admin-promo-codes__form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+@media (max-width: 480px) {
+  .admin-promo-codes__form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-promo-codes__badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin-promo-codes__badge.is-active {
+  background: color-mix(in srgb, var(--color-success) 16%, transparent);
+  color: var(--color-success);
+}
+
+.admin-promo-codes__badge.is-muted {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+}

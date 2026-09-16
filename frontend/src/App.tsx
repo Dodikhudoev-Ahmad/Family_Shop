@@ -15,6 +15,8 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { AdminOrdersPage } from './pages/admin/AdminOrdersPage';
 import { AdminProductsPage } from './pages/admin/AdminProductsPage';
 import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage';
+import { AdminPromoCodesPage } from './pages/admin/AdminPromoCodesPage';
+import { AdminPromoBannersPage } from './pages/admin/AdminPromoBannersPage';
 
 export default function App() {
   return (
@@ -43,6 +45,22 @@ export default function App() {
             element={
               <AdminRoute>
                 <AdminCategoriesPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/promo-codes"
+            element={
+              <AdminRoute>
+                <AdminPromoCodesPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/promo-banners"
+            element={
+              <AdminRoute>
+                <AdminPromoBannersPage />
               </AdminRoute>
             }
           />
