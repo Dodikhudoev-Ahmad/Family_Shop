@@ -15,6 +15,7 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         return await DbSet
             .Include(o => o.Items)
             .ThenInclude(i => i.Product)
+            .Include(o => o.PromoCode)
             .Where(o => o.UserId == userId)
             .ToListAsync(cancellationToken);
     }
@@ -24,6 +25,7 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         return await DbSet
             .Include(o => o.Items)
             .ThenInclude(i => i.Product)
+            .Include(o => o.PromoCode)
             .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
     }
 
@@ -40,6 +42,7 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         var query = DbSet
             .Include(o => o.Items)
             .ThenInclude(i => i.Product)
+            .Include(o => o.PromoCode)
             .AsQueryable();
 
         if (status is not null)

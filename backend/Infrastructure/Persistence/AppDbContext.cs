@@ -16,6 +16,8 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<PromoCode> PromoCodes => Set<PromoCode>();
+    public DbSet<PromoBanner> PromoBanners => Set<PromoBanner>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

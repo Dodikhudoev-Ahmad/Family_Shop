@@ -60,8 +60,58 @@ public class OrderService : IOrderService
 
         order.TotalPrice = total;
 
+        PromoCode? promoCode = null;
+
+        if (!string.IsNullOrWhiteSpace(request.PromoCode))
+        {
+            var code = request.PromoCode.Trim().ToUpperInvariant();
+            promoCode = await _unitOfWork.PromoCodes.GetByCodeAsync(code, cancellationToken);
+            if (promoCode is null)
+            {
+                return Result<OrderDto>.Failure("Промокод не найден.");
+            }
+
+            var evaluation = PromoCodePolicy.Evaluate(promoCode, total.Amount, DateTime.UtcNow);
+            if (!evaluation.IsSuccess)
+            {
+                return Result<OrderDto>.Failure(evaluation.Errors);
+            }
+
+            order.PromoCodeId = promoCode.Id;
+            order.PromoCode = promoCode;
+            order.DiscountAmount = new Domain.ValueObjects.Money(evaluation.Value!.DiscountAmount);
+            order.TotalPrice = new Domain.ValueObjects.Money(evaluation.Value.FinalTotal);
+        }
+
         await _unitOfWork.Orders.AddAsync(order, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (promoCode is not null)
+        {
+            // Usage-limit check + increment happens as one atomic conditional UPDATE inside the
+            // same transaction as the order insert, so a promo code can't be over-redeemed by
+            // concurrent orders racing past the in-memory limit check above, and a failed order
+            // never leaves a promo code's usage count incremented (or vice versa).
+            var applied = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
+            {
+                var incremented = await _unitOfWork.PromoCodes.TryIncrementUsageAsync(promoCode.Id, ct);
+                if (!incremented)
+                {
+                    return false;
+                }
+
+                await _unitOfWork.SaveChangesAsync(ct);
+                return true;
+            }, cancellationToken);
+
+            if (!applied)
+            {
+                return Result<OrderDto>.Failure("Промокод больше не действует (лимит использований исчерпан).");
+            }
+        }
+        else
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         return Result<OrderDto>.Success(ToDto(order));
     }
@@ -142,7 +192,9 @@ public class OrderService : IOrderService
             i.Product?.Images.FirstOrDefault(),
             i.Quantity,
             i.Price.Amount,
-            i.Size)).ToList());
+            i.Size)).ToList(),
+        order.PromoCode?.Code,
+        order.DiscountAmount.Amount);
 
     private static OrderDto ToDto(Order order) => new(
         order.Id,
@@ -160,5 +212,7 @@ public class OrderService : IOrderService
             i.Product?.Images.FirstOrDefault(),
             i.Quantity,
             i.Price.Amount,
-            i.Size)).ToList());
+            i.Size)).ToList(),
+        order.PromoCode?.Code,
+        order.DiscountAmount.Amount);
 }

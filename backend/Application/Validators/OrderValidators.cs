@@ -19,6 +19,8 @@ public class CreateOrderRequestValidator : AbstractValidator<CreateOrderRequestD
             .WithMessage("City is required for courier delivery.");
         RuleFor(x => x.Address).NotEmpty().When(x => x.DeliveryMethod == DeliveryMethod.Courier)
             .WithMessage("Address is required for courier delivery.");
+
+        RuleFor(x => x.PromoCode).MaximumLength(50);
     }
 }
 

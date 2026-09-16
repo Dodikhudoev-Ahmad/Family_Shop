@@ -32,4 +32,8 @@ public class Order
     public DeliveryMethod DeliveryMethod { get; set; }
     public string? City { get; set; }
     public string? Address { get; set; }
+
+    public int? PromoCodeId { get; set; }
+    public PromoCode? PromoCode { get; set; }
+    public Money DiscountAmount { get; set; }
 }

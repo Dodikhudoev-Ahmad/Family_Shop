@@ -13,6 +13,10 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
             .HasConversion(m => m.Amount, v => new Money(v))
             .HasColumnType("decimal(18,2)");
 
+        builder.Property(o => o.DiscountAmount)
+            .HasConversion(m => m.Amount, v => new Money(v))
+            .HasColumnType("decimal(18,2)");
+
         builder.Property(o => o.ContactName).HasMaxLength(200).IsRequired();
         builder.Property(o => o.ContactPhone).HasMaxLength(32).IsRequired();
         builder.Property(o => o.City).HasMaxLength(200);
@@ -21,6 +25,11 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasOne(o => o.User)
             .WithMany()
             .HasForeignKey(o => o.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(o => o.PromoCode)
+            .WithMany()
+            .HasForeignKey(o => o.PromoCodeId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(o => o.UserId);
