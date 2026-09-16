@@ -113,6 +113,11 @@ public class PromoCodeService : IPromoCodeService
             return Result<bool>.Failure("Промокод не найден.");
         }
 
+        if (await _unitOfWork.Orders.AnyByPromoCodeIdAsync(id, cancellationToken))
+        {
+            return Result<bool>.Failure("Нельзя удалить промокод, у него есть заказы.");
+        }
+
         _unitOfWork.PromoCodes.Remove(promoCode);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
