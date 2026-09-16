@@ -46,6 +46,13 @@
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
 
+  /* Промо-баннер без картинки: фиксированный тёмный градиент и текст поверх него,
+     не завязанные на --color-accent* — те тона в тёмной теме слишком светлые и
+     проваливают контраст 4.5:1 для белого текста. */
+  --color-banner-fallback-from: #7A4A2E;
+  --color-banner-fallback-to: #5C3620;
+  --color-banner-cta-hover-text: #8A5636;
+
   /* Прочее */
   --header-height: 88px;
   --header-height-compact: 64px;
