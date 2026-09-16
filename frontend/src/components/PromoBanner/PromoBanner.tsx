@@ -27,7 +27,7 @@ export function PromoBanner() {
   return (
     <section className="promo-banner container">
       <div
-        className="promo-banner__card"
+        className={`promo-banner__card${!banner.imageUrl ? ' promo-banner__card--fallback' : ''}`}
         style={banner.imageUrl ? { backgroundImage: `url(${banner.imageUrl})` } : undefined}
       >
         {banner.imageUrl && <div className="promo-banner__overlay" />}
