@@ -23,11 +23,10 @@ public class AdminPromoCodesController : ControllerBase
     /// <summary>Список промокодов с пагинацией.</summary>
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResult<PromoCodeDto>>>> GetPromoCodes(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10,
+        [FromQuery] PromoCodeFilterDto filter,
         CancellationToken cancellationToken = default)
     {
-        var result = await _promoCodeService.GetPromoCodesAsync(new PromoCodeFilterDto(page, pageSize), cancellationToken);
+        var result = await _promoCodeService.GetPromoCodesAsync(filter, cancellationToken);
         return Ok(ApiResponse<PagedResult<PromoCodeDto>>.Ok(result));
     }
 
