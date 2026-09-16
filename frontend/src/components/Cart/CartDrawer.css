@@ -148,6 +148,20 @@
   margin-bottom: var(--space-3);
 }
 
+.cart-drawer__total-value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  color: var(--color-success);
+}
+
+.cart-drawer__total-old {
+  color: var(--color-text-secondary);
+  text-decoration: line-through;
+  font-weight: 400;
+  font-size: 0.85em;
+}
+
 .cart-drawer__checkout-btn {
   width: 100%;
 }

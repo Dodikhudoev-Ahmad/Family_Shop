@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Product } from '../types/product';
+import { ApiError, validatePromoCode, type PromoCodeApplicationDto } from '../lib/api';
 import { useToast } from './ToastContext';
 
 export interface CartLine {
@@ -21,6 +22,12 @@ interface CartContextValue {
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
+  promo: PromoCodeApplicationDto | null;
+  promoError: string | null;
+  isApplyingPromo: boolean;
+  applyPromoCode: (code: string) => Promise<void>;
+  clearPromoCode: () => void;
+  finalTotal: number;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -39,6 +46,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>(loadStoredLines);
   const [isOpen, setIsOpen] = useState(false);
   const [bump, setBump] = useState(0);
+  const [promo, setPromo] = useState<PromoCodeApplicationDto | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
+  const appliedForSubtotal = useRef<number | null>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -83,13 +94,52 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const removeItem = (key: string) => setLines((prev) => prev.filter((l) => l.key !== key));
 
-  const clearCart = () => setLines([]);
+  const clearPromoCode = () => {
+    setPromo(null);
+    setPromoError(null);
+    appliedForSubtotal.current = null;
+  };
+
+  const clearCart = () => {
+    setLines([]);
+    clearPromoCode();
+  };
 
   const totalItems = useMemo(() => lines.reduce((sum, l) => sum + l.quantity, 0), [lines]);
   const totalPrice = useMemo(
     () => lines.reduce((sum, l) => sum + (l.product.discountPrice ?? l.product.price) * l.quantity, 0),
     [lines]
   );
+
+  // A promo's discount was computed for a specific subtotal - if the cart changes afterwards
+  // (quantity edited, item removed), silently drop it rather than show a stale discount.
+  useEffect(() => {
+    if (promo && appliedForSubtotal.current !== null && appliedForSubtotal.current !== totalPrice) {
+      clearPromoCode();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPrice]);
+
+  const applyPromoCode = async (code: string) => {
+    const trimmed = code.trim();
+    if (!trimmed) return;
+
+    setIsApplyingPromo(true);
+    setPromoError(null);
+    try {
+      const result = await validatePromoCode(trimmed, totalPrice);
+      setPromo(result);
+      appliedForSubtotal.current = totalPrice;
+    } catch (err) {
+      setPromo(null);
+      appliedForSubtotal.current = null;
+      setPromoError(err instanceof ApiError ? err.message : 'Не удалось применить промокод.');
+    } finally {
+      setIsApplyingPromo(false);
+    }
+  };
+
+  const finalTotal = promo ? promo.finalTotal : totalPrice;
 
   return (
     <CartContext.Provider
@@ -105,6 +155,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         totalItems,
         totalPrice,
+        promo,
+        promoError,
+        isApplyingPromo,
+        applyPromoCode,
+        clearPromoCode,
+        finalTotal,
       }}
     >
       {children}
