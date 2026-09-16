@@ -6,6 +6,7 @@ import { ProductCardSkeleton } from '../components/ProductCard/ProductCardSkelet
 import { Slider } from '../components/Slider/Slider';
 import { Reveal } from '../components/Reveal';
 import { FadeImage } from '../components/FadeImage/FadeImage';
+import { PromoBanner } from '../components/PromoBanner/PromoBanner';
 import { useSeo } from '../hooks/useSeo';
 import { DEFAULT_DESCRIPTION, DEFAULT_TITLE } from '../data/seo';
 import './HomePage.css';
@@ -41,6 +42,8 @@ export function HomePage() {
           </Link>
         ))}
       </section>
+
+      <PromoBanner />
 
       {error && (
         <p className="container home__error">
