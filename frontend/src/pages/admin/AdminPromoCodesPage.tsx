@@ -59,6 +59,14 @@ function toDateInput(iso: string): string {
   return iso.slice(0, 10);
 }
 
+// validFrom/validUntil are stored as UTC-anchored calendar dates (see handleSubmit) -
+// format with timeZone: 'UTC' so the displayed date matches what was entered instead of
+// shifting by the admin's local offset (toLocaleDateString would otherwise roll
+// end-of-day UTC into the next local calendar day for any timezone ahead of UTC).
+function formatValidUntil(iso: string): string {
+  return new Date(iso).toLocaleDateString('ru-RU', { timeZone: 'UTC' });
+}
+
 function isExpired(promo: PromoCodeDto): boolean {
   return new Date(promo.validUntil).getTime() < Date.now();
 }
@@ -266,7 +274,7 @@ export function AdminPromoCodesPage() {
                         </td>
                         <td>{formatDiscount(promo)}</td>
                         <td>{formatConditions(promo)}</td>
-                        <td>{new Date(promo.validUntil).toLocaleDateString('ru-RU')}</td>
+                        <td>{formatValidUntil(promo.validUntil)}</td>
                         <td>{promo.usageLimit !== null ? `${promo.usageCount} / ${promo.usageLimit}` : promo.usageCount}</td>
                         <td>
                           <PromoStatusBadge promo={promo} />
@@ -530,7 +538,7 @@ function PromoCodesCards({
           </div>
           <div className="admin-category-card__parent">{formatDiscount(promo)} · {formatConditions(promo)}</div>
           <div className="admin-category-card__parent">
-            До {new Date(promo.validUntil).toLocaleDateString('ru-RU')} · использовано{' '}
+            До {formatValidUntil(promo.validUntil)} · использовано{' '}
             {promo.usageLimit !== null ? `${promo.usageCount} / ${promo.usageLimit}` : promo.usageCount}
           </div>
           <div className="admin-category-card__actions">
