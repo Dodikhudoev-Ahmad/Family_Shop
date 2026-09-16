@@ -63,7 +63,10 @@
 
 .promo-banner__cta:hover {
   background: var(--color-white);
-  color: var(--color-accent-hover);
+  /* Hover background is always solid white regardless of theme, but
+     --color-accent-hover is a light tone in dark theme (~2.2:1 on white) -
+     use the fixed banner token instead so this always passes 4.5:1. */
+  color: var(--color-banner-cta-hover-text);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
