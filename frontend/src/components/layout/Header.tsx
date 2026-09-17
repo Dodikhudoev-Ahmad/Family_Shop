@@ -7,6 +7,7 @@ import { useFavorites } from '../../context/FavoritesContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { MobileMenu } from './MobileMenu';
+import { LogoMark } from './LogoMark';
 import { SearchOverlay } from '../Search/SearchOverlay';
 import { ConfirmDialog } from '../ConfirmDialog/ConfirmDialog';
 import './Header.css';
@@ -43,6 +44,7 @@ export function Header() {
         )}
 
         <Link to="/" className="header__logo">
+          <LogoMark />
           Family Shop
         </Link>
 

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { ConfirmDialog } from '../ConfirmDialog/ConfirmDialog';
+import { LogoMark } from '../layout/LogoMark';
 import './AdminLayout.css';
 
 const NAV_ITEMS = [
@@ -23,6 +24,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     <div className="admin-layout">
       <header className="admin-topbar">
         <Link to="/" className="admin-topbar__logo">
+          <LogoMark size={18} />
           Family Shop
           <span>Admin</span>
         </Link>
