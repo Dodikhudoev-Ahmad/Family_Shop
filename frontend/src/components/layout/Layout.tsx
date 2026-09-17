@@ -3,6 +3,7 @@ import { Header } from './Header';
 import { Footer } from './Footer';
 import { CartDrawer } from '../Cart/CartDrawer';
 import { QuickViewModal } from '../QuickView/QuickViewModal';
+import { BackToTop } from '../BackToTop/BackToTop';
 
 export function Layout() {
   return (
@@ -14,6 +15,7 @@ export function Layout() {
       <Footer />
       <CartDrawer />
       <QuickViewModal />
+      <BackToTop />
     </div>
   );
 }

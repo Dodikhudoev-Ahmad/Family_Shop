@@ -20,7 +20,7 @@ export function Header() {
   const { totalItems, bump, openCart } = useCart();
   const { categories, isLoading: isCategoriesLoading } = useCategories();
   const { user, logout } = useAuth();
-  const { favoriteIds } = useFavorites();
+  const { favoriteIds, bump: favBump } = useFavorites();
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
@@ -107,7 +107,11 @@ export function Header() {
 
           <Link to="/favorites" className="header__icon-btn header__fav-btn" aria-label="Избранное">
             <HeartIcon />
-            {favoriteIds.length > 0 && <span className="header__cart-count">{favoriteIds.length}</span>}
+            {favoriteIds.length > 0 && (
+              <span key={favBump} className="header__cart-count bounce">
+                {favoriteIds.length}
+              </span>
+            )}
           </Link>
 
           <button className="header__icon-btn header__cart-btn" aria-label="Корзина" onClick={openCart}>
