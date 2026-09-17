@@ -21,6 +21,12 @@
   box-shadow: var(--shadow-lg);
   font-size: 14px;
   animation: toast-in var(--transition-slow);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.toast.is-leaving {
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
 }
 
 .toast--success {
@@ -58,6 +64,10 @@
 
   .toast {
     animation: toast-in-top var(--transition-slow);
+  }
+
+  .toast.is-leaving {
+    transform: translateY(-8px) scale(0.96);
   }
 }
 
