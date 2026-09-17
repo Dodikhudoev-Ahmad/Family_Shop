@@ -7,12 +7,13 @@ import './MobileMenu.css';
 interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
+  onRequestLogout: () => void;
 }
 
-export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
+export function MobileMenu({ isOpen, onClose, onRequestLogout }: MobileMenuProps) {
   useLockBodyScroll(isOpen);
   const { categories } = useCategories();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   return (
     <>
@@ -45,8 +46,8 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               <button
                 className="mobile-menu__link mobile-menu__link--secondary"
                 onClick={() => {
-                  logout();
                   onClose();
+                  onRequestLogout();
                 }}
               >
                 Выйти
