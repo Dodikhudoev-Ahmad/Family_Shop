@@ -8,6 +8,8 @@ namespace Infrastructure.Persistence;
 public static class SeedData
 {
     private const string AdminEmail = "admin@familyshop.kz";
+    // Generated for the deploy-prep pass — see the chat report for this value.
+    // Change it after first login if this seed ever runs against a public database.
     private const string AdminPassword = "***REMOVED***";
     // A few replacement photos (picked to avoid visible brand logos) live under Unsplash's
     // /flagged/ path instead of the regular CDN path — prefix the id with "flagged/" for those.
