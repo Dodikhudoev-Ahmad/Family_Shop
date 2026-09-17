@@ -1,15 +1,17 @@
-// Placeholder production domain — reused from the footer contact
-// (hello@familyshop.example). Swap for the real domain before deploy;
-// it drives canonical/og:url and the static files in public/.
-export const SITE_URL = 'https://familyshop.example';
+// TODO: production domain. Set VITE_SITE_URL in the deploy environment
+// (falls back to the familyshop.example placeholder if unset) - it drives
+// canonical/og:url here and the matching %VITE_SITE_URL% tags in index.html.
+// public/robots.txt and public/sitemap.xml are static files Vite doesn't
+// template, so they carry their own TODO markers and need updating by hand.
+export const SITE_URL = import.meta.env.VITE_SITE_URL ?? 'https://familyshop.example';
 export const SITE_NAME = 'Family Shop';
 
-// No branded raster asset exists in the repo yet (only favicon.svg /
-// icons.svg, and social crawlers largely ignore SVG og:image). Reusing
-// the home page's "women" hero photo, cropped to the 1200x630 og:image
-// ratio, as a temporary stand-in until a real brand image is designed.
-export const DEFAULT_OG_IMAGE =
-  'https://images.unsplash.com/photo-1662532577856-e8ee8b138a8b?w=1200&h=630&fit=crop&q=80';
+// TODO: no branded raster photo exists yet. public/logo-icon-badge.svg (hanger
+// mark + wordmark on the accent color, 1200x630) is a temporary stand-in -
+// swap for a real lifestyle/product photo before launch. Note most social
+// crawlers (Facebook/LinkedIn in particular) don't render SVG og:image at
+// all, so this placeholder may just show as a blank preview until replaced.
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/logo-icon-badge.svg`;
 
 export const DEFAULT_TITLE = `${SITE_NAME} — интернет-магазин одежды в Казахстане`;
 export const DEFAULT_DESCRIPTION =

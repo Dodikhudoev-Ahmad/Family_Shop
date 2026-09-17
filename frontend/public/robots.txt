@@ -1,3 +1,6 @@
+# TODO: static file, not processed by Vite - replace familyshop.example below with the
+# real production domain before deploy (keep in sync with VITE_SITE_URL in .env and the
+# TODO in sitemap.xml).
 User-agent: *
 Allow: /
 Disallow: /account

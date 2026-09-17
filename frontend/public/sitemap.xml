@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- TODO: static file, not processed by Vite - replace every familyshop.example URL below
+     with the real production domain before deploy (keep in sync with VITE_SITE_URL in .env
+     and the TODO in robots.txt). -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://familyshop.example/</loc>
