@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { ConfirmDialog } from '../ConfirmDialog/ConfirmDialog';
 import './AdminLayout.css';
 
 const NAV_ITEMS = [
@@ -16,6 +17,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
 
   return (
     <div className="admin-layout">
@@ -42,7 +44,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <button className="admin-topbar__logout" onClick={logout}>
+          <button className="admin-topbar__logout" onClick={() => setConfirmingLogout(true)}>
             Выйти
           </button>
         </div>
@@ -64,6 +66,16 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
         <main className="admin-main">{children}</main>
       </div>
+
+      <ConfirmDialog
+        open={confirmingLogout}
+        title="Выйти из аккаунта администратора?"
+        description="Понадобится снова войти, чтобы вернуться в панель управления."
+        confirmLabel="Выйти"
+        isDangerous={false}
+        onConfirm={logout}
+        onCancel={() => setConfirmingLogout(false)}
+      />
     </div>
   );
 }
