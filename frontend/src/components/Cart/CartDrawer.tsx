@@ -6,6 +6,7 @@ import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import { Button } from '../Button/Button';
 import { ConfirmDialog } from '../ConfirmDialog/ConfirmDialog';
 import { PromoCodeInput } from '../PromoCodeInput/PromoCodeInput';
+import { FadeImage } from '../FadeImage/FadeImage';
 import './CartDrawer.css';
 
 export function CartDrawer() {
@@ -44,7 +45,7 @@ export function CartDrawer() {
             <ul className="cart-drawer__list">
               {lines.map((line) => (
                 <li key={line.key} className="cart-line">
-                  <img src={line.product.images[0]} alt={line.product.name} className="cart-line__image" />
+                  <FadeImage src={line.product.images[0]} alt={line.product.name} className="cart-line__image" />
                   <div className="cart-line__info">
                     <span className="cart-line__name">{line.product.name}</span>
                     <span className="cart-line__size">Размер: {line.size}</span>
