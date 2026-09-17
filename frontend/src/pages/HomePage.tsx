@@ -7,6 +7,7 @@ import { Slider } from '../components/Slider/Slider';
 import { Reveal } from '../components/Reveal';
 import { FadeImage } from '../components/FadeImage/FadeImage';
 import { PromoBanner } from '../components/PromoBanner/PromoBanner';
+import { RecentlyViewed } from '../components/RecentlyViewed/RecentlyViewed';
 import { useSeo } from '../hooks/useSeo';
 import { DEFAULT_DESCRIPTION, DEFAULT_TITLE } from '../data/seo';
 import './HomePage.css';
@@ -101,6 +102,8 @@ export function HomePage() {
           </Reveal>
         </section>
       )}
+
+      <RecentlyViewed />
     </div>
   );
 }
