@@ -36,16 +36,29 @@ export function ProductCard({ product }: ProductCardProps) {
           discountPercent && <span className="product-card__badge">−{discountPercent}%</span>
         )}
 
-        <button
-          className={`product-card__fav product-card__fav--mobile ${favorite ? 'is-active' : ''}`}
-          aria-label={favorite ? 'Убрать из избранного' : 'В избранное'}
-          onClick={(e) => {
-            e.preventDefault();
-            toggleFavorite(product.id, product.name);
-          }}
-        >
-          <HeartIcon filled={favorite} />
-        </button>
+        <div className="product-card__mobile-actions">
+          <button
+            className={`product-card__icon-btn ${favorite ? 'is-active' : ''}`}
+            aria-label={favorite ? 'Убрать из избранного' : 'В избранное'}
+            onClick={(e) => {
+              e.preventDefault();
+              toggleFavorite(product.id, product.name);
+            }}
+          >
+            <HeartIcon filled={favorite} />
+          </button>
+          <button
+            className="product-card__icon-btn"
+            aria-label="Быстрый просмотр"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              openQuickView(product);
+            }}
+          >
+            <EyeIcon />
+          </button>
+        </div>
 
         <div className="product-card__hover-actions">
           <button
@@ -63,6 +76,7 @@ export function ProductCard({ product }: ProductCardProps) {
             aria-label="Быстрый просмотр"
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               openQuickView(product);
             }}
           >
