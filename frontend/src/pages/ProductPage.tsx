@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { Gender } from '../types/product';
 import { useProducts } from '../context/ProductsContext';
 import { useCategories } from '../context/CategoriesContext';
+import { useRecentlyViewed } from '../context/RecentlyViewedContext';
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
+import { RecentlyViewed } from '../components/RecentlyViewed/RecentlyViewed';
 import { useSeo } from '../hooks/useSeo';
 import { SITE_NAME, truncateDescription } from '../data/seo';
 import { formatPrice } from '../utils/formatPrice';
@@ -28,6 +30,7 @@ export function ProductPage() {
   const { addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { showToast } = useToast();
+  const { addViewed } = useRecentlyViewed();
 
   const [activeImage, setActiveImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -39,6 +42,13 @@ export function ProductPage() {
     image: product?.images[0],
     type: 'product',
   });
+
+  // Only a full page view counts as "viewed" - Quick View opens intentionally
+  // don't call this, since a hover/tap-to-peek is a weaker signal of interest.
+  useEffect(() => {
+    if (product) addViewed(product.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id]);
 
   if (isLoading) {
     return <div className="container product-page__not-found">Загрузка...</div>;
@@ -194,6 +204,8 @@ export function ProductPage() {
           </Slider>
         </section>
       )}
+
+      <RecentlyViewed excludeId={product.id} className="home-section" />
     </div>
   );
 }
