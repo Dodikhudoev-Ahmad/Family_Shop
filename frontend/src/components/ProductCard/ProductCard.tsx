@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 import type { Product } from '../../types/product';
 import { useFavorites } from '../../context/FavoritesContext';
@@ -10,9 +11,13 @@ import './ProductCard.css';
 
 interface ProductCardProps {
   product: Product;
+  // When set, removing this product from favorites goes through the caller
+  // instead of toggling immediately - FavoritesPage uses this to confirm
+  // removal first. Adding to favorites (from any page) always stays instant.
+  onRequestRemoveFromFavorites?: (product: Product) => void;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { open: openQuickView } = useQuickView();
   const favorite = isFavorite(product.id);
@@ -21,6 +26,15 @@ export function ProductCard({ product }: ProductCardProps) {
     : null;
   const outOfStock = isOutOfStock(product.stock);
   const lowStock = isLowStock(product.stock);
+
+  const handleFavoriteClick = (e: MouseEvent) => {
+    e.preventDefault();
+    if (favorite && onRequestRemoveFromFavorites) {
+      onRequestRemoveFromFavorites(product);
+      return;
+    }
+    toggleFavorite(product.id, product.name);
+  };
 
   return (
     <div className={`product-card ${outOfStock ? 'is-out-of-stock' : ''}`}>
@@ -40,10 +54,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <button
             className={`product-card__icon-btn ${favorite ? 'is-active' : ''}`}
             aria-label={favorite ? 'Убрать из избранного' : 'В избранное'}
-            onClick={(e) => {
-              e.preventDefault();
-              toggleFavorite(product.id, product.name);
-            }}
+            onClick={handleFavoriteClick}
           >
             <HeartIcon filled={favorite} />
           </button>
@@ -64,10 +75,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <button
             className={`product-card__icon-btn ${favorite ? 'is-active' : ''}`}
             aria-label={favorite ? 'Убрать из избранного' : 'В избранное'}
-            onClick={(e) => {
-              e.preventDefault();
-              toggleFavorite(product.id, product.name);
-            }}
+            onClick={handleFavoriteClick}
           >
             <HeartIcon filled={favorite} />
           </button>
