@@ -4,6 +4,7 @@ interface Toast {
   id: string;
   message: string;
   variant: 'success' | 'error' | 'info';
+  leaving?: boolean;
 }
 
 interface ToastContextValue {
@@ -12,6 +13,11 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
+// Matches the toast-out animation duration in toast.css - the toast is marked
+// "leaving" first so it can play its exit transition, then actually removed
+// from the list once that animation has had time to finish.
+const LEAVE_ANIMATION_MS = 220;
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -19,7 +25,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const id = crypto.randomUUID();
     setToasts((prev) => [...prev, { id, message, variant }]);
     setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
+      setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, LEAVE_ANIMATION_MS);
     }, 3200);
   }, []);
 
@@ -28,7 +37,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div className="toast-stack" role="status" aria-live="polite">
         {toasts.map((t) => (
-          <div key={t.id} className={`toast toast--${t.variant}`}>
+          <div key={t.id} className={`toast toast--${t.variant} ${t.leaving ? 'is-leaving' : ''}`}>
             {t.message}
           </div>
         ))}

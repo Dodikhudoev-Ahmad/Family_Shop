@@ -42,6 +42,10 @@ button {
   font-family: inherit;
 }
 
+button:not(:disabled) {
+  cursor: pointer;
+}
+
 img {
   display: block;
   max-width: 100%;
