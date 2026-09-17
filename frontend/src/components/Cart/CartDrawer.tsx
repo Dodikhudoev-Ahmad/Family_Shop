@@ -1,14 +1,24 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useCart } from '../../context/CartContext';
+import { useCart, type CartLine } from '../../context/CartContext';
 import { formatPrice } from '../../utils/formatPrice';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import { Button } from '../Button/Button';
+import { ConfirmDialog } from '../ConfirmDialog/ConfirmDialog';
 import { PromoCodeInput } from '../PromoCodeInput/PromoCodeInput';
 import './CartDrawer.css';
 
 export function CartDrawer() {
   const { lines, isOpen, closeCart, updateQuantity, removeItem, totalPrice, promo, finalTotal } = useCart();
   useLockBodyScroll(isOpen);
+
+  const [pendingRemove, setPendingRemove] = useState<CartLine | null>(null);
+
+  const handleRemove = () => {
+    if (!pendingRemove) return;
+    removeItem(pendingRemove.key);
+    setPendingRemove(null);
+  };
 
   return (
     <>
@@ -54,7 +64,7 @@ export function CartDrawer() {
                           +
                         </button>
                       </div>
-                      <button className="cart-line__remove" onClick={() => removeItem(line.key)} aria-label="Удалить товар">
+                      <button className="cart-line__remove" onClick={() => setPendingRemove(line)} aria-label="Удалить товар">
                         <TrashIcon />
                       </button>
                     </div>
@@ -85,6 +95,15 @@ export function CartDrawer() {
           </>
         )}
       </aside>
+
+      <ConfirmDialog
+        open={pendingRemove !== null}
+        title={`Удалить «${pendingRemove?.product.name}» из корзины?`}
+        description={`Размер: ${pendingRemove?.size}. Товар будет удалён из корзины.`}
+        confirmLabel="Удалить"
+        onConfirm={handleRemove}
+        onCancel={() => setPendingRemove(null)}
+      />
     </>
   );
 }
