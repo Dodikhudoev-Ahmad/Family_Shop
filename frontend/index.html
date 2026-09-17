@@ -26,7 +26,10 @@
       name="description"
       content="Женская, мужская и детская одежда, обувь и сумки с быстрой доставкой по Казахстану. Минимализм и качество в каждой вещи."
     />
-    <link rel="canonical" href="https://familyshop.example/" />
+    <!-- TODO: %VITE_SITE_URL% comes from the VITE_SITE_URL env var (see .env / src/data/seo.ts)
+         and falls back to the familyshop.example placeholder below when unset. Set it in the
+         deploy environment instead of editing these tags by hand. -->
+    <link rel="canonical" href="%VITE_SITE_URL%/" />
 
     <meta property="og:site_name" content="Family Shop" />
     <meta property="og:type" content="website" />
@@ -35,8 +38,10 @@
       property="og:description"
       content="Женская, мужская и детская одежда, обувь и сумки с быстрой доставкой по Казахстану. Минимализм и качество в каждой вещи."
     />
-    <meta property="og:image" content="https://images.unsplash.com/photo-1662532577856-e8ee8b138a8b?w=1200&h=630&fit=crop&q=80" />
-    <meta property="og:url" content="https://familyshop.example/" />
+    <!-- TODO: temporary SVG placeholder (public/logo-icon-badge.svg) - swap for a real
+         1200x630 photo before launch, see src/data/seo.ts for the full note. -->
+    <meta property="og:image" content="%VITE_SITE_URL%/logo-icon-badge.svg" />
+    <meta property="og:url" content="%VITE_SITE_URL%/" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Family Shop — интернет-магазин одежды в Казахстане" />
@@ -44,7 +49,7 @@
       name="twitter:description"
       content="Женская, мужская и детская одежда, обувь и сумки с быстрой доставкой по Казахстану. Минимализм и качество в каждой вещи."
     />
-    <meta name="twitter:image" content="https://images.unsplash.com/photo-1662532577856-e8ee8b138a8b?w=1200&h=630&fit=crop&q=80" />
+    <meta name="twitter:image" content="%VITE_SITE_URL%/logo-icon-badge.svg" />
   </head>
   <body>
     <div id="root"></div>
