@@ -77,7 +77,7 @@ export function FavoritesPage() {
         <h1 className="favorites__title">Избранное</h1>
         <div className="favorites__empty">
           <HeartEmptyIcon />
-          <p>В избранном пока ничего нет</p>
+          <p>В избранном пока ничего нет — сохраняйте понравившиеся вещи, чтобы не потерять</p>
           <Link to="/catalog">
             <Button variant="primary">В каталог</Button>
           </Link>
