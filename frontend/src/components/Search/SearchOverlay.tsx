@@ -104,7 +104,10 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
           )}
 
           {status === 'done' && results.length === 0 && (
-            <div className="search-overlay__hint">Ничего не найдено по запросу «{trimmed}»</div>
+            <div className="search-overlay__hint">
+              <NoResultsIcon />
+              <p>Ничего не нашлось по запросу «{trimmed}» — попробуйте другое слово</p>
+            </div>
           )}
 
           {results.length > 0 && (
@@ -141,6 +144,16 @@ function SearchIcon() {
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
       <circle cx="9" cy="9" r="6.5" stroke="currentColor" strokeWidth="1.6" />
       <path d="M18 18L14 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function NoResultsIcon() {
+  return (
+    <svg width="40" height="40" viewBox="0 0 20 20" fill="none">
+      <circle cx="9" cy="9" r="6.5" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M13.5 13.5L17 17" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M6.5 9h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
   );
 }

@@ -33,7 +33,8 @@ export function CartDrawer() {
 
         {lines.length === 0 ? (
           <div className="cart-drawer__empty">
-            <p>Ваша корзина пуста</p>
+            <CartEmptyIcon />
+            <p>Пока здесь пусто — самое время что-нибудь присмотреть</p>
             <Button variant="secondary" onClick={closeCart}>
               Продолжить покупки
             </Button>
@@ -105,6 +106,15 @@ export function CartDrawer() {
         onCancel={() => setPendingRemove(null)}
       />
     </>
+  );
+}
+
+function CartEmptyIcon() {
+  return (
+    <svg width="48" height="48" viewBox="0 0 21 21" fill="none">
+      <path d="M5 7h11l-1 10H6L5 7z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M8 7V5.5a2.5 2.5 0 0 1 5 0V7" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
   );
 }
 
