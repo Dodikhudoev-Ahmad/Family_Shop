@@ -3,6 +3,7 @@ import { useToast } from './ToastContext';
 
 interface FavoritesContextValue {
   favoriteIds: string[];
+  bump: number;
   isFavorite: (id: string) => boolean;
   toggleFavorite: (id: string, name: string) => void;
 }
@@ -19,6 +20,9 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       return [];
     }
   });
+  // Bumped only when an item is added (not removed) so the header heart's
+  // badge plays the same "bounce" micro-animation the cart count does.
+  const [bump, setBump] = useState(0);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -34,11 +38,12 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   const toggleFavorite = (id: string, name: string) => {
     const has = favoriteIds.includes(id);
     setFavoriteIds((prev) => (has ? prev.filter((f) => f !== id) : [...prev, id]));
+    if (!has) setBump((b) => b + 1);
     showToast(has ? `«${name}» удалён из избранного` : `«${name}» добавлен в избранное`, 'info');
   };
 
   return (
-    <FavoritesContext.Provider value={{ favoriteIds, isFavorite, toggleFavorite }}>
+    <FavoritesContext.Provider value={{ favoriteIds, bump, isFavorite, toggleFavorite }}>
       {children}
     </FavoritesContext.Provider>
   );
