@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { ConfirmDialog } from '../ConfirmDialog/ConfirmDialog';
 import { StarRating } from '../StarRating/StarRating';
 import {
   ApiError,
@@ -42,6 +43,8 @@ export function ProductReviews({ productId }: { productId: number }) {
   const [error, setError] = useState<string | null>(null);
 
   const [myReview, setMyReview] = useState<ReviewDto | null | undefined>(undefined);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const requestIdRef = useRef(0);
 
@@ -116,14 +119,17 @@ export function ProductReviews({ productId }: { productId: number }) {
   };
 
   const handleDelete = () => {
+    setIsDeleting(true);
     deleteMyReview(productId)
       .then(() => {
         setReviews((prev) => (prev ?? []).filter((r) => r.id !== myReview?.id));
         setMyReview(null);
         loadSummary();
         showToast('Отзыв удалён', 'info');
+        setConfirmingDelete(false);
       })
-      .catch((err: unknown) => showToast(err instanceof ApiError ? err.message : 'Не удалось удалить отзыв.', 'error'));
+      .catch((err: unknown) => showToast(err instanceof ApiError ? err.message : 'Не удалось удалить отзыв.', 'error'))
+      .finally(() => setIsDeleting(false));
   };
 
   return (
@@ -137,7 +143,7 @@ export function ProductReviews({ productId }: { productId: number }) {
           <Link to="/login">Войдите</Link>, чтобы оставить отзыв о товаре.
         </p>
       ) : myReview === undefined ? null : myReview ? (
-        <MyReviewCard review={myReview} onDelete={handleDelete} />
+        <MyReviewCard review={myReview} onDelete={() => setConfirmingDelete(true)} />
       ) : (
         <ReviewForm productId={productId} onCreated={handleCreated} />
       )}
@@ -183,6 +189,16 @@ export function ProductReviews({ productId }: { productId: number }) {
           {isLoadingMore ? 'Загрузка...' : 'Показать ещё'}
         </button>
       )}
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="Удалить ваш отзыв?"
+        description="Отзыв будет удалён без возможности восстановления."
+        confirmLabel="Удалить"
+        isBusy={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmingDelete(false)}
+      />
     </section>
   );
 }
