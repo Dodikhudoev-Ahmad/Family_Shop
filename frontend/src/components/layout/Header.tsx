@@ -8,12 +8,14 @@ import { useTheme } from '../../context/ThemeContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { MobileMenu } from './MobileMenu';
 import { SearchOverlay } from '../Search/SearchOverlay';
+import { ConfirmDialog } from '../ConfirmDialog/ConfirmDialog';
 import './Header.css';
 
 export function Header() {
   const [isCompact, setIsCompact] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 1025px)');
   const { totalItems, bump, openCart } = useCart();
   const { categories, isLoading: isCategoriesLoading } = useCategories();
@@ -93,7 +95,7 @@ export function Header() {
                   <span className="header__avatar">{user.name.charAt(0).toUpperCase()}</span>
                   <span className="header__account-name">{user.role === 'Admin' ? 'Администратор' : user.name}</span>
                 </Link>
-                <button className="header__icon-btn" aria-label="Выйти" onClick={logout}>
+                <button className="header__icon-btn" aria-label="Выйти" onClick={() => setConfirmingLogout(true)}>
                   <LogoutIcon />
                 </button>
               </div>
@@ -119,8 +121,25 @@ export function Header() {
         </div>
       </div>
 
-      <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      <MobileMenu
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        onRequestLogout={() => setConfirmingLogout(true)}
+      />
       <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+
+      <ConfirmDialog
+        open={confirmingLogout}
+        title="Выйти из аккаунта?"
+        description="Понадобится снова войти, чтобы оформлять заказы и видеть избранное."
+        confirmLabel="Выйти"
+        isDangerous={false}
+        onConfirm={() => {
+          logout();
+          setConfirmingLogout(false);
+        }}
+        onCancel={() => setConfirmingLogout(false)}
+      />
     </header>
   );
 }
