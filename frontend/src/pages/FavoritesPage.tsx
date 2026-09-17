@@ -4,6 +4,8 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useProducts } from '../context/ProductsContext';
 import { ProductCard } from '../components/ProductCard/ProductCard';
 import { Button } from '../components/Button/Button';
+import { ConfirmDialog } from '../components/ConfirmDialog/ConfirmDialog';
+import type { Product } from '../types/product';
 import './FavoritesPage.css';
 
 const REMOVE_DELAY = 300;
@@ -57,11 +59,17 @@ function useFadingIds(currentIds: string[]) {
 }
 
 export function FavoritesPage() {
-  const { favoriteIds } = useFavorites();
+  const { favoriteIds, toggleFavorite } = useFavorites();
   const { products } = useProducts();
   const { visibleIds, removingIds, isRemoving } = useFadingIds(favoriteIds);
+  const [pendingRemoval, setPendingRemoval] = useState<Product | null>(null);
 
   const visibleProducts = products.filter((p) => visibleIds.includes(p.id));
+
+  const handleConfirmRemove = () => {
+    if (pendingRemoval) toggleFavorite(pendingRemoval.id, pendingRemoval.name);
+    setPendingRemoval(null);
+  };
 
   if (visibleProducts.length === 0) {
     return (
@@ -84,10 +92,19 @@ export function FavoritesPage() {
       <div className={`favorites__grid ${isRemoving ? 'is-removing-item' : ''}`}>
         {visibleProducts.map((product) => (
           <div key={product.id} className={`favorites__item ${removingIds.has(product.id) ? 'is-removing' : ''}`}>
-            <ProductCard product={product} />
+            <ProductCard product={product} onRequestRemoveFromFavorites={setPendingRemoval} />
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={pendingRemoval !== null}
+        title={`Убрать «${pendingRemoval?.name}» из избранного?`}
+        description="Товар будет удалён из списка избранного."
+        confirmLabel="Убрать"
+        onConfirm={handleConfirmRemove}
+        onCancel={() => setPendingRemoval(null)}
+      />
     </div>
   );
 }
