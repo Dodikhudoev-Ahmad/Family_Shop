@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { useCategories } from '../context/CategoriesContext';
 import { ProductCard } from '../components/ProductCard/ProductCard';
@@ -29,6 +29,7 @@ const SORT_TO_API: Record<SortOption, ProductSortBy> = {
 
 export function CatalogPage() {
   const { slug } = useParams();
+  const [searchParams] = useSearchParams();
   const { categories } = useCategories();
   const { products: allProducts, isLoading: isCatalogLoading, error: catalogError } = useProducts();
   const activeCategory = categories.find((c) => c.slug === slug) ?? null;
@@ -51,12 +52,12 @@ export function CatalogPage() {
     return [Math.min(...prices), Math.max(...prices)];
   }, [allProducts]);
 
-  const [filters, setFilters] = useState<Filters>({
+  const [filters, setFilters] = useState<Filters>(() => ({
     categoryId: activeCategory?.id ?? null,
     size: null,
     priceRange: priceBounds,
-    discountOnly: false,
-  });
+    discountOnly: searchParams.get('discount') === 'true',
+  }));
   const [sort, setSort] = useState<SortOption>('new');
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
