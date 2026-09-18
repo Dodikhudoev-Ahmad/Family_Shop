@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/*.user
+**/*.suo
+
+# Secrets - never bake these into an image layer
+**/appsettings.*.local.json
+**/secrets.json
+.env
+.env.*
+
+# Not needed for the build
+**/*.md
+.git/
+.gitignore
