@@ -162,16 +162,32 @@ var app = builder.Build();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
+// Apply pending EF Core migrations and seed initial data on every startup, in every
+// environment - this used to run only inside the IsDevelopment() branch below, which is
+// why a fresh Production database (e.g. Railway Postgres) never got its schema created
+// ("relation Products does not exist"). SeedData.SeedAsync is idempotent: it calls
+// Database.MigrateAsync (a no-op once migrations are applied) and each seed step is
+// separately guarded by an Any() check, so re-running this on every restart is safe and
+// won't duplicate the admin user, categories/products, or reviews. Wrapped in try/catch so
+// a migration failure logs instead of crashing a pod that might already have a working
+// schema from a previous deploy.
+try
+{
+    using var migrationScope = app.Services.CreateScope();
+    var db = migrationScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var passwordHasher = migrationScope.ServiceProvider.GetRequiredService<Application.Interfaces.IPasswordHasher>();
+    await SeedData.SeedAsync(db, passwordHasher);
+}
+catch (Exception ex)
+{
+    app.Logger.LogError(ex, "Database migration/seed failed on startup");
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(options => options.SwaggerEndpoint("/swagger/v1/swagger.json", "Family Shop API v1"));
-
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var passwordHasher = scope.ServiceProvider.GetRequiredService<Application.Interfaces.IPasswordHasher>();
-    await SeedData.SeedAsync(db, passwordHasher);
 }
 else
 {
