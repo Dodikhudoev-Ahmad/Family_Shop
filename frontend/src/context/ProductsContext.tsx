@@ -22,13 +22,11 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     if (categoriesLoading) return;
 
     let cancelled = false;
-    const shoesBagsId = categories.find((c) => c.slug === 'shoes-bags')?.id;
-    const shoesBagsNumericId = shoesBagsId ? Number(shoesBagsId) : null;
 
     fetchProducts()
       .then((dtos) => {
         if (cancelled) return;
-        setProducts(dtos.map((dto) => mapProduct(dto, shoesBagsNumericId)));
+        setProducts(dtos.map((dto) => mapProduct(dto, categories)));
       })
       .catch((err: Error) => {
         if (cancelled) return;

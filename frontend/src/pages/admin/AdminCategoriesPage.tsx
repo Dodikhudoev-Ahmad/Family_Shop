@@ -22,10 +22,11 @@ interface FormState {
   name: string;
   slug: string;
   parentCategoryId: number | null;
+  hasSizes: boolean;
   slugTouched: boolean;
 }
 
-const EMPTY_FORM: FormState = { id: null, name: '', slug: '', parentCategoryId: null, slugTouched: false };
+const EMPTY_FORM: FormState = { id: null, name: '', slug: '', parentCategoryId: null, hasSizes: true, slugTouched: false };
 
 export function AdminCategoriesPage() {
   const { showToast } = useToast();
@@ -79,6 +80,7 @@ export function AdminCategoriesPage() {
       name: category.name,
       slug: category.slug,
       parentCategoryId: category.parentCategoryId,
+      hasSizes: category.hasSizes,
       slugTouched: true,
     });
     setFormErrors([]);
@@ -98,7 +100,12 @@ export function AdminCategoriesPage() {
 
     setIsSaving(true);
     setFormErrors([]);
-    const request = { name: form.name.trim(), slug: form.slug.trim(), parentCategoryId: form.parentCategoryId };
+    const request = {
+      name: form.name.trim(),
+      slug: form.slug.trim(),
+      parentCategoryId: form.parentCategoryId,
+      hasSizes: form.hasSizes,
+    };
     const promise = form.id === null ? createAdminCategory(request) : updateAdminCategory(form.id, request);
 
     promise
@@ -333,6 +340,15 @@ function CategoryFormModal({
                   </option>
                 ))}
             </select>
+          </label>
+
+          <label className="admin-checkbox">
+            <input
+              type="checkbox"
+              checked={form.hasSizes}
+              onChange={(e) => setForm((prev) => ({ ...prev, hasSizes: e.target.checked }))}
+            />
+            <span>Товары этой категории продаются по размерам</span>
           </label>
 
           {errors.length > 0 && (
