@@ -6,7 +6,7 @@ import { useToast } from './ToastContext';
 export interface CartLine {
   key: string;
   product: Product;
-  size: string;
+  size: string | null;
   quantity: number;
 }
 
@@ -16,7 +16,7 @@ interface CartContextValue {
   bump: number;
   openCart: () => void;
   closeCart: () => void;
-  addItem: (product: Product, size: string, quantity?: number) => void;
+  addItem: (product: Product, size: string | null, quantity?: number) => void;
   updateQuantity: (key: string, quantity: number) => void;
   removeItem: (key: string) => void;
   clearCart: () => void;
@@ -61,8 +61,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [lines]);
 
-  const addItem = (product: Product, size: string, quantity = 1) => {
-    const key = `${product.id}__${size}`;
+  const addItem = (product: Product, size: string | null, quantity = 1) => {
+    const key = `${product.id}__${size ?? 'onesize'}`;
     const existing = lines.find((l) => l.key === key);
     const cappedQuantity = Math.min((existing?.quantity ?? 0) + quantity, product.stock) - (existing?.quantity ?? 0);
 

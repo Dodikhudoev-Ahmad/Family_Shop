@@ -70,7 +70,7 @@ export function ProductPage() {
   const lowStock = isLowStock(product.stock);
 
   const handleAddToCart = () => {
-    if (!selectedSize) {
+    if (product.sizes.length > 0 && !selectedSize) {
       showToast('Пожалуйста, выберите размер', 'error');
       return;
     }
@@ -106,7 +106,9 @@ export function ProductPage() {
         </div>
 
         <div className="product-page__details">
-          <span className="product-page__category">{categoryLabel(product.gender)}</span>
+          {productCategory?.hasSizes !== false && (
+            <span className="product-page__category">{categoryLabel(product.gender)}</span>
+          )}
           <h1 className="product-page__name">{product.name}</h1>
           {product.reviewCount > 0 && (
             <div className="product-page__rating">
@@ -125,20 +127,22 @@ export function ProductPage() {
           {lowStock && <span className="product-page__stock-warning">Осталось {product.stock} шт</span>}
           {outOfStock && <span className="product-page__stock-warning product-page__stock-warning--out">Нет в наличии</span>}
 
-          <div className="product-page__block">
-            <span className="product-page__block-title">Размер</span>
-            <div className="product-page__sizes">
-              {product.sizes.map((size) => (
-                <button
-                  key={size}
-                  className={`size-btn ${selectedSize === size ? 'is-selected' : ''}`}
-                  onClick={() => setSelectedSize(size)}
-                >
-                  {size}
-                </button>
-              ))}
+          {product.sizes.length > 0 && (
+            <div className="product-page__block">
+              <span className="product-page__block-title">Размер</span>
+              <div className="product-page__sizes">
+                {product.sizes.map((size) => (
+                  <button
+                    key={size}
+                    className={`size-btn ${selectedSize === size ? 'is-selected' : ''}`}
+                    onClick={() => setSelectedSize(size)}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {!outOfStock && (
             <div className="product-page__block">

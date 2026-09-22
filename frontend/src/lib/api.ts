@@ -373,6 +373,7 @@ export interface CategoryUpsertRequest {
   name: string;
   slug: string;
   parentCategoryId: number | null;
+  hasSizes: boolean;
 }
 
 export function createAdminCategory(request: CategoryUpsertRequest): Promise<CategoryDto> {

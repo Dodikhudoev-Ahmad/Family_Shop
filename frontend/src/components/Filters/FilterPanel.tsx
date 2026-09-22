@@ -42,20 +42,22 @@ export function FilterPanel({ filters, onChange, availableSizes, priceBounds }: 
         </div>
       </div>
 
-      <div className="filter-panel__group">
-        <h4 className="filter-panel__title">Размер</h4>
-        <div className="filter-panel__chips">
-          {availableSizes.map((size) => (
-            <button
-              key={size}
-              className={`filter-chip filter-chip--square ${filters.size === size ? 'is-active' : ''}`}
-              onClick={() => onChange({ ...filters, size: filters.size === size ? null : size })}
-            >
-              {size}
-            </button>
-          ))}
+      {availableSizes.length > 0 && (
+        <div className="filter-panel__group">
+          <h4 className="filter-panel__title">Размер</h4>
+          <div className="filter-panel__chips">
+            {availableSizes.map((size) => (
+              <button
+                key={size}
+                className={`filter-chip filter-chip--square ${filters.size === size ? 'is-active' : ''}`}
+                onClick={() => onChange({ ...filters, size: filters.size === size ? null : size })}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="filter-panel__group">
         <h4 className="filter-panel__title">Цена</h4>

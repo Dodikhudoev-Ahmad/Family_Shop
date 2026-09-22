@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Product } from '../../types/product';
 import { useFavorites } from '../../context/FavoritesContext';
 import { useQuickView } from '../../context/QuickViewContext';
+import { useCategories } from '../../context/CategoriesContext';
 import { FadeImage } from '../FadeImage/FadeImage';
 import { StarRating } from '../StarRating/StarRating';
 import { formatPrice } from '../../utils/formatPrice';
@@ -20,7 +21,11 @@ interface ProductCardProps {
 export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { open: openQuickView } = useQuickView();
+  const { categories } = useCategories();
   const favorite = isFavorite(product.id);
+  // Gender only means something for apparel-style categories (women/men/kids/shoes-bags) -
+  // showing "Мужское"/"Женское" on a microwave or a dumbbell would be confusing.
+  const showGenderLabel = categories.find((c) => c.id === product.categoryId)?.hasSizes ?? true;
   const discountPercent = product.discountPrice
     ? Math.round((1 - product.discountPrice / product.price) * 100)
     : null;
@@ -94,7 +99,7 @@ export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCa
       </Link>
 
       <Link to={`/product/${product.id}`} className="product-card__info">
-        <span className="product-card__category">{categoryLabel(product.gender)}</span>
+        {showGenderLabel && <span className="product-card__category">{categoryLabel(product.gender)}</span>}
         <span className="product-card__name" title={product.name}>
           {product.name}
         </span>

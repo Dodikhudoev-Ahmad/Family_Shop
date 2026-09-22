@@ -41,11 +41,6 @@ export function CatalogPage() {
       : `Весь каталог одежды ${SITE_NAME} — женское, мужское, детское, обувь и сумки. Быстрая доставка по Казахстану.`,
   });
 
-  const shoesBagsNumericId = useMemo(() => {
-    const id = categories.find((c) => c.slug === 'shoes-bags')?.id;
-    return id ? Number(id) : null;
-  }, [categories]);
-
   const priceBounds: [number, number] = useMemo(() => {
     if (allProducts.length === 0) return [0, 0];
     const prices = allProducts.map((p) => p.discountPrice ?? p.price);
@@ -120,7 +115,7 @@ export function CatalogPage() {
     })
       .then((result) => {
         if (cancelled) return;
-        setPageProducts(result.items.map((dto) => mapProduct(dto, shoesBagsNumericId)));
+        setPageProducts(result.items.map((dto) => mapProduct(dto, categories)));
         setPage(1);
         setHasMore(result.hasMore);
       })
@@ -136,7 +131,7 @@ export function CatalogPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryIdNum, minPrice, maxPrice, sort, boundsReady, shoesBagsNumericId]);
+  }, [categoryIdNum, minPrice, maxPrice, sort, boundsReady, categories]);
 
   const loadMore = () => {
     // Guard with a ref (synchronous) rather than state alone: the IntersectionObserver
@@ -159,7 +154,7 @@ export function CatalogPage() {
         setPageProducts((prev) => {
           const seen = new Set(prev.map((p) => p.id));
           const next = result.items
-            .map((dto) => mapProduct(dto, shoesBagsNumericId))
+            .map((dto) => mapProduct(dto, categories))
             .filter((p) => !seen.has(p.id));
           return [...prev, ...next];
         });
