@@ -229,3 +229,63 @@
 .product-card__price-new {
   color: var(--color-accent);
 }
+
+/* Two cards per row at 320-480px need noticeably tighter padding/type than
+   the desktop 4-up grid, or the name/price clip or crowd the action buttons. */
+@media (max-width: 480px) {
+  .product-card {
+    --card-padding: 8px;
+  }
+
+  .product-card__mobile-actions {
+    top: var(--space-1);
+    right: var(--space-1);
+    gap: 6px;
+  }
+
+  .product-card__icon-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .product-card__icon-btn svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .product-card__badge {
+    top: var(--space-1);
+    left: var(--space-1);
+    font-size: 10px;
+    padding: 4px 7px;
+  }
+
+  .product-card__category {
+    font-size: 10px;
+  }
+
+  .product-card__name {
+    margin-top: 4px;
+    font-size: 12.5px;
+    line-height: 1.35;
+    min-height: calc(12.5px * 1.35 * 2);
+  }
+
+  .product-card__price {
+    margin-top: 5px;
+    font-size: 13.5px;
+    gap: 6px;
+  }
+
+  .product-card__price-old {
+    font-size: 11px;
+  }
+
+  .product-card__rating {
+    margin-top: 3px;
+  }
+
+  .product-card__stock-warning {
+    font-size: 10px;
+  }
+}
