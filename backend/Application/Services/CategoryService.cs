@@ -41,7 +41,8 @@ public class CategoryService : ICategoryService
         {
             Name = dto.Name.Trim(),
             Slug = slug,
-            ParentCategoryId = dto.ParentCategoryId
+            ParentCategoryId = dto.ParentCategoryId,
+            HasSizes = dto.HasSizes
         };
 
         await _unitOfWork.Categories.AddAsync(category, cancellationToken);
@@ -78,6 +79,7 @@ public class CategoryService : ICategoryService
         category.Name = dto.Name.Trim();
         category.Slug = slug;
         category.ParentCategoryId = dto.ParentCategoryId;
+        category.HasSizes = dto.HasSizes;
 
         _unitOfWork.Categories.Update(category);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -109,5 +111,5 @@ public class CategoryService : ICategoryService
         return Result<bool>.Success(true);
     }
 
-    private static CategoryDto ToDto(Category c) => new(c.Id, c.Name, c.Slug, c.ParentCategoryId);
+    private static CategoryDto ToDto(Category c) => new(c.Id, c.Name, c.Slug, c.ParentCategoryId, c.HasSizes);
 }
