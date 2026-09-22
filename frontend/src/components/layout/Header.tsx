@@ -78,13 +78,15 @@ export function Header() {
             <SearchIcon />
           </button>
 
-          <button
-            className="header__icon-btn"
-            aria-label={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
-            onClick={toggleTheme}
-          >
-            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-          </button>
+          {isDesktop && (
+            <button
+              className="header__icon-btn"
+              aria-label={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
+              onClick={toggleTheme}
+            >
+              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+            </button>
+          )}
 
           {isDesktop &&
             (user ? (
