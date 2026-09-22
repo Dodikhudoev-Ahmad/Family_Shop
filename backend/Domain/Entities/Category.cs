@@ -7,4 +7,5 @@ public class Category
     public string Slug { get; set; } = string.Empty;
     public int? ParentCategoryId { get; set; }
     public Category? ParentCategory { get; set; }
+    public bool HasSizes { get; set; } = true;
 }
