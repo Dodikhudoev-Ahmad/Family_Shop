@@ -13,3 +13,12 @@
 .app-shell main {
   flex: 1;
 }
+
+/* Reserves space for the floating mobile tab bar (height + the gap above and
+   below it that lets it "hover" over the content) so it never covers the
+   tail end of the page (footer content, last catalog row, etc). */
+@media (max-width: 768px) {
+  .app-shell {
+    padding-bottom: calc(var(--tabbar-height) + var(--space-3) * 2 + env(safe-area-inset-bottom, 0px));
+  }
+}

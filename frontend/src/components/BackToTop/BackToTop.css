@@ -40,6 +40,6 @@
 @media (max-width: 768px) {
   .back-to-top {
     right: var(--space-3);
-    bottom: var(--space-3);
+    bottom: calc(var(--tabbar-height) + var(--space-3) * 2 + var(--space-2) + env(safe-area-inset-bottom, 0px));
   }
 }

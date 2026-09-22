@@ -154,6 +154,7 @@
 
 @media (max-width: 480px) {
   .catalog__grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4) var(--space-2);
   }
 }

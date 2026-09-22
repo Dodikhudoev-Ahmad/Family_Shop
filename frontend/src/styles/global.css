@@ -7,6 +7,10 @@
 html {
   scroll-behavior: smooth;
   color-scheme: light;
+  /* Safety net: catches any future element that overflows the viewport width
+     instead of letting it push the whole page into horizontal scroll. Doesn't
+     replace fixing the actual source of an overflow, just contains it. */
+  overflow-x: hidden;
 }
 
 html[data-theme='dark'] {
@@ -20,6 +24,7 @@ body {
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   transition: background-color var(--transition-base), color var(--transition-base);
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4 {

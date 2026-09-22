@@ -4,6 +4,7 @@ import { Footer } from './Footer';
 import { CartDrawer } from '../Cart/CartDrawer';
 import { QuickViewModal } from '../QuickView/QuickViewModal';
 import { BackToTop } from '../BackToTop/BackToTop';
+import { MobileTabBar } from '../MobileTabBar/MobileTabBar';
 
 export function Layout() {
   return (
@@ -16,6 +17,7 @@ export function Layout() {
       <CartDrawer />
       <QuickViewModal />
       <BackToTop />
+      <MobileTabBar />
     </div>
   );
 }
