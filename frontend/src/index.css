@@ -21,4 +21,17 @@
   .app-shell {
     padding-bottom: calc(var(--tabbar-height) + var(--space-3) * 2 + env(safe-area-inset-bottom, 0px));
   }
+
+  /* Belt-and-suspenders on top of the app-shell padding above: each page's
+     own scroll container gets the same clearance added to its existing
+     bottom padding, so the last row of content (product cards, order list,
+     etc.) never sits behind the tab bar even if something upstream changes
+     how far the page extends past the viewport. */
+  .catalog,
+  .favorites,
+  .account,
+  .product-page,
+  .checkout {
+    padding-bottom: calc(var(--space-8) + var(--tabbar-height) + var(--space-3) * 2 + env(safe-area-inset-bottom, 0px));
+  }
 }
