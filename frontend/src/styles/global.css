@@ -121,3 +121,34 @@ ul {
 .bounce {
   animation: bounce-badge 400ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Thin, terracotta-tinted scrollbar for desktop only — mobile browsers already
+   hide/overlay their scrollbars natively, so this is scoped above the tablet
+   breakpoint to leave that behavior untouched. */
+@media (min-width: 769px) {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-accent) 45%, transparent) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background-color var(--transition-fast);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--color-accent) 70%, transparent);
+  }
+}
