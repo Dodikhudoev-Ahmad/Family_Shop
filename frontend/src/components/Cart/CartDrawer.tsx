@@ -48,7 +48,7 @@ export function CartDrawer() {
                   <FadeImage src={line.product.images[0]} alt={line.product.name} className="cart-line__image" />
                   <div className="cart-line__info">
                     <span className="cart-line__name">{line.product.name}</span>
-                    <span className="cart-line__size">Размер: {line.size}</span>
+                    {line.size && <span className="cart-line__size">Размер: {line.size}</span>}
                     <span className="cart-line__price">
                       {formatPrice((line.product.discountPrice ?? line.product.price) * line.quantity)}
                     </span>
@@ -101,7 +101,7 @@ export function CartDrawer() {
       <ConfirmDialog
         open={pendingRemove !== null}
         title={`Удалить «${pendingRemove?.product.name}» из корзины?`}
-        description={`Размер: ${pendingRemove?.size}. Товар будет удалён из корзины.`}
+        description={pendingRemove?.size ? `Размер: ${pendingRemove.size}. Товар будет удалён из корзины.` : 'Товар будет удалён из корзины.'}
         confirmLabel="Удалить"
         onConfirm={handleRemove}
         onCancel={() => setPendingRemove(null)}
