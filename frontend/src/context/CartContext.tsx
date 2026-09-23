@@ -12,10 +12,7 @@ export interface CartLine {
 
 interface CartContextValue {
   lines: CartLine[];
-  isOpen: boolean;
   bump: number;
-  openCart: () => void;
-  closeCart: () => void;
   addItem: (product: Product, size: string | null, quantity?: number) => void;
   updateQuantity: (key: string, quantity: number) => void;
   removeItem: (key: string) => void;
@@ -44,7 +41,6 @@ function loadStoredLines(): CartLine[] {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>(loadStoredLines);
-  const [isOpen, setIsOpen] = useState(false);
   const [bump, setBump] = useState(0);
   const [promo, setPromo] = useState<PromoCodeApplicationDto | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -149,10 +145,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     <CartContext.Provider
       value={{
         lines,
-        isOpen,
         bump,
-        openCart: () => setIsOpen(true),
-        closeCart: () => setIsOpen(false),
         addItem,
         updateQuantity,
         removeItem,

@@ -19,7 +19,7 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 1025px)');
-  const { totalItems, bump, openCart } = useCart();
+  const { totalItems, bump } = useCart();
   const { categories, isLoading: isCategoriesLoading } = useCategories();
   const { user, logout } = useAuth();
   const { favoriteIds, bump: favBump } = useFavorites();
@@ -108,14 +108,14 @@ export function Header() {
           )}
 
           {isDesktop && (
-            <button className="header__icon-btn header__cart-btn" aria-label="Корзина" onClick={openCart}>
+            <Link to="/cart" className="header__icon-btn header__cart-btn" aria-label="Корзина">
               <CartIcon />
               {totalItems > 0 && (
                 <span key={bump} className="header__cart-count bounce">
                   {totalItems}
                 </span>
               )}
-            </button>
+            </Link>
           )}
         </div>
       </div>
