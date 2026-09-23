@@ -7,6 +7,7 @@ import { useFavorites } from '../../context/FavoritesContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { MobileMenu } from './MobileMenu';
+import { CategoryMegaMenu } from './CategoryMegaMenu';
 import { LogoMark } from './LogoMark';
 import { SearchOverlay } from '../Search/SearchOverlay';
 import { ConfirmDialog } from '../ConfirmDialog/ConfirmDialog';
@@ -50,19 +51,7 @@ export function Header() {
 
         {isDesktop && (
           <nav className="header__nav" aria-label="Категории">
-            {isCategoriesLoading ? (
-              <HeaderNavSkeleton />
-            ) : (
-              categories.map((c) => (
-                <NavLink
-                  key={c.id}
-                  to={`/catalog/${c.slug}`}
-                  className={({ isActive }) => `header__nav-link ${isActive ? 'is-active' : ''}`}
-                >
-                  {c.name}
-                </NavLink>
-              ))
-            )}
+            <CategoryMegaMenu categories={categories} isLoading={isCategoriesLoading} />
             <NavLink to="/about" className={({ isActive }) => `header__nav-link ${isActive ? 'is-active' : ''}`}>
               О нас
             </NavLink>
@@ -154,17 +143,6 @@ export function Header() {
   );
 }
 
-function HeaderNavSkeleton() {
-  // Widths approximate the real category labels (Женское/Мужское/Детское/Обувь и сумки)
-  // so there's no layout shift once the real links pop in.
-  return (
-    <>
-      {[62, 68, 66, 108].map((w, i) => (
-        <span key={i} className="skeleton header__nav-skeleton-item" style={{ width: w }} />
-      ))}
-    </>
-  );
-}
 
 function BurgerIcon() {
   return (

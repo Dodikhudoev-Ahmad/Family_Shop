@@ -46,6 +46,7 @@
 
 .header__nav {
   display: flex;
+  align-items: center;
   gap: var(--space-5);
 }
 
@@ -75,11 +76,139 @@
   transform: scaleX(1);
 }
 
-.header__nav-skeleton-item {
-  display: inline-block;
-  height: 14px;
-  margin: var(--space-2) 0;
-  border-radius: var(--radius-sm);
+/* Mega menu (desktop "Каталог" nav item) — the trigger is a normal flex item
+   of .header__nav, but the panel/overlay below are positioned relative to
+   .header itself (the nearest positioned ancestor, since .header is
+   position:sticky and nothing in between sets its own position), so the
+   panel centers in the full header width regardless of where the trigger
+   sits, per the "centered, not full-bleed" spec. */
+.header__catalog {
+  display: flex;
+  align-items: center;
+}
+
+.header__catalog-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.header__catalog-chevron {
+  transition: transform var(--transition-fast);
+}
+
+.header__catalog-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.mega-menu-overlay {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  background: rgba(26, 26, 26, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-base);
+  z-index: 1;
+}
+
+.mega-menu-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mega-menu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: min(880px, calc(100vw - 48px));
+  margin-top: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: translateX(-50%) translateY(-6px);
+  pointer-events: none;
+  transition: opacity var(--transition-base), transform var(--transition-base);
+  z-index: 2;
+}
+
+.mega-menu.is-open {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.mega-menu__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+.mega-menu__col-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.mega-menu__col-chevron {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+a.mega-menu__col-title--link {
+  transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+a.mega-menu__col-title--link:hover {
+  color: var(--color-accent);
+  transform: translateX(2px);
+}
+
+.mega-menu__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mega-menu__list a {
+  display: block;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+.mega-menu__list a:hover {
+  color: var(--color-accent);
+  transform: translateX(3px);
+}
+
+.mega-menu__skeleton-title {
+  display: block;
+  width: 70%;
+  height: 15px;
+  margin-bottom: var(--space-2);
+}
+
+.mega-menu__skeleton-line {
+  display: block;
+  width: 85%;
+  height: 11px;
+  margin-bottom: 6px;
 }
 
 .header__actions {
