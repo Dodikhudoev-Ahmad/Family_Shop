@@ -217,7 +217,7 @@ export function CheckoutPage() {
             <h4>Состав заказа</h4>
             {lines.map((line) => (
               <div key={line.key} className="checkout__summary-line">
-                <span>{line.product.name} · {line.size} × {line.quantity}</span>
+                <span>{line.product.name}{line.size ? ` · ${line.size}` : ''} × {line.quantity}</span>
                 <span>{formatPrice((line.product.discountPrice ?? line.product.price) * line.quantity)}</span>
               </div>
             ))}
