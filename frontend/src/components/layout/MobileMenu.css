@@ -95,13 +95,6 @@ button.mobile-menu__link--secondary {
   padding: var(--space-2) 0;
 }
 
-.mobile-menu__theme-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-text-secondary);
-}
-
 .mobile-menu.is-open .mobile-menu__link {
   opacity: 1;
   transform: translateY(0);

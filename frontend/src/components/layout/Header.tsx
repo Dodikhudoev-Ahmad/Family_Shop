@@ -78,15 +78,13 @@ export function Header() {
             <SearchIcon />
           </button>
 
-          {isDesktop && (
-            <button
-              className="header__icon-btn"
-              aria-label={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
-              onClick={toggleTheme}
-            >
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-            </button>
-          )}
+          <button
+            className="header__icon-btn"
+            aria-label={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
+            onClick={toggleTheme}
+          >
+            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+          </button>
 
           {isDesktop &&
             (user ? (
@@ -109,23 +107,27 @@ export function Header() {
               </Link>
             ))}
 
-          <Link to="/favorites" className="header__icon-btn header__fav-btn" aria-label="Избранное">
-            <HeartIcon />
-            {favoriteIds.length > 0 && (
-              <span key={favBump} className="header__cart-count bounce">
-                {favoriteIds.length}
-              </span>
-            )}
-          </Link>
+          {isDesktop && (
+            <Link to="/favorites" className="header__icon-btn header__fav-btn" aria-label="Избранное">
+              <HeartIcon />
+              {favoriteIds.length > 0 && (
+                <span key={favBump} className="header__cart-count bounce">
+                  {favoriteIds.length}
+                </span>
+              )}
+            </Link>
+          )}
 
-          <button className="header__icon-btn header__cart-btn" aria-label="Корзина" onClick={openCart}>
-            <CartIcon />
-            {totalItems > 0 && (
-              <span key={bump} className="header__cart-count bounce">
-                {totalItems}
-              </span>
-            )}
-          </button>
+          {isDesktop && (
+            <button className="header__icon-btn header__cart-btn" aria-label="Корзина" onClick={openCart}>
+              <CartIcon />
+              {totalItems > 0 && (
+                <span key={bump} className="header__cart-count bounce">
+                  {totalItems}
+                </span>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
