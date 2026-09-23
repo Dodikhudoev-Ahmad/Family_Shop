@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import './MobileTabBar.css';
 
 export function MobileTabBar() {
-  const { totalItems, bump, openCart, isOpen: isCartOpen } = useCart();
+  const { totalItems, bump } = useCart();
   const { favoriteIds, bump: favBump } = useFavorites();
   const { user } = useAuth();
 
@@ -20,11 +20,7 @@ export function MobileTabBar() {
         </span>
       </NavLink>
 
-      <button
-        type="button"
-        className={`mobile-tabbar__item mobile-tabbar__item--button ${isCartOpen ? 'is-active' : ''}`}
-        onClick={openCart}
-      >
+      <NavLink to="/cart" className={({ isActive }) => `mobile-tabbar__item ${isActive ? 'is-active' : ''}`}>
         <span className="mobile-tabbar__pill">
           <span className="mobile-tabbar__icon-wrap">
             <CartIcon />
@@ -36,7 +32,7 @@ export function MobileTabBar() {
           </span>
           <span>Корзина</span>
         </span>
-      </button>
+      </NavLink>
 
       <NavLink to="/favorites" className={({ isActive }) => `mobile-tabbar__item ${isActive ? 'is-active' : ''}`}>
         <span className="mobile-tabbar__pill">

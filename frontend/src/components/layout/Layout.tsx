@@ -1,7 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { Header } from './Header';
 import { Footer } from './Footer';
-import { CartDrawer } from '../Cart/CartDrawer';
 import { QuickViewModal } from '../QuickView/QuickViewModal';
 import { BackToTop } from '../BackToTop/BackToTop';
 import { MobileTabBar } from '../MobileTabBar/MobileTabBar';
@@ -14,7 +13,6 @@ export function Layout() {
         <Outlet />
       </main>
       <Footer />
-      <CartDrawer />
       <QuickViewModal />
       <BackToTop />
       <MobileTabBar />
