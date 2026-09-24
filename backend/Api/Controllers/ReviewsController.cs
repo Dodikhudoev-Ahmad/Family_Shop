@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Api.Common;
 using Application.Common;
 using Application.DTOs;
@@ -56,6 +57,7 @@ public class ReviewsController : ControllerBase
     /// <summary>Оставить отзыв: один пользователь — один отзыв на товар.</summary>
     [HttpPost]
     [Authorize]
+    [EnableRateLimiting("review-create")]
     public async Task<ActionResult<ApiResponse<ReviewDto>>> CreateReview(int productId, CreateReviewRequestDto request, CancellationToken cancellationToken)
     {
         var result = await _reviewService.CreateReviewAsync(productId, GetUserId(), request, cancellationToken);

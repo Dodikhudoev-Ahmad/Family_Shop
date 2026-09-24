@@ -32,3 +32,11 @@ public class CreateOrderItemValidator : AbstractValidator<CreateOrderItemDto>
         RuleFor(x => x.Quantity).GreaterThan(0).LessThanOrEqualTo(50);
     }
 }
+
+public class UpdateOrderStatusRequestValidator : AbstractValidator<UpdateOrderStatusRequestDto>
+{
+    public UpdateOrderStatusRequestValidator()
+    {
+        RuleFor(x => x.Status).IsInEnum();
+    }
+}
