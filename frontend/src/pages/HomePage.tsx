@@ -44,7 +44,7 @@ export function HomePage() {
         ))}
       </section>
 
-      <PromoBanner />
+      <PromoBanner placement="Home" />
 
       {error && (
         <p className="container home__error">

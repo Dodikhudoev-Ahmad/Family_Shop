@@ -1,5 +1,12 @@
 namespace Domain.Entities;
 
+public enum PromoBannerPlacement
+{
+    Home,
+    Cart,
+    Both
+}
+
 public class PromoBanner
 {
     public int Id { get; set; }
@@ -10,4 +17,5 @@ public class PromoBanner
     public string? ImageUrl { get; set; }
     public bool IsActive { get; set; }
     public int SortOrder { get; set; }
+    public PromoBannerPlacement Placement { get; set; } = PromoBannerPlacement.Home;
 }

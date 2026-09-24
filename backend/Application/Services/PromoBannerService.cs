@@ -15,9 +15,9 @@ public class PromoBannerService : IPromoBannerService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<IReadOnlyList<PromoBannerDto>> GetActiveBannersAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PromoBannerDto>> GetActiveBannersAsync(PromoBannerPlacement placement, CancellationToken cancellationToken = default)
     {
-        var banners = await _unitOfWork.PromoBanners.GetActiveAsync(cancellationToken);
+        var banners = await _unitOfWork.PromoBanners.GetActiveAsync(placement, cancellationToken);
         return banners.Select(ToDto).ToList();
     }
 
@@ -37,7 +37,8 @@ public class PromoBannerService : IPromoBannerService
             ButtonLink = dto.ButtonLink?.Trim(),
             ImageUrl = dto.ImageUrl?.Trim(),
             IsActive = dto.IsActive,
-            SortOrder = dto.SortOrder
+            SortOrder = dto.SortOrder,
+            Placement = dto.Placement
         };
 
         await _unitOfWork.PromoBanners.AddAsync(banner, cancellationToken);
@@ -61,6 +62,7 @@ public class PromoBannerService : IPromoBannerService
         banner.ImageUrl = dto.ImageUrl?.Trim();
         banner.IsActive = dto.IsActive;
         banner.SortOrder = dto.SortOrder;
+        banner.Placement = dto.Placement;
 
         _unitOfWork.PromoBanners.Update(banner);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -83,5 +85,5 @@ public class PromoBannerService : IPromoBannerService
     }
 
     private static PromoBannerDto ToDto(PromoBanner b) => new(
-        b.Id, b.Title, b.Subtitle, b.ButtonText, b.ButtonLink, b.ImageUrl, b.IsActive, b.SortOrder);
+        b.Id, b.Title, b.Subtitle, b.ButtonText, b.ButtonLink, b.ImageUrl, b.IsActive, b.SortOrder, b.Placement);
 }

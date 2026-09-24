@@ -450,6 +450,9 @@ export function deleteAdminPromoCode(id: number): Promise<void> {
   return apiFetch<void>(`/admin/promo-codes/${id}`, { method: 'DELETE' });
 }
 
+/** 0=Home, 1=Cart, 2=Both - matches backend PromoBannerPlacement. */
+export type ApiPromoBannerPlacement = 0 | 1 | 2;
+
 export interface PromoBannerDto {
   id: number;
   title: string;
@@ -459,6 +462,7 @@ export interface PromoBannerDto {
   imageUrl: string | null;
   isActive: boolean;
   sortOrder: number;
+  placement: ApiPromoBannerPlacement;
 }
 
 export interface PromoBannerUpsertRequest {
@@ -469,10 +473,11 @@ export interface PromoBannerUpsertRequest {
   imageUrl: string | null;
   isActive: boolean;
   sortOrder: number;
+  placement: ApiPromoBannerPlacement;
 }
 
-export function fetchActivePromoBanners(): Promise<PromoBannerDto[]> {
-  return apiFetch<PromoBannerDto[]>('/promo-banners/active');
+export function fetchActivePromoBanners(placement: ApiPromoBannerPlacement): Promise<PromoBannerDto[]> {
+  return apiFetch<PromoBannerDto[]>(`/promo-banners/active?placement=${placement}`);
 }
 
 export function fetchAdminPromoBanners(): Promise<PromoBannerDto[]> {
