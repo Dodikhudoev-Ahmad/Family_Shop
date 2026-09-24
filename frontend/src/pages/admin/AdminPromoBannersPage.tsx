@@ -11,6 +11,7 @@ import {
   fetchAdminPromoBanners,
   updateAdminPromoBanner,
   uploadAdminPromoBannerImage,
+  type ApiPromoBannerPlacement,
   type PromoBannerDto,
   type PromoBannerUpsertRequest,
 } from '../../lib/api';
@@ -29,6 +30,8 @@ interface FormState {
   imageError: string | null;
   isActive: boolean;
   sortOrder: string;
+  showOnHome: boolean;
+  showOnCart: boolean;
 }
 
 const EMPTY_FORM: FormState = {
@@ -42,7 +45,25 @@ const EMPTY_FORM: FormState = {
   imageError: null,
   isActive: true,
   sortOrder: '0',
+  showOnHome: true,
+  showOnCart: false,
 };
+
+/** Placement is stored as a single enum (0=Home, 1=Cart, 2=Both) but edited as two
+ * independent checkboxes - these convert between the two representations. */
+function placementToCheckboxes(placement: ApiPromoBannerPlacement): { showOnHome: boolean; showOnCart: boolean } {
+  return { showOnHome: placement === 0 || placement === 2, showOnCart: placement === 1 || placement === 2 };
+}
+
+function checkboxesToPlacement(showOnHome: boolean, showOnCart: boolean): ApiPromoBannerPlacement {
+  if (showOnHome && showOnCart) return 2;
+  return showOnCart ? 1 : 0;
+}
+
+function placementLabel(placement: ApiPromoBannerPlacement): string {
+  if (placement === 2) return 'Главная + Корзина';
+  return placement === 1 ? 'Корзина' : 'Главная';
+}
 
 export function AdminPromoBannersPage() {
   const { showToast } = useToast();
@@ -102,6 +123,7 @@ export function AdminPromoBannersPage() {
       imageError: null,
       isActive: banner.isActive,
       sortOrder: String(banner.sortOrder),
+      ...placementToCheckboxes(banner.placement),
     });
     setFormErrors([]);
     setFormOpen(true);
@@ -112,6 +134,7 @@ export function AdminPromoBannersPage() {
     const errors: string[] = [];
     if (!form.title.trim()) errors.push('Укажите заголовок баннера.');
     if (form.isImageUploading) errors.push('Дождитесь загрузки изображения.');
+    if (!form.showOnHome && !form.showOnCart) errors.push('Выберите хотя бы одно место показа.');
     if (errors.length > 0) {
       setFormErrors(errors);
       return;
@@ -128,6 +151,7 @@ export function AdminPromoBannersPage() {
       imageUrl: form.imageUrl,
       isActive: form.isActive,
       sortOrder: Number(form.sortOrder) || 0,
+      placement: checkboxesToPlacement(form.showOnHome, form.showOnCart),
     };
 
     const promise = form.id === null ? createAdminPromoBanner(request) : updateAdminPromoBanner(form.id, request);
@@ -208,6 +232,7 @@ export function AdminPromoBannersPage() {
                     <th>Баннер</th>
                     <th>Заголовок</th>
                     <th>Кнопка</th>
+                    <th>Место показа</th>
                     <th>Порядок</th>
                     <th>Статус</th>
                     <th />
@@ -228,6 +253,7 @@ export function AdminPromoBannersPage() {
                         {banner.subtitle && <div className="admin-promo-banners__subtitle">{banner.subtitle}</div>}
                       </td>
                       <td>{banner.buttonText || '—'}</td>
+                      <td>{placementLabel(banner.placement)}</td>
                       <td>{banner.sortOrder}</td>
                       <td>
                         <span className={`admin-promo-codes__badge ${banner.isActive ? 'is-active' : 'is-muted'}`}>
@@ -296,6 +322,7 @@ function BannersCards({
           <div className="admin-product-card__body">
             <h3>{banner.title}</h3>
             {banner.subtitle && <span className="admin-promo-banners__subtitle">{banner.subtitle}</span>}
+            <span className="admin-promo-banners__subtitle">{placementLabel(banner.placement)}</span>
             <span className={`admin-promo-codes__badge ${banner.isActive ? 'is-active' : 'is-muted'}`}>
               {banner.isActive ? 'Активен' : 'Выключен'}
             </span>
@@ -408,6 +435,26 @@ function PromoBannerFormModal({
               onChange={(e) => setForm((prev) => ({ ...prev, sortOrder: e.target.value }))}
             />
           </label>
+
+          <div className="admin-form-field">
+            <span>Место показа</span>
+            <label className="admin-checkbox">
+              <input
+                type="checkbox"
+                checked={form.showOnHome}
+                onChange={(e) => setForm((prev) => ({ ...prev, showOnHome: e.target.checked }))}
+              />
+              <span>Главная страница</span>
+            </label>
+            <label className="admin-checkbox">
+              <input
+                type="checkbox"
+                checked={form.showOnCart}
+                onChange={(e) => setForm((prev) => ({ ...prev, showOnCart: e.target.checked }))}
+              />
+              <span>Корзина</span>
+            </label>
+          </div>
 
           <label className="admin-checkbox">
             <input
