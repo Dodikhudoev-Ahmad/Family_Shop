@@ -14,6 +14,6 @@ public class PromoBannerConfiguration : IEntityTypeConfiguration<PromoBanner>
         builder.Property(b => b.ButtonLink).HasMaxLength(500);
         builder.Property(b => b.ImageUrl).HasMaxLength(1000);
 
-        builder.HasIndex(b => new { b.IsActive, b.SortOrder });
+        builder.HasIndex(b => new { b.Placement, b.IsActive, b.SortOrder });
     }
 }

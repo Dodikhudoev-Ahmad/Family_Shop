@@ -7,6 +7,7 @@ import { Button } from '../components/Button/Button';
 import { ConfirmDialog } from '../components/ConfirmDialog/ConfirmDialog';
 import { PromoCodeInput } from '../components/PromoCodeInput/PromoCodeInput';
 import { FadeImage } from '../components/FadeImage/FadeImage';
+import { PromoBanner } from '../components/PromoBanner/PromoBanner';
 import './CartPage.css';
 
 export function CartPage() {
@@ -20,7 +21,12 @@ export function CartPage() {
   };
 
   return (
-    <div className="container cart-page">
+    <>
+      {/* PromoBanner applies its own .container - kept as a sibling of the page's
+          .container div rather than nested inside it, so widths/padding don't stack. */}
+      <PromoBanner placement="Cart" />
+
+      <div className="container cart-page">
       <Breadcrumbs items={[{ label: 'Главная', href: '/' }, { label: 'Корзина' }]} />
       <h1 className="cart-page__title">Корзина</h1>
 
@@ -110,7 +116,8 @@ export function CartPage() {
         onConfirm={handleRemove}
         onCancel={() => setPendingRemove(null)}
       />
-    </div>
+      </div>
+    </>
   );
 }
 

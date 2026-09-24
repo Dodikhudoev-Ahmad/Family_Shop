@@ -4,20 +4,26 @@
 
 .promo-banner__card {
   position: relative;
-  border-radius: var(--radius-lg);
+  /* Same radius as a product card, so the banner reads as part of the same
+     card system instead of a one-off shape. */
+  border-radius: var(--radius-md);
   overflow: hidden;
   padding: var(--space-6) var(--space-5);
   background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
   background-size: cover;
   background-position: center;
-  min-height: 220px;
+  min-height: 260px;
   display: flex;
   align-items: center;
   box-shadow: var(--shadow-md);
 }
 
 .promo-banner__card--fallback {
-  background: linear-gradient(135deg, var(--color-banner-fallback-from) 0%, var(--color-banner-fallback-to) 100%);
+  /* Plain terracotta accent fill when the banner has no image, per spec. The
+     overlay below (rendered unconditionally, not just for the image case)
+     keeps the white title/button text at a safe contrast ratio even in dark
+     theme, where --color-accent is a lighter, warmer tone. */
+  background: var(--color-accent);
 }
 
 .promo-banner__overlay {
@@ -77,6 +83,37 @@
 
 .promo-banner__cta:hover .promo-banner__arrow {
   transform: translateX(4px);
+}
+
+.promo-banner__dots {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: var(--space-3);
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.promo-banner__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.promo-banner__dot:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.promo-banner__dot.is-active {
+  background: var(--color-white);
+  transform: scale(1.2);
 }
 
 @media (max-width: 767px) {

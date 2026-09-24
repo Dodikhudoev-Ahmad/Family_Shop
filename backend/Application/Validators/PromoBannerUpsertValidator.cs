@@ -18,5 +18,6 @@ public class PromoBannerUpsertValidator : AbstractValidator<PromoBannerUpsertDto
             .WithMessage("Button link must be a relative path or an http(s) URL.");
         RuleFor(x => x.ImageUrl).MaximumLength(1000);
         RuleFor(x => x.SortOrder).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.Placement).IsInEnum();
     }
 }

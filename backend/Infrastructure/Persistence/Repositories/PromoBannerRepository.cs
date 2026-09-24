@@ -10,10 +10,10 @@ public class PromoBannerRepository : RepositoryBase<PromoBanner>, IPromoBannerRe
     {
     }
 
-    public async Task<IReadOnlyList<PromoBanner>> GetActiveAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PromoBanner>> GetActiveAsync(PromoBannerPlacement placement, CancellationToken cancellationToken = default)
     {
         return await DbSet
-            .Where(b => b.IsActive)
+            .Where(b => b.IsActive && (b.Placement == placement || b.Placement == PromoBannerPlacement.Both))
             .OrderBy(b => b.SortOrder)
             .ThenBy(b => b.Id)
             .ToListAsync(cancellationToken);

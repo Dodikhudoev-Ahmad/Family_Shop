@@ -1,3 +1,5 @@
+using Domain.Entities;
+
 namespace Application.DTOs;
 
 public record PromoBannerDto(
@@ -8,7 +10,8 @@ public record PromoBannerDto(
     string? ButtonLink,
     string? ImageUrl,
     bool IsActive,
-    int SortOrder);
+    int SortOrder,
+    PromoBannerPlacement Placement);
 
 public record PromoBannerUpsertDto(
     string Title,
@@ -17,4 +20,5 @@ public record PromoBannerUpsertDto(
     string? ButtonLink,
     string? ImageUrl,
     bool IsActive,
-    int SortOrder);
+    int SortOrder,
+    PromoBannerPlacement Placement);
