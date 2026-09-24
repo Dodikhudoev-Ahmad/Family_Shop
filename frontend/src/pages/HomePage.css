@@ -107,4 +107,23 @@
   .home-section {
     margin-top: var(--space-6);
   }
+
+  /* Match the Slider's mobile grid so the loading placeholder doesn't
+     briefly show a horizontal-scroll row right before the real grid. */
+  .home__skeleton-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-5) var(--space-4);
+  }
+
+  .home__skeleton-row > * {
+    flex: none;
+    width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .home__skeleton-row {
+    gap: var(--space-4) var(--space-2);
+  }
 }
