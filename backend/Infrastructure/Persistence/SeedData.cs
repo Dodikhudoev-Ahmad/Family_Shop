@@ -1,4 +1,7 @@
+using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Application.Interfaces;
 using Domain.Entities;
 using Domain.ValueObjects;
@@ -7,10 +10,7 @@ namespace Infrastructure.Persistence;
 
 public static class SeedData
 {
-    private const string AdminEmail = "admin@familyshop.kz";
-    // Generated for the deploy-prep pass — see the chat report for this value.
-    // Change it after first login if this seed ever runs against a public database.
-    private const string AdminPassword = "1&@X4Y2jaFxe^iH6";
+    private const string DefaultAdminEmail = "admin@familyshop.kz";
     // A few replacement photos (picked to avoid visible brand logos) live under Unsplash's
     // /flagged/ path instead of the regular CDN path — prefix the id with "flagged/" for those.
     // Some categories (bytovaya-tehnika/sport/posuda) also mix in CC0 photos from StockSnap
@@ -24,17 +24,37 @@ public static class SeedData
                 ? $"https://images.unsplash.com/flagged/photo-{unsplashId["flagged/".Length..]}?w=600&h=800&fit=crop&q=80"
                 : $"https://images.unsplash.com/photo-{unsplashId}?w=600&h=800&fit=crop&q=80";
 
-    public static async Task SeedAsync(AppDbContext context, IPasswordHasher passwordHasher, CancellationToken cancellationToken = default)
+    public static async Task SeedAsync(
+        AppDbContext context,
+        IPasswordHasher passwordHasher,
+        IConfiguration configuration,
+        ILogger logger,
+        CancellationToken cancellationToken = default)
     {
         await context.Database.MigrateAsync(cancellationToken);
 
         if (!await context.Users.AnyAsync(u => u.Role == UserRole.Admin, cancellationToken))
         {
+            var adminEmail = configuration["Seed:AdminEmail"] ?? DefaultAdminEmail;
+            var adminPassword = configuration["Seed:AdminPassword"];
+
+            // Never fall back to a hardcoded literal - if SEED_ADMIN_PASSWORD isn't set,
+            // generate a random one and log it once so an operator can retrieve it from the
+            // deploy logs on first boot, instead of shipping a credential in source control.
+            if (string.IsNullOrEmpty(adminPassword))
+            {
+                adminPassword = GenerateRandomPassword();
+                logger.LogWarning(
+                    "Seed:AdminPassword / SEED_ADMIN_PASSWORD is not set. Generated a one-time admin password for {AdminEmail}: {AdminPassword} — log in and change it immediately, this value will not be shown again.",
+                    adminEmail,
+                    adminPassword);
+            }
+
             context.Users.Add(new User
             {
-                Email = new Email(AdminEmail),
+                Email = new Email(adminEmail),
                 Name = "Администратор",
-                PasswordHash = passwordHasher.Hash(AdminPassword),
+                PasswordHash = passwordHasher.Hash(adminPassword),
                 Role = UserRole.Admin
             });
             await context.SaveChangesAsync(cancellationToken);
@@ -388,5 +408,17 @@ public static class SeedData
         yield return Make("Рюкзак кожаный коричневый", "Рюкзак из натуральной кожи с ремешком-затяжкой.", 22900, null, 7, categoryId, Gender.Male, "1622560480605-d83c853bc5c3");
         yield return Make("Кулон с кристаллом на цепочке", "Кулон с гранёным кристаллом синего цвета на тонкой цепочке.", 7900, 6300, 16, categoryId, Gender.Female, "1599643477877-530eb83abc8e");
         yield return Make("Чехол для телефона карбоновый чёрный", "Противоударный чехол с текстурой карбона, тонкий профиль.", 4900, null, 30, categoryId, Gender.Male, "1601593346740-925612772716");
+    }
+
+    private static string GenerateRandomPassword()
+    {
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*";
+        var bytes = RandomNumberGenerator.GetBytes(20);
+        var result = new char[20];
+        for (var i = 0; i < bytes.Length; i++)
+        {
+            result[i] = chars[bytes[i] % chars.Length];
+        }
+        return new string(result);
     }
 }

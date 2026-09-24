@@ -1,6 +1,8 @@
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
@@ -54,6 +56,14 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Persist DataProtection keys in Postgres (the same durable store everything else uses)
+// instead of the default ephemeral container filesystem - otherwise the key ring is
+// regenerated on every restart/redeploy and anything encrypted with it becomes unreadable,
+// and a multi-instance deploy would have each instance holding a different key ring.
+builder.Services.AddDataProtection()
+    .PersistKeysToDbContext<AppDbContext>()
+    .SetApplicationName("FamilyShop");
 
 // Keep the multipart/form parser's cap in sync with AdminProductsController's
 // MaxImageSizeBytes — the controller's [RequestSizeLimit] already caps the Kestrel request
@@ -141,6 +151,42 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 
+    // Order creation: generous enough for a real shopper (retrying after a stock/promo
+    // error, ordering more than once), tight enough to blunt scripted order-flooding.
+    options.AddPolicy("order-create", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    // Review creation: one person leaves very few reviews per minute in practice.
+    options.AddPolicy("review-create", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    // Promo code validation: unauthenticated and cheap to call, so it's the easiest
+    // endpoint to abuse for brute-forcing promo codes - keep it tighter than the
+    // global default.
+    options.AddPolicy("promo-validate", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 15,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
         RateLimitPartition.GetFixedWindowLimiter(
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -176,7 +222,7 @@ try
     using var migrationScope = app.Services.CreateScope();
     var db = migrationScope.ServiceProvider.GetRequiredService<AppDbContext>();
     var passwordHasher = migrationScope.ServiceProvider.GetRequiredService<Application.Interfaces.IPasswordHasher>();
-    await SeedData.SeedAsync(db, passwordHasher);
+    await SeedData.SeedAsync(db, passwordHasher, app.Configuration, app.Logger);
 }
 catch (Exception ex)
 {

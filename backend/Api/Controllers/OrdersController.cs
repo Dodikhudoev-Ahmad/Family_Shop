@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Api.Common;
 using Application.DTOs;
 using Application.Interfaces;
@@ -22,6 +23,7 @@ public class OrdersController : ControllerBase
 
     /// <summary>Создание заказа из текущего пользователя (id берётся из access-токена, не из тела запроса).</summary>
     [HttpPost]
+    [EnableRateLimiting("order-create")]
     public async Task<ActionResult<ApiResponse<OrderDto>>> CreateOrder(CreateOrderRequestDto request, CancellationToken cancellationToken)
     {
         var result = await _orderService.CreateOrderAsync(GetUserId(), request, cancellationToken);
