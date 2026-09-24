@@ -63,3 +63,28 @@
     width: 270px;
   }
 }
+
+/* Below the desktop breakpoint, swap the horizontal scroller for a plain
+   2-column grid (matching .catalog__grid) so every item in the section is
+   reached by scrolling the page down instead of swiping sideways. */
+@media (max-width: 1024px) {
+  .slider__track {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-5) var(--space-4);
+    overflow-x: visible;
+    scroll-snap-type: none;
+    padding-bottom: 0;
+  }
+
+  .slider__item {
+    width: auto;
+    scroll-snap-align: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .slider__track {
+    gap: var(--space-4) var(--space-2);
+  }
+}
