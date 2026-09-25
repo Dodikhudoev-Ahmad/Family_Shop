@@ -1,0 +1,52 @@
+/* Timeline (~2.3s): fade-in 0–.5s, pause, expand .85–1.7s, hold, fade-out 1.9–2.3s */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1c1917;
+  color: #fff;
+  cursor: pointer;
+  animation: splash-out 0.4s ease-in 1.9s forwards;
+}
+
+.splash__word {
+  display: flex;
+  align-items: baseline;
+  font-family: var(--font-heading, 'Fraunces', serif);
+  font-size: clamp(36px, 11.5vw, 76px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  opacity: 0;
+  animation: splash-in 0.5s ease-out forwards;
+}
+
+.splash__word > span:not(.splash__rest):not(.splash__gap) {
+  color: #c17a54;
+}
+
+.splash__rest {
+  display: inline-block;
+  overflow: hidden;
+  padding: 0 0.06em 0.2em 0;
+  margin-bottom: -0.2em;
+  max-width: 0;
+  opacity: 0;
+  animation: splash-expand 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.85s forwards;
+}
+.splash__rest--family { --w: 2.7em; }
+.splash__rest--shop { --w: 2em; }
+
+.splash__gap {
+  display: inline-block;
+  width: 0;
+  animation: splash-gap 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.85s forwards;
+}
+
+@keyframes splash-in { to { opacity: 1; } }
+@keyframes splash-expand { to { max-width: var(--w); opacity: 1; } }
+@keyframes splash-gap { to { width: 0.3em; } }
+@keyframes splash-out { to { opacity: 0; } }
