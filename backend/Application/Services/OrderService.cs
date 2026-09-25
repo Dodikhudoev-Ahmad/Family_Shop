@@ -162,6 +162,19 @@ public class OrderService : IOrderService
             return Result<AdminOrderDto>.Failure($"Cannot transition order from '{order.Status}' to '{newStatus}'.");
         }
 
+        // A cancelled order never ships, so put its reserved stock back on sale - otherwise every
+        // cancellation permanently shrinks the catalogue's available quantity.
+        if (newStatus == OrderStatus.Cancelled && order.Status != OrderStatus.Cancelled)
+        {
+            foreach (var item in order.Items)
+            {
+                if (item.Product is not null)
+                {
+                    item.Product.Stock += item.Quantity;
+                }
+            }
+        }
+
         order.Status = newStatus;
         _unitOfWork.Orders.Update(order);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
