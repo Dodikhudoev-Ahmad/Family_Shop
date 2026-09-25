@@ -3,6 +3,7 @@ import { Layout } from './components/layout/Layout';
 import { AdminRoute } from './components/AdminRoute/AdminRoute';
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
 import { ScrollToTop } from './components/ScrollToTop/ScrollToTop';
+import { SplashScreen } from './components/SplashScreen/SplashScreen';
 import { HomePage } from './pages/HomePage';
 import { CatalogPage } from './pages/CatalogPage';
 import { ProductPage } from './pages/ProductPage';
@@ -22,6 +23,7 @@ import { AdminPromoBannersPage } from './pages/admin/AdminPromoBannersPage';
 export default function App() {
   return (
     <ErrorBoundary>
+      <SplashScreen />
       <BrowserRouter>
         <ScrollToTop />
         <Routes>
