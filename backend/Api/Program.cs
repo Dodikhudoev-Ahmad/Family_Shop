@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -204,7 +205,22 @@ builder.Services.AddHsts(options =>
     options.IncludeSubDomains = true;
 });
 
+// The API runs behind Railway's reverse proxy, so without this every request appears to come
+// from the proxy's IP: all per-IP rate-limit partitions (login 10/min, global 100/min, ...)
+// would be shared by ALL visitors, and Request.Scheme would be http (breaking HTTPS redirect
+// and Secure cookies logic). The proxy's address isn't fixed, so the default loopback-only
+// trust list is cleared; ForwardLimit stays 1, i.e. only the entry the proxy itself appended
+// is honoured, so a client-supplied X-Forwarded-For can't be used to dodge rate limits.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 

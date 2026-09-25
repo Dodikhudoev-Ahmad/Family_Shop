@@ -14,10 +14,12 @@ public class AuthController : ControllerBase
 {
     private const string RefreshTokenCookie = "refreshToken";
     private readonly IAuthService _authService;
+    private readonly IWebHostEnvironment _environment;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, IWebHostEnvironment environment)
     {
         _authService = authService;
+        _environment = environment;
     }
 
     /// <summary>Регистрация нового пользователя.</summary>
@@ -62,7 +64,7 @@ public class AuthController : ControllerBase
         var result = await _authService.RefreshAsync(refreshToken, cancellationToken);
         if (!result.IsSuccess)
         {
-            Response.Cookies.Delete(RefreshTokenCookie);
+            Response.Cookies.Delete(RefreshTokenCookie, BuildCookieOptions(null));
             return Unauthorized(ApiResponse<AuthResponseDto>.Fail(result.Errors));
         }
 
@@ -79,19 +81,28 @@ public class AuthController : ControllerBase
             await _authService.RevokeRefreshTokenAsync(refreshToken, cancellationToken);
         }
 
-        Response.Cookies.Delete(RefreshTokenCookie);
+        Response.Cookies.Delete(RefreshTokenCookie, BuildCookieOptions(null));
         return NoContent();
     }
 
     private void SetRefreshTokenCookie(string refreshToken)
     {
-        Response.Cookies.Append(RefreshTokenCookie, refreshToken, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTimeOffset.UtcNow.AddDays(14),
-            Path = "/api/v1/auth"
-        });
+        Response.Cookies.Append(RefreshTokenCookie, refreshToken, BuildCookieOptions(DateTimeOffset.UtcNow.AddDays(14)));
     }
+
+    // In production the SPA and the API live on different sites (separate *.up.railway.app
+    // hosts, and up.railway.app is on the Public Suffix List), so a SameSite=Strict cookie is
+    // rejected outright on the cross-site fetch response and every page reload logged the user
+    // out. SameSite=None+Secure lets the browser store/send it; CORS (credentials + strict
+    // origin whitelist) still stops other origins from reading the response. Once the SPA and
+    // API share one registrable domain (custom domain), this can go back to Strict.
+    // Delete() must use the same Path/SameSite/Secure as Append(), or the browser ignores it.
+    private CookieOptions BuildCookieOptions(DateTimeOffset? expires) => new()
+    {
+        HttpOnly = true,
+        Secure = true,
+        SameSite = _environment.IsDevelopment() ? SameSiteMode.Strict : SameSiteMode.None,
+        Expires = expires,
+        Path = "/api/v1/auth"
+    };
 }

@@ -199,4 +199,31 @@ public class OrderServiceTests
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, e => e.PropertyName == nameof(CreateOrderRequestDto.Items));
     }
+
+    [Fact]
+    public async Task UpdateOrderStatusAsync_ToCancelled_RestoresProductStock()
+    {
+        var product = new Product { Id = 1, Name = "Shoes", Price = new Money(2000), Stock = 3 };
+        var order = new Order { Id = 7, Status = OrderStatus.Created };
+        order.Items.Add(new OrderItem { ProductId = 1, Product = product, Quantity = 2, Price = new Money(2000) });
+        _orders.GetByIdWithItemsAsync(7, Arg.Any<CancellationToken>()).Returns(order);
+
+        var result = await _sut.UpdateOrderStatusAsync(7, OrderStatus.Cancelled);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(5, product.Stock);
+    }
+
+    [Fact]
+    public async Task UpdateOrderStatusAsync_ToNonCancelledStatus_DoesNotChangeStock()
+    {
+        var product = new Product { Id = 1, Name = "Shoes", Price = new Money(2000), Stock = 3 };
+        var order = new Order { Id = 8, Status = OrderStatus.Created };
+        order.Items.Add(new OrderItem { ProductId = 1, Product = product, Quantity = 2, Price = new Money(2000) });
+        _orders.GetByIdWithItemsAsync(8, Arg.Any<CancellationToken>()).Returns(order);
+
+        await _sut.UpdateOrderStatusAsync(8, OrderStatus.Processing);
+
+        Assert.Equal(3, product.Stock);
+    }
 }
