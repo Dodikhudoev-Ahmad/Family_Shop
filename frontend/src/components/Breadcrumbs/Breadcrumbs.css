@@ -50,7 +50,7 @@
   }
 
   .breadcrumbs__current {
-    max-width: 160px;
+    max-width: min(160px, 36vw);
     overflow: hidden;
     text-overflow: ellipsis;
   }

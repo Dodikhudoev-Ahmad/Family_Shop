@@ -68,3 +68,11 @@ a.footer__link:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* Touch targets: footer links are ~17px tall by default, too small to hit reliably on phones. */
+@media (pointer: coarse) {
+  .footer__link {
+    display: inline-block;
+    padding: 8px 0;
+  }
+}
