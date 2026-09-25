@@ -1,6 +1,5 @@
-# TODO: static file, not processed by Vite - replace familyshop.example below with the
-# real production domain before deploy (keep in sync with VITE_SITE_URL in .env and the
-# TODO in sitemap.xml).
+# NOTE: static file, not processed by Vite - currently points at the Railway domain;
+# update it if a custom domain is connected (keep in sync with VITE_SITE_URL and sitemap.xml).
 User-agent: *
 Allow: /
 Disallow: /account
@@ -8,4 +7,4 @@ Disallow: /checkout
 Disallow: /login
 Disallow: /favorites
 
-Sitemap: https://familyshop.example/sitemap.xml
+Sitemap: https://endearing-consideration-production-6e0c.up.railway.app/sitemap.xml

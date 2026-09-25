@@ -1,3 +1,4 @@
+import { CONTACT_EMAIL } from '../data/contacts';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { useCategories } from '../context/CategoriesContext';
@@ -112,9 +113,11 @@ export function AboutPage() {
                 Перейти в каталог
               </Button>
             </Link>
-            <a href="mailto:hello@familyshop.example" className="about-cta__contact">
-              Или напишите нам: hello@familyshop.example
-            </a>
+            {CONTACT_EMAIL && (
+              <a href={`mailto:${CONTACT_EMAIL}`} className="about-cta__contact">
+                Или напишите нам: {CONTACT_EMAIL}
+              </a>
+            )}
           </div>
         </Reveal>
       </section>

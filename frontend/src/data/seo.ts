@@ -3,7 +3,7 @@
 // canonical/og:url here and the matching %VITE_SITE_URL% tags in index.html.
 // public/robots.txt and public/sitemap.xml are static files Vite doesn't
 // template, so they carry their own TODO markers and need updating by hand.
-export const SITE_URL = import.meta.env.VITE_SITE_URL ?? 'https://familyshop.example';
+export const SITE_URL = (import.meta.env.VITE_SITE_URL ?? 'https://familyshop.example').replace(/\/+$/, '');
 export const SITE_NAME = 'Family Shop';
 
 // TODO: no branded raster photo exists yet. public/logo-icon-badge.svg (hanger

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { CONTACT_ADDRESS, CONTACT_EMAIL, CONTACT_PHONE, SOCIAL_LINKS } from '../../data/contacts';
 import { useCategories } from '../../context/CategoriesContext';
 import './Footer.css';
 
@@ -31,35 +32,31 @@ export function Footer() {
           </ul>
         </div>
 
-        <div className="footer__col">
-          <h4 className="footer__heading">Контакты</h4>
-          <ul className="footer__list">
-            <li className="footer__link">+7 (900) 000-00-00</li>
-            <li className="footer__link">hello@familyshop.example</li>
-            <li className="footer__link">Москва, ул. Примерная, 1</li>
-          </ul>
-        </div>
+        {(CONTACT_PHONE || CONTACT_EMAIL || CONTACT_ADDRESS) && (
+          <div className="footer__col">
+            <h4 className="footer__heading">Контакты</h4>
+            <ul className="footer__list">
+              {CONTACT_PHONE && <li className="footer__link">{CONTACT_PHONE}</li>}
+              {CONTACT_EMAIL && <li className="footer__link">{CONTACT_EMAIL}</li>}
+              {CONTACT_ADDRESS && <li className="footer__link">{CONTACT_ADDRESS}</li>}
+            </ul>
+          </div>
+        )}
 
-        <div className="footer__col">
-          <h4 className="footer__heading">Соцсети</h4>
-          <ul className="footer__list">
-            <li>
-              <a className="footer__link" href="#" onClick={(e) => e.preventDefault()}>
-                Instagram
-              </a>
-            </li>
-            <li>
-              <a className="footer__link" href="#" onClick={(e) => e.preventDefault()}>
-                Telegram
-              </a>
-            </li>
-            <li>
-              <a className="footer__link" href="#" onClick={(e) => e.preventDefault()}>
-                VK
-              </a>
-            </li>
-          </ul>
-        </div>
+        {SOCIAL_LINKS.length > 0 && (
+          <div className="footer__col">
+            <h4 className="footer__heading">Соцсети</h4>
+            <ul className="footer__list">
+              {SOCIAL_LINKS.map((social) => (
+                <li key={social.label}>
+                  <a className="footer__link" href={social.href} target="_blank" rel="noopener noreferrer">
+                    {social.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       <div className="footer__bottom container">

@@ -1,40 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- TODO: static file, not processed by Vite - replace every familyshop.example URL below
+<!-- TODO: static file, not processed by Vite - replace every Railway-domain URL below
      with the real production domain before deploy (keep in sync with VITE_SITE_URL in .env
      and the TODO in robots.txt). -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://familyshop.example/</loc>
+    <loc>https://endearing-consideration-production-6e0c.up.railway.app/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://familyshop.example/catalog</loc>
+    <loc>https://endearing-consideration-production-6e0c.up.railway.app/catalog</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://familyshop.example/catalog/women</loc>
+    <loc>https://endearing-consideration-production-6e0c.up.railway.app/catalog/women</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://familyshop.example/catalog/men</loc>
+    <loc>https://endearing-consideration-production-6e0c.up.railway.app/catalog/men</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://familyshop.example/catalog/kids</loc>
+    <loc>https://endearing-consideration-production-6e0c.up.railway.app/catalog/kids</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://familyshop.example/catalog/shoes-bags</loc>
+    <loc>https://endearing-consideration-production-6e0c.up.railway.app/catalog/shoes-bags</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://familyshop.example/about</loc>
+    <loc>https://endearing-consideration-production-6e0c.up.railway.app/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
