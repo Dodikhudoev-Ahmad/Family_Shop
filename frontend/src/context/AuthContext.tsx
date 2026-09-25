@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useToast } from './ToastContext';
 import { loginRequest, logoutRequest, registerRequest, silentRefresh, type ApiUserRole } from '../lib/api';
-import { onAccessTokenChange, setAccessToken } from '../lib/authToken';
+import { hasSessionHint, onAccessTokenChange, setAccessToken } from '../lib/authToken';
 
 interface AuthUser {
   id: number;
@@ -38,11 +38,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    if (!hasSessionHint()) {
+      setIsLoading(false);
+      return;
+    }
     silentRefresh()
       .then((data) => {
-        if (cancelled || !data) return;
+        if (cancelled) return;
+        if (!data) {
+          setAccessToken(null); // stale hint - the refresh cookie is gone/expired
+          return;
+        }
         setAccessToken(data.accessToken);
         setUser({ id: data.userId, email: data.email, name: data.name, role: data.role });
+      })
+      .catch(() => {
+        // network error: stay logged out instead of leaving an unhandled rejection
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);

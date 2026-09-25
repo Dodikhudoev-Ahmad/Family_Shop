@@ -11,8 +11,27 @@ export function getAccessToken(): string | null {
   return accessToken;
 }
 
+// Non-secret hint (just "1") that this browser has signed in before. The refresh cookie is
+// httpOnly, so JS can't tell whether one exists; without the hint every anonymous page load
+// fires a pointless /auth/refresh that 401s (red console error + burns the rate-limit budget).
+const SESSION_HINT_KEY = 'fs-has-session';
+
+export function hasSessionHint(): boolean {
+  try {
+    return localStorage.getItem(SESSION_HINT_KEY) === '1';
+  } catch {
+    return true;
+  }
+}
+
 export function setAccessToken(token: string | null): void {
   accessToken = token;
+  try {
+    if (token) localStorage.setItem(SESSION_HINT_KEY, '1');
+    else localStorage.removeItem(SESSION_HINT_KEY);
+  } catch {
+    // storage unavailable - the hint is only an optimisation
+  }
   listeners.forEach((listener) => listener(token));
 }
 

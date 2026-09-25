@@ -78,4 +78,17 @@
     line-height: 16px;
     text-align: center;
   }
+
+  /* 320px-wide phones: four labelled items with 14px pill padding overflow the bar. */
+  @media (max-width: 360px) {
+    .mobile-tabbar__item {
+      min-width: 0;
+      font-size: 11px;
+    }
+
+    .mobile-tabbar__pill {
+      padding: 9px 6px 8px;
+    }
+  }
 }
+
