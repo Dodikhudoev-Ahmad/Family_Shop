@@ -35,6 +35,7 @@ public class ProductService : IProductService
             sortOrder,
             filter.Page,
             filter.PageSize,
+            filter.ProductType,
             cancellationToken);
 
         return new PagedResult<ProductDto>(items.Select(ToDto).ToList(), totalCount, filter.Page, filter.PageSize);
@@ -65,6 +66,7 @@ public class ProductService : IProductService
             Gender = dto.Gender,
             Images = dto.Images,
             IsBestseller = dto.IsBestseller,
+            ProductType = ProductTypeClassifier.Infer(dto.Name),
             CreatedAt = DateTime.UtcNow
         };
 
@@ -97,6 +99,7 @@ public class ProductService : IProductService
         product.Gender = dto.Gender;
         product.Images = dto.Images;
         product.IsBestseller = dto.IsBestseller;
+        product.ProductType = ProductTypeClassifier.Infer(dto.Name);
 
         _unitOfWork.Products.Update(product);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -124,5 +127,5 @@ public class ProductService : IProductService
     }
 
     private static ProductDto ToDto(Domain.Entities.Product p) =>
-        new(p.Id, p.Name, p.Description, p.Price.Amount, p.DiscountPrice?.Amount, p.Stock, p.CategoryId, p.Gender, p.Images, p.CreatedAt, p.IsBestseller, p.AverageRating, p.ReviewCount);
+        new(p.Id, p.Name, p.Description, p.Price.Amount, p.DiscountPrice?.Amount, p.Stock, p.CategoryId, p.Gender, p.Images, p.CreatedAt, p.IsBestseller, p.AverageRating, p.ReviewCount, p.ProductType);
 }

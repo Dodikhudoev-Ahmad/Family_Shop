@@ -21,6 +21,7 @@ public interface IProductRepository : IRepository<Product>
         ProductSortOrder sortOrder,
         int page,
         int pageSize,
+        string? productType,
         CancellationToken cancellationToken = default);
 
     Task<bool> AnyByCategoryIdAsync(int categoryId, CancellationToken cancellationToken = default);

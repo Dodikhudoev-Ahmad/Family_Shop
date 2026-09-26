@@ -30,9 +30,10 @@ public class ProductsController : ControllerBase
         [FromQuery] ProductSortBy sortBy = ProductSortBy.Newest,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 8,
+        [FromQuery] string? productType = null,
         CancellationToken cancellationToken = default)
     {
-        var filter = new ProductFilterDto(gender, categoryId, minPrice, maxPrice, search, sortBy, page, pageSize);
+        var filter = new ProductFilterDto(gender, categoryId, minPrice, maxPrice, search, sortBy, page, pageSize, productType);
         var result = await _productService.GetProductsAsync(filter, cancellationToken);
         return Ok(ApiResponse<PagedResult<ProductDto>>.Ok(result));
     }

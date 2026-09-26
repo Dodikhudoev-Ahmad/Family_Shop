@@ -24,6 +24,9 @@ public class Product
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsBestseller { get; set; }
 
+    /// <summary>Тип изделия (рубашка, куртка, кроссовки...) для быстрых фильтров внутри категории.</summary>
+    public string? ProductType { get; set; }
+
     // Denormalized from Review rows and recomputed whenever a review is added/removed,
     // so catalog listing/sorting never has to aggregate Reviews per page.
     public decimal AverageRating { get; set; }
