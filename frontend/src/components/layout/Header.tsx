@@ -8,7 +8,6 @@ import { useTheme } from '../../context/ThemeContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { MobileMenu } from './MobileMenu';
 import { CategoryMegaMenu } from './CategoryMegaMenu';
-import { LogoMark } from './LogoMark';
 import { SearchOverlay } from '../Search/SearchOverlay';
 import { ConfirmDialog } from '../ConfirmDialog/ConfirmDialog';
 import './Header.css';
@@ -44,9 +43,11 @@ export function Header() {
           </button>
         )}
 
-        <Link to="/" className="header__logo">
-          <LogoMark />
-          Family Shop
+        <Link to="/" className="header__logo" aria-label="FamilyShop — на главную">
+          <span className="header__wordmark">
+            <span className="header__wordmark-accent">F</span>amily
+            <span className="header__wordmark-accent">S</span>hop
+          </span>
         </Link>
 
         {isDesktop && (

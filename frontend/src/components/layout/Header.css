@@ -27,7 +27,7 @@
   align-items: center;
   gap: var(--space-1);
   font-family: var(--font-heading);
-  font-size: 20px;
+  font-size: 25px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--color-text);
@@ -35,13 +35,16 @@
   flex-shrink: 0;
 }
 
-.header__logo svg {
-  color: var(--color-accent);
-  flex-shrink: 0;
+.header__wordmark {
+  white-space: nowrap;
+}
+
+.header__wordmark-accent {
+  color: #c17a54;
 }
 
 .header--compact .header__logo {
-  font-size: 17px;
+  font-size: 21px;
 }
 
 .header__nav {
@@ -330,7 +333,7 @@ a.mega-menu__col-title--link:hover {
 
 @media (max-width: 480px) {
   .header__logo {
-    font-size: 17px;
+    font-size: 22px;
   }
 
   .header__actions {
