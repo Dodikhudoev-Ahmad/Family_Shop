@@ -9,6 +9,7 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 const STORAGE_KEY = 'theme';
+let transitionTimer = 0;
 
 function getInitialTheme(): Theme {
   const attr = document.documentElement.getAttribute('data-theme');
@@ -34,7 +35,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [theme]);
 
-  const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  const toggleTheme = () => {
+    // Class exists only during the switch so the colour transition doesn't
+    // touch hover/animation transitions the rest of the time.
+    const root = document.documentElement;
+    root.classList.add('theme-transition');
+    window.clearTimeout(transitionTimer);
+    transitionTimer = window.setTimeout(() => root.classList.remove('theme-transition'), 350);
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
 }

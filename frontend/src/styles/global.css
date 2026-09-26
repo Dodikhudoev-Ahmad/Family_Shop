@@ -152,3 +152,31 @@ ul {
     background-color: color-mix(in srgb, var(--color-accent) 70%, transparent);
   }
 }
+
+/* Applied by ThemeProvider only while switching themes: one shared timing for
+   every themed colour, without touching transform/opacity/images. */
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition:
+    background-color 250ms ease-in-out,
+    color 250ms ease-in-out,
+    border-color 250ms ease-in-out,
+    box-shadow 250ms ease-in-out,
+    fill 250ms ease-in-out,
+    stroke 250ms ease-in-out !important;
+}
+
+html.theme-transition img,
+html.theme-transition video,
+html.theme-transition picture {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition: none !important;
+  }
+}
