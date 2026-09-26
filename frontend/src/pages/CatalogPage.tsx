@@ -6,6 +6,7 @@ import { ProductCard } from '../components/ProductCard/ProductCard';
 import { ProductCardSkeleton } from '../components/ProductCard/ProductCardSkeleton';
 import { FilterPanel, type Filters } from '../components/Filters/FilterPanel';
 import { FilterPanelSkeleton } from '../components/Filters/FilterPanelSkeleton';
+import { TypeChips } from '../components/TypeChips/TypeChips';
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 import { useSeo } from '../hooks/useSeo';
 import { SITE_NAME } from '../data/seo';
@@ -54,6 +55,7 @@ export function CatalogPage() {
     discountOnly: searchParams.get('discount') === 'true',
   }));
   const [sort, setSort] = useState<SortOption>('new');
+  const [productType, setProductType] = useState<string | null>(null);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const isLoadingMoreRef = useRef(false);
@@ -67,7 +69,20 @@ export function CatalogPage() {
 
   useEffect(() => {
     setFilters((f) => ({ ...f, categoryId: activeCategory?.id ?? null }));
+    setProductType(null);
   }, [activeCategory?.id]);
+
+  // Product types present in the current category, most common first.
+  const availableTypes = useMemo(() => {
+    if (!activeCategory) return [];
+    const counts = new Map<string, number>();
+    for (const p of allProducts) {
+      if (p.categoryId === activeCategory.id && p.productType) {
+        counts.set(p.productType, (counts.get(p.productType) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ru')).map(([t]) => t);
+  }, [allProducts, activeCategory]);
 
   // Tracks whether the real price bounds (from loaded products) have been applied to
   // filters/debouncedPriceRange yet — until then we must not send minPrice/maxPrice at all,
@@ -107,6 +122,7 @@ export function CatalogPage() {
 
     fetchProductsPage({
       categoryId: categoryIdNum,
+      productType: productType ?? undefined,
       minPrice: minPrice > priceBounds[0] ? minPrice : undefined,
       maxPrice: maxPrice < priceBounds[1] ? maxPrice : undefined,
       sortBy: SORT_TO_API[sort],
@@ -131,7 +147,7 @@ export function CatalogPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryIdNum, minPrice, maxPrice, sort, boundsReady, categories]);
+  }, [categoryIdNum, productType, minPrice, maxPrice, sort, boundsReady, categories]);
 
   const loadMore = () => {
     // Guard with a ref (synchronous) rather than state alone: the IntersectionObserver
@@ -144,6 +160,7 @@ export function CatalogPage() {
 
     fetchProductsPage({
       categoryId: categoryIdNum,
+      productType: productType ?? undefined,
       minPrice: minPrice > priceBounds[0] ? minPrice : undefined,
       maxPrice: maxPrice < priceBounds[1] ? maxPrice : undefined,
       sortBy: SORT_TO_API[sort],
@@ -201,6 +218,7 @@ export function CatalogPage() {
       )}
       <div className="catalog__header">
         <h1 className="catalog__title">{activeCategory?.name ?? 'Каталог'}</h1>
+        <TypeChips types={availableTypes} value={productType} onChange={setProductType} />
         <div className="catalog__toolbar">
           <button className="catalog__filter-toggle" onClick={() => setIsFilterSheetOpen(true)}>
             Фильтры

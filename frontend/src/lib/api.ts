@@ -98,6 +98,7 @@ export interface ProductQuery {
   sortBy?: ProductSortBy;
   page?: number;
   pageSize?: number;
+  productType?: string;
 }
 
 function buildProductParams(query: ProductQuery): URLSearchParams {
@@ -110,6 +111,7 @@ function buildProductParams(query: ProductQuery): URLSearchParams {
   if (query.sortBy !== undefined) params.set('sortBy', String(query.sortBy));
   if (query.page !== undefined) params.set('page', String(query.page));
   if (query.pageSize !== undefined) params.set('pageSize', String(query.pageSize));
+  if (query.productType !== undefined) params.set('productType', query.productType);
   return params;
 }
 
