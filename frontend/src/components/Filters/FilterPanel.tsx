@@ -14,9 +14,13 @@ interface FilterPanelProps {
   onChange: (filters: Filters) => void;
   availableSizes: string[];
   priceBounds: [number, number];
+  /** Desktop sidebar only: mobile has the TypeChips strip instead. */
+  productTypes?: string[];
+  productType?: string | null;
+  onProductTypeChange?: (type: string | null) => void;
 }
 
-export function FilterPanel({ filters, onChange, availableSizes, priceBounds }: FilterPanelProps) {
+export function FilterPanel({ filters, onChange, availableSizes, priceBounds, productTypes = [], productType = null, onProductTypeChange }: FilterPanelProps) {
   const { categories } = useCategories();
 
   return (
@@ -41,6 +45,24 @@ export function FilterPanel({ filters, onChange, availableSizes, priceBounds }: 
           ))}
         </div>
       </div>
+
+      {productTypes.length > 1 && onProductTypeChange && (
+        <div className="filter-panel__group">
+          <h4 className="filter-panel__title">Тип</h4>
+          <div className="filter-panel__chips">
+            {[null, ...productTypes].map((type) => (
+              <button
+                key={type ?? 'all'}
+                className={`filter-chip ${productType === type ? 'is-active' : ''}`}
+                aria-pressed={productType === type}
+                onClick={() => onProductTypeChange(type)}
+              >
+                {type ?? 'Все'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {availableSizes.length > 0 && (
         <div className="filter-panel__group">
