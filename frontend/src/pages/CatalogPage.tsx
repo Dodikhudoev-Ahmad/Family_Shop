@@ -237,7 +237,15 @@ export function CatalogPage() {
           {isCatalogLoading ? (
             <FilterPanelSkeleton />
           ) : (
-            <FilterPanel filters={filters} onChange={setFilters} availableSizes={availableSizes} priceBounds={priceBounds} />
+            <FilterPanel
+              filters={filters}
+              onChange={setFilters}
+              availableSizes={availableSizes}
+              priceBounds={priceBounds}
+              productTypes={availableTypes}
+              productType={productType}
+              onProductTypeChange={setProductType}
+            />
           )}
         </aside>
 
