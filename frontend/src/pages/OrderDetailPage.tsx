@@ -68,7 +68,7 @@ export function OrderDetailPage() {
 
       <div className="order-detail__info">
         <div>{order.contactName}, {order.contactPhone}</div>
-        <div>{order.deliveryMethod === 0 ? `${order.city}, ${order.address}` : 'Самовывоз из пункта выдачи'}</div>
+        <div>{order.deliveryMethod === 0 ? [order.city, order.address].filter(Boolean).join(', ') : 'Самовывоз из пункта выдачи'}</div>
         <div>Оплата при получении</div>
       </div>
 

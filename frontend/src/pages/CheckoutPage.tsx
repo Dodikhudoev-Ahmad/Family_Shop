@@ -37,17 +37,13 @@ const BagIcon = () => (
 );
 
 const initialDetails: DeliveryDetails = {
-  fullName: '',
   phone: '',
-  city: '',
   address: '',
   method: 'courier',
 };
 
 const DELIVERY_METHOD_TO_API: Record<DeliveryMethod, ApiDeliveryMethod> = { courier: 0, pickup: 1 };
 
-const NAME_RE = /^[A-Za-zА-Яа-яЁё\s-]+$/;
-const NAME_MIN_LENGTH = 2;
 const NATIONAL_PHONE_LENGTH = 10; // digits after the +7 country code
 
 // Extracts the 10-digit national number. The displayed value already carries
@@ -79,23 +75,11 @@ function formatPhoneInput(raw: string): string {
   return result;
 }
 
-function nameError(value: string): string | null {
-  const trimmed = value.trim();
-  if (!trimmed) return 'Укажите имя и фамилию';
-  if (trimmed.length < NAME_MIN_LENGTH) return 'Слишком короткое имя';
-  if (!NAME_RE.test(value)) return 'Только буквы, пробел и дефис';
-  return null;
-}
-
 function phoneError(value: string): string | null {
   const national = getNationalDigits(value);
   if (!national) return 'Укажите номер телефона';
   if (national.length < NATIONAL_PHONE_LENGTH) return 'Введите номер полностью';
   return null;
-}
-
-function cityError(value: string): string | null {
-  return value.trim() ? null : 'Укажите город';
 }
 
 function addressError(value: string): string | null {
@@ -114,16 +98,13 @@ export function CheckoutPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const errors = {
-    fullName: touched.fullName ? nameError(details.fullName) : null,
     phone: touched.phone ? phoneError(details.phone) : null,
-    city: touched.city && details.method === 'courier' ? cityError(details.city) : null,
     address: touched.address && details.method === 'courier' ? addressError(details.address) : null,
   };
 
   const isStep1Valid =
-    !nameError(details.fullName) &&
     !phoneError(details.phone) &&
-    (details.method === 'pickup' || (!cityError(details.city) && !addressError(details.address)));
+    (details.method === 'pickup' || !addressError(details.address));
 
   const markTouched = (field: keyof DeliveryDetails) => setTouched((t) => ({ ...t, [field]: true }));
 
@@ -164,7 +145,7 @@ export function CheckoutPage() {
 
   const handleContinue = (e: FormEvent) => {
     e.preventDefault();
-    setTouched({ fullName: true, phone: true, city: true, address: true });
+    setTouched({ phone: true, address: true });
     if (isStep1Valid) {
       setStep(2);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -182,10 +163,8 @@ export function CheckoutPage() {
           quantity: line.quantity,
           size: line.size,
         })),
-        contactName: details.fullName,
         contactPhone: details.phone,
         deliveryMethod: DELIVERY_METHOD_TO_API[details.method],
-        city: details.method === 'courier' ? details.city : undefined,
         address: details.method === 'courier' ? details.address : undefined,
         promoCode: promo?.code,
       });
@@ -238,18 +217,6 @@ export function CheckoutPage() {
       {step === 1 ? (
         <form className="checkout__form" onSubmit={handleContinue}>
           <div className="checkout__field">
-            <label htmlFor="fullName">Имя и фамилия</label>
-            <input
-              id="fullName"
-              value={details.fullName}
-              className={errors.fullName ? 'has-error' : ''}
-              onChange={(e) => setDetails({ ...details, fullName: e.target.value })}
-              onBlur={() => markTouched('fullName')}
-            />
-            {errors.fullName && <span className="checkout__error">{errors.fullName}</span>}
-          </div>
-
-          <div className="checkout__field">
             <label htmlFor="phone">Телефон</label>
             <input
               id="phone"
@@ -287,17 +254,6 @@ export function CheckoutPage() {
           {details.method === 'courier' && (
             <>
               <div className="checkout__field">
-                <label htmlFor="city">Город</label>
-                <input
-                  id="city"
-                  value={details.city}
-                  className={errors.city ? 'has-error' : ''}
-                  onChange={(e) => setDetails({ ...details, city: e.target.value })}
-                  onBlur={() => markTouched('city')}
-                />
-                {errors.city && <span className="checkout__error">{errors.city}</span>}
-              </div>
-              <div className="checkout__field">
                 <label htmlFor="address">Адрес</label>
                 <input
                   id="address"
@@ -305,6 +261,8 @@ export function CheckoutPage() {
                   className={errors.address ? 'has-error' : ''}
                   onChange={(e) => setDetails({ ...details, address: e.target.value })}
                   onBlur={() => markTouched('address')}
+                  placeholder="г. Алматы, ул. Абая, д. 10, кв. 5"
+                  autoComplete="street-address"
                 />
                 {errors.address && <span className="checkout__error">{errors.address}</span>}
               </div>
@@ -322,10 +280,10 @@ export function CheckoutPage() {
               <span className="checkout-card__icon"><TruckIcon /></span>
               Доставка
             </h4>
-            <p className="checkout-card__strong">{details.fullName}</p>
+            <p className="checkout-card__strong">{user.name}</p>
             <p>{details.phone}</p>
             <p className="checkout-card__muted">
-              {details.method === 'courier' ? `${details.city}, ${details.address}` : 'Самовывоз из пункта выдачи'}
+              {details.method === 'courier' ? details.address : 'Самовывоз из пункта выдачи'}
             </p>
           </section>
 
