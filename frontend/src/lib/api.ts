@@ -207,10 +207,9 @@ export interface OrderDto {
 
 export interface CreateOrderRequest {
   items: { productId: number; quantity: number; size: string | null }[];
-  contactName: string;
+  contactName?: string;
   contactPhone: string;
   deliveryMethod: ApiDeliveryMethod;
-  city?: string;
   address?: string;
   promoCode?: string;
 }

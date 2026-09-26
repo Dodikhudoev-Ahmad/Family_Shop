@@ -17,12 +17,19 @@ public class OrderService : IOrderService
 
     public async Task<Result<OrderDto>> CreateOrderAsync(int userId, CreateOrderRequestDto request, CancellationToken cancellationToken = default)
     {
+        var contactName = request.ContactName?.Trim();
+        if (string.IsNullOrEmpty(contactName))
+        {
+            var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
+            contactName = user?.Name;
+        }
+
         var order = new Order
         {
             UserId = userId,
             Status = OrderStatus.Created,
             CreatedAt = DateTime.UtcNow,
-            ContactName = request.ContactName,
+            ContactName = contactName ?? string.Empty,
             ContactPhone = request.ContactPhone,
             DeliveryMethod = request.DeliveryMethod,
             City = request.DeliveryMethod == DeliveryMethod.Courier ? request.City : null,

@@ -6,7 +6,7 @@ public record CreateOrderItemDto(int ProductId, int Quantity, string? Size);
 
 public record CreateOrderRequestDto(
     List<CreateOrderItemDto> Items,
-    string ContactName,
+    string? ContactName,
     string ContactPhone,
     DeliveryMethod DeliveryMethod,
     string? City,

@@ -11,12 +11,11 @@ public class CreateOrderRequestValidator : AbstractValidator<CreateOrderRequestD
         RuleFor(x => x.Items).NotEmpty().WithMessage("Cart is empty.");
         RuleForEach(x => x.Items).SetValidator(new CreateOrderItemValidator());
 
-        RuleFor(x => x.ContactName).NotEmpty().MaximumLength(200);
+        // Blank name falls back to the account name in OrderService.
+        RuleFor(x => x.ContactName).MaximumLength(200);
         RuleFor(x => x.ContactPhone).NotEmpty().MaximumLength(32);
         RuleFor(x => x.DeliveryMethod).IsInEnum();
 
-        RuleFor(x => x.City).NotEmpty().When(x => x.DeliveryMethod == DeliveryMethod.Courier)
-            .WithMessage("City is required for courier delivery.");
         RuleFor(x => x.Address).NotEmpty().When(x => x.DeliveryMethod == DeliveryMethod.Courier)
             .WithMessage("Address is required for courier delivery.");
 
