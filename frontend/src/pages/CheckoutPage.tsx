@@ -1,15 +1,40 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../utils/formatPrice';
 import { Button } from '../components/Button/Button';
+import { FadeImage } from '../components/FadeImage/FadeImage';
 import { PromoCodeInput } from '../components/PromoCodeInput/PromoCodeInput';
 import { ApiError, createOrder, type ApiDeliveryMethod } from '../lib/api';
 import type { DeliveryDetails, DeliveryMethod } from '../types/order';
 import './CheckoutPage.css';
 
 type Step = 1 | 2;
+
+const REDIRECT_DELAY_MS = 3500;
+
+const TruckIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M3 6h11v10H3zM14 9h4l3 3v4h-7" />
+    <circle cx="7.5" cy="17.5" r="1.8" />
+    <circle cx="17.5" cy="17.5" r="1.8" />
+  </svg>
+);
+
+const WalletIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 7a2 2 0 0 1 2-2h11v4" />
+    <rect x="3" y="7" width="18" height="13" rx="2.5" />
+    <circle cx="16.5" cy="13.5" r="1.2" />
+  </svg>
+);
+
+const BagIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2" />
+  </svg>
+);
 
 const initialDetails: DeliveryDetails = {
   fullName: '',
@@ -80,6 +105,7 @@ function addressError(value: string): string | null {
 export function CheckoutPage() {
   const { lines, totalPrice, finalTotal, promo, clearCart } = useCart();
   const { user, isLoading: isAuthLoading } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>(1);
   const [details, setDetails] = useState<DeliveryDetails>(initialDetails);
   const [touched, setTouched] = useState<Partial<Record<keyof DeliveryDetails, boolean>>>({});
@@ -112,6 +138,13 @@ export function CheckoutPage() {
     }
   }, [details.phone]);
 
+  // After a successful order, show the confirmation briefly, then go to the account.
+  useEffect(() => {
+    if (!orderNumber) return;
+    const timer = window.setTimeout(() => navigate('/account'), REDIRECT_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [orderNumber, navigate]);
+
   if (isAuthLoading) {
     return <div className="container checkout" />;
   }
@@ -139,6 +172,7 @@ export function CheckoutPage() {
   };
 
   const handleConfirm = async () => {
+    if (isSubmitting) return;
     setIsSubmitting(true);
     setSubmitError(null);
     try {
@@ -166,17 +200,21 @@ export function CheckoutPage() {
 
   if (orderNumber) {
     return (
-      <div className="container checkout-success">
-        <div className="checkout-success__icon">✓</div>
+      <div className="container checkout-success" role="status">
+        <svg className="checkout-success__check" viewBox="0 0 52 52" aria-hidden="true">
+          <circle className="checkout-success__check-circle" cx="26" cy="26" r="24" fill="none" />
+          <path className="checkout-success__check-mark" fill="none" d="M14 27l8 8 16-17" />
+        </svg>
         <h1>Заказ оформлен!</h1>
         <p>Номер вашего заказа</p>
         <span className="checkout-success__number">{orderNumber}</span>
         <p className="checkout-success__note">
           Мы свяжемся с вами для подтверждения. Оплата — при получении заказа.
         </p>
-        <Link to="/">
+        <p className="checkout-success__redirect">Переходим в личный кабинет…</p>
+        <Link to="/account">
           <Button variant="primary" size="lg">
-            На главную
+            В личный кабинет
           </Button>
         </Link>
       </div>
@@ -279,45 +317,74 @@ export function CheckoutPage() {
         </form>
       ) : (
         <div className="checkout__summary">
-          <div className="checkout__summary-block">
-            <h4>Доставка</h4>
-            <p>{details.fullName}, {details.phone}</p>
-            <p>{details.method === 'courier' ? `${details.city}, ${details.address}` : 'Самовывоз из пункта выдачи'}</p>
-          </div>
+          <section className="checkout-card">
+            <h4 className="checkout-card__title">
+              <span className="checkout-card__icon"><TruckIcon /></span>
+              Доставка
+            </h4>
+            <p className="checkout-card__strong">{details.fullName}</p>
+            <p>{details.phone}</p>
+            <p className="checkout-card__muted">
+              {details.method === 'courier' ? `${details.city}, ${details.address}` : 'Самовывоз из пункта выдачи'}
+            </p>
+          </section>
 
-          <div className="checkout__summary-block">
-            <h4>Способ оплаты</h4>
+          <section className="checkout-card">
+            <h4 className="checkout-card__title">
+              <span className="checkout-card__icon"><WalletIcon /></span>
+              Способ оплаты
+            </h4>
             <p>Оплата при получении</p>
-          </div>
+          </section>
 
-          <div className="checkout__summary-block">
-            <h4>Состав заказа</h4>
-            {lines.map((line) => (
-              <div key={line.key} className="checkout__summary-line">
-                <span>{line.product.name}{line.size ? ` · ${line.size}` : ''} × {line.quantity}</span>
-                <span>{formatPrice((line.product.discountPrice ?? line.product.price) * line.quantity)}</span>
-              </div>
-            ))}
-          </div>
+          <section className="checkout-card">
+            <h4 className="checkout-card__title">
+              <span className="checkout-card__icon"><BagIcon /></span>
+              Состав заказа
+            </h4>
+            <ul className="checkout-items">
+              {lines.map((line) => (
+                <li key={line.key} className="checkout-item">
+                  <FadeImage src={line.product.images[0]} alt={line.product.name} className="checkout-item__thumb" />
+                  <div className="checkout-item__info">
+                    <span className="checkout-item__name">{line.product.name}</span>
+                    <span className="checkout-item__meta">
+                      {line.size ? `${line.size} · ` : ''}{line.quantity} шт.
+                    </span>
+                  </div>
+                  <span className="checkout-item__price">
+                    {formatPrice((line.product.discountPrice ?? line.product.price) * line.quantity)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
 
-          <div className="checkout__summary-block">
-            <h4>Промокод</h4>
-            <PromoCodeInput />
-          </div>
+          <section className="checkout-promo">
+            <span className="checkout-promo__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12V4h8l10 10-8 8z" />
+                <circle cx="7.5" cy="8.5" r="1.3" />
+              </svg>
+            </span>
+            <div className="checkout-promo__body">
+              <PromoCodeInput />
+            </div>
+          </section>
 
           <div className="checkout__summary-total">
-            <span>Итого</span>
+            <span className="checkout__summary-total-label">Итого</span>
             {promo ? (
               <span className="checkout__summary-total-value">
                 <span className="checkout__summary-total-old">{formatPrice(totalPrice)}</span>
                 {formatPrice(finalTotal)}
               </span>
             ) : (
-              <span>{formatPrice(totalPrice)}</span>
+              <span className="checkout__summary-total-value">{formatPrice(totalPrice)}</span>
             )}
           </div>
 
-          {submitError && <span className="checkout__error checkout__submit-error">{submitError}</span>}
+          {submitError && <span className="checkout__error checkout__submit-error" role="alert">{submitError}</span>}
 
           <div className="checkout__summary-actions">
             <Button
@@ -330,7 +397,8 @@ export function CheckoutPage() {
             >
               Назад
             </Button>
-            <Button variant="primary" size="lg" onClick={handleConfirm} disabled={isSubmitting}>
+            <Button variant="primary" size="lg" onClick={handleConfirm} disabled={isSubmitting} aria-busy={isSubmitting}>
+              {isSubmitting && <span className="btn-spinner" aria-hidden="true" />}
               {isSubmitting ? 'Оформляем...' : 'Подтвердить заказ'}
             </Button>
           </div>
