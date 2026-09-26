@@ -25,6 +25,8 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.AverageRating).HasColumnType("decimal(3,2)").HasDefaultValue(0m);
         builder.Property(p => p.ReviewCount).HasDefaultValue(0);
 
+        builder.Property(p => p.ProductType).HasMaxLength(50);
+
         builder.HasIndex(p => p.CategoryId);
         builder.HasIndex(p => p.Gender);
     }

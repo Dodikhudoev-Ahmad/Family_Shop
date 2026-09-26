@@ -20,4 +20,7 @@
     <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="seed-names.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

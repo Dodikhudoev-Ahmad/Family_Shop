@@ -137,6 +137,18 @@ public static class SeedData
             await context.SaveChangesAsync(cancellationToken);
         }
 
+        // Backfill product types for rows created before the column existed (idempotent).
+        var untyped = await context.Products.Where(p => p.ProductType == null).ToListAsync(cancellationToken);
+        foreach (var product in untyped)
+        {
+            product.ProductType = ProductTypeClassifier.Infer(product.Name);
+        }
+
+        if (untyped.Count > 0)
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+
         // Guarded independently of category/product seeding (same reasoning as the admin-user
         // guard above) - otherwise reviews silently never seed on a DB that already has a catalog.
         if (!await context.Reviews.AnyAsync(cancellationToken))

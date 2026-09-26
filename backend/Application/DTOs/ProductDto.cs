@@ -15,7 +15,8 @@ public record ProductDto(
     DateTime CreatedAt,
     bool IsBestseller,
     decimal AverageRating,
-    int ReviewCount);
+    int ReviewCount,
+    string? ProductType = null);
 
 public record ProductUpsertDto(
     string Name,

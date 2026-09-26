@@ -20,6 +20,7 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
         ProductSortOrder sortOrder,
         int page,
         int pageSize,
+        string? productType,
         CancellationToken cancellationToken = default)
     {
         var query = DbSet.AsQueryable();
@@ -32,6 +33,11 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
         if (categoryId is not null)
         {
             query = query.Where(p => p.CategoryId == categoryId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(productType))
+        {
+            query = query.Where(p => p.ProductType == productType);
         }
 
         if (minPrice is not null)

@@ -18,4 +18,5 @@ public record ProductFilterDto(
     string? Search = null,
     ProductSortBy SortBy = ProductSortBy.Newest,
     int Page = 1,
-    int PageSize = 8);
+    int PageSize = 8,
+    string? ProductType = null);
