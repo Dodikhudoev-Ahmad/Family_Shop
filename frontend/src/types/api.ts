@@ -21,6 +21,7 @@ export interface ProductDto {
   isBestseller: boolean;
   averageRating: number;
   reviewCount: number;
+  productType: string | null;
 }
 
 export interface CategoryDto {

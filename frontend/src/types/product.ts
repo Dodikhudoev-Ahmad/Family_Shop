@@ -23,4 +23,5 @@ export interface Product {
   createdAt: string;
   averageRating: number;
   reviewCount: number;
+  productType?: string;
 }

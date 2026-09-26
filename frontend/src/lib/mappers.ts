@@ -9,7 +9,6 @@ const SHOE_SIZES = ['36', '37', '38', '39', '40'];
 export function mapCategory(dto: CategoryDto): Category {
   return { id: String(dto.id), name: dto.name, slug: dto.slug, hasSizes: dto.hasSizes };
 }
-
 function sizesFor(categoryId: number, categories: Category[]): string[] {
   const category = categories.find((c) => c.id === String(categoryId));
   if (!category?.hasSizes) return [];
@@ -32,5 +31,6 @@ export function mapProduct(dto: ProductDto, categories: Category[]): Product {
     createdAt: dto.createdAt,
     averageRating: dto.averageRating,
     reviewCount: dto.reviewCount,
+    productType: dto.productType ?? undefined,
   };
 }
