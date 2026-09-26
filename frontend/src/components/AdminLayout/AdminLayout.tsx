@@ -24,7 +24,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     <div className="admin-layout">
       <header className="admin-topbar">
         <Link to="/" className="admin-topbar__logo">
-          <LogoMark size={18} />
+          <LogoMark size={22} />
           Family Shop
           <span>Admin</span>
         </Link>
