@@ -12,7 +12,7 @@ import { useSeo } from '../hooks/useSeo';
 import { SITE_NAME } from '../data/seo';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 import { fetchProductsPage } from '../lib/api';
-import { mapProduct } from '../lib/mappers';
+import { mapProduct, sortSizes } from '../lib/mappers';
 import type { Product } from '../types/product';
 import type { ProductSortBy } from '../types/api';
 import './CatalogPage.css';
@@ -91,7 +91,10 @@ export function CatalogPage() {
 
   useLockBodyScroll(isFilterSheetOpen);
 
-  const availableSizes = useMemo(() => Array.from(new Set(allProducts.flatMap((p) => p.sizes))).sort(), [allProducts]);
+  const availableSizes = useMemo(
+    () => sortSizes(Array.from(new Set(allProducts.flatMap((p) => p.sizes)))),
+    [allProducts]
+  );
 
   // Debounce price range so dragging the slider doesn't fire a request per pixel.
   const [debouncedPriceRange, setDebouncedPriceRange] = useState(filters.priceRange);

@@ -3,8 +3,20 @@ import type { Category, Gender, Product } from '../types/product';
 
 const GENDER_MAP: Record<number, Gender> = { 0: 'male', 1: 'female', 2: 'kids' };
 
-const CLOTHING_SIZES = ['XS', 'S', 'M', 'L', 'XL'];
+export const CLOTHING_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 const SHOE_SIZES = ['36', '37', '38', '39', '40'];
+
+/** Sorts a mixed list of sizes (clothing or shoe) into the canonical order above,
+ * instead of alphabetically (which would put '2XL' before 'L', 'XL' before 'XS', etc). */
+export function sortSizes(sizes: string[]): string[] {
+  const order = [...CLOTHING_SIZES, ...SHOE_SIZES];
+  return [...sizes].sort((a, b) => {
+    const ia = order.indexOf(a);
+    const ib = order.indexOf(b);
+    if (ia === -1 || ib === -1) return a.localeCompare(b);
+    return ia - ib;
+  });
+}
 
 export function mapCategory(dto: CategoryDto): Category {
   return { id: String(dto.id), name: dto.name, slug: dto.slug, hasSizes: dto.hasSizes };
