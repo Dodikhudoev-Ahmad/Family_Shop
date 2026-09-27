@@ -3,7 +3,7 @@ import type { Category, Gender, Product } from '../types/product';
 
 const GENDER_MAP: Record<number, Gender> = { 0: 'male', 1: 'female', 2: 'kids' };
 
-export const CLOTHING_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+export const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 const SHOE_SIZES = ['36', '37', '38', '39', '40'];
 
 /** Sorts a mixed list of sizes (clothing or shoe) into the canonical order above,
