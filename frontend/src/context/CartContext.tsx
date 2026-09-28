@@ -17,6 +17,9 @@ interface CartContextValue {
   updateQuantity: (key: string, quantity: number) => void;
   removeItem: (key: string) => void;
   clearCart: () => void;
+  /** Product.Stock is shared across all sizes, so "room left" for a product is stock minus the
+   * quantity already in the cart across every size line of that product, not just one line. */
+  remainingStock: (product: Product) => number;
   totalItems: number;
   totalPrice: number;
   promo: PromoCodeApplicationDto | null;
@@ -30,10 +33,39 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | null>(null);
 const STORAGE_KEY = 'family-shop:cart';
 
+// A stored line's key is derived, not trusted - old/malformed entries (missing `key`, `size`
+// stored as undefined instead of null, etc.) are rebuilt from `product.id` + `size` the same way
+// addItem does, so the productId+size identity described above holds for every line regardless
+// of when it was saved.
+function normalizeLine(raw: unknown): CartLine | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const candidate = raw as Partial<CartLine> & { product?: Product };
+  if (!candidate.product || typeof candidate.product.id !== 'string') return null;
+
+  const size = typeof candidate.size === 'string' && candidate.size.length > 0 ? candidate.size : null;
+  const quantity = typeof candidate.quantity === 'number' && candidate.quantity > 0 ? candidate.quantity : 0;
+  if (quantity <= 0) return null;
+
+  return { key: `${candidate.product.id}__${size ?? 'onesize'}`, product: candidate.product, size, quantity };
+}
+
 function loadStoredLines(): CartLine[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as CartLine[]) : [];
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    // Two legacy entries can normalize to the same key (e.g. both missing `size`) - merge
+    // instead of letting the later one silently overwrite the earlier one's quantity.
+    const merged = new Map<string, CartLine>();
+    for (const raw of parsed) {
+      const line = normalizeLine(raw);
+      if (!line) continue;
+      const existing = merged.get(line.key);
+      merged.set(line.key, existing ? { ...existing, quantity: existing.quantity + line.quantity } : line);
+    }
+    return [...merged.values()];
   } catch {
     return [];
   }
@@ -57,10 +89,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [lines]);
 
+  // Stock is per-product, not per-size - "room left" has to look at every size line of this
+  // product together, not just the one line/key being touched.
+  const remainingStock = (product: Product): number => {
+    const inCart = lines.filter((l) => l.product.id === product.id).reduce((sum, l) => sum + l.quantity, 0);
+    return product.stock - inCart;
+  };
+
   const addItem = (product: Product, size: string | null, quantity = 1) => {
     const key = `${product.id}__${size ?? 'onesize'}`;
-    const existing = lines.find((l) => l.key === key);
-    const cappedQuantity = Math.min((existing?.quantity ?? 0) + quantity, product.stock) - (existing?.quantity ?? 0);
+    const cappedQuantity = Math.max(0, Math.min(quantity, remainingStock(product)));
 
     if (cappedQuantity <= 0) {
       showToast(`Доступно только ${product.stock} шт «${product.name}»`, 'error');
@@ -68,6 +106,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     setLines((prev) => {
+      const existing = prev.find((l) => l.key === key);
       if (existing) {
         return prev.map((l) => (l.key === key ? { ...l, quantity: l.quantity + cappedQuantity } : l));
       }
@@ -76,17 +115,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setBump((b) => b + 1);
     showToast(
       cappedQuantity < quantity
-        ? `Доступно только ${product.stock} шт — добавлено ${cappedQuantity}`
-        : `«${product.name}» добавлен в корзину`
+        ? `Доступно только ${remainingStock(product)} шт — добавлено ${cappedQuantity}`
+        : `«${product.name}» добавлен в корзину${size ? ` (размер ${size})` : ''}`
     );
   };
 
   const updateQuantity = (key: string, quantity: number) => {
-    setLines((prev) =>
-      quantity <= 0
-        ? prev.filter((l) => l.key !== key)
-        : prev.map((l) => (l.key === key ? { ...l, quantity: Math.min(quantity, l.product.stock) } : l))
-    );
+    setLines((prev) => {
+      if (quantity <= 0) return prev.filter((l) => l.key !== key);
+
+      return prev.map((l) => {
+        if (l.key !== key) return l;
+        // Room for this line = stock minus what the product's OTHER size lines already hold.
+        const otherLinesQuantity = prev
+          .filter((o) => o.key !== key && o.product.id === l.product.id)
+          .reduce((sum, o) => sum + o.quantity, 0);
+        const maxForThisLine = Math.max(0, l.product.stock - otherLinesQuantity);
+        return { ...l, quantity: Math.min(quantity, maxForThisLine) };
+      });
+    });
   };
 
   const removeItem = (key: string) => setLines((prev) => prev.filter((l) => l.key !== key));
@@ -150,6 +197,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         updateQuantity,
         removeItem,
         clearCart,
+        remainingStock,
         totalItems,
         totalPrice,
         promo,
