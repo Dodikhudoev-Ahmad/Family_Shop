@@ -60,82 +60,101 @@ public static class SeedData
             await context.SaveChangesAsync(cancellationToken);
         }
 
-        List<Product> women13, men13, kids13, shoesBags13;
-
-        if (!await context.Categories.AnyAsync(cancellationToken))
+        // Every category the seed knows about, ensured idempotently by slug - covers both a
+        // first boot and an already-deployed database that predates the newer categories.
+        var categorySpecs = new (string Name, string Slug, bool HasSizes)[]
         {
-            var women = new Category { Name = "Женское", Slug = "women", HasSizes = true };
-            var men = new Category { Name = "Мужское", Slug = "men", HasSizes = true };
-            var kids = new Category { Name = "Детское", Slug = "kids", HasSizes = true };
-            var shoesBags = new Category { Name = "Обувь и сумки", Slug = "shoes-bags", HasSizes = true };
+            ("Женское", "women", true),
+            ("Мужское", "men", true),
+            ("Детское", "kids", true),
+            ("Обувь и сумки", "shoes-bags", true),
+            ("Бытовая техника", "bytovaya-tehnika", false),
+            ("Спортивные товары", "sport", false),
+            ("Посуда", "posuda", false),
+            ("Аксессуары", "aksessuary", false),
+        };
 
-            context.Categories.AddRange(women, men, kids, shoesBags);
-            await context.SaveChangesAsync(cancellationToken);
-
-            women13 = BuildWomen(women.Id).ToList();
-            men13 = BuildMen(men.Id).ToList();
-            kids13 = BuildKids(kids.Id).ToList();
-            shoesBags13 = BuildShoesAndBags(shoesBags.Id).ToList();
-
-            foreach (var block in new[] { women13, men13, kids13, shoesBags13 })
+        var categoriesBySlug = await context.Categories.ToDictionaryAsync(c => c.Slug, c => c, cancellationToken);
+        foreach (var (name, slug, hasSizes) in categorySpecs)
+        {
+            if (!categoriesBySlug.ContainsKey(slug))
             {
-                for (var i = 0; i < block.Count; i++)
+                var category = new Category { Name = name, Slug = slug, HasSizes = hasSizes };
+                context.Categories.Add(category);
+                await context.SaveChangesAsync(cancellationToken);
+                categoriesBySlug[slug] = category;
+            }
+        }
+
+        // Idempotent catalog upsert, keyed by (CategoryId, Name) instead of re-running only on
+        // an empty table: prod already has real Orders/Reviews pointing at existing product Ids
+        // (e.g. FS-1, FS-2), so an existing row is only ever updated in place here - its Id,
+        // Price, Stock, CreatedAt and IsBestseller are left untouched - never deleted or
+        // re-inserted. Only its Images/ProductType are corrected if the seed definition changed
+        // (this is how the mis-matched "Худи с капюшоном серое" photo gets fixed on redeploy).
+        // A genuinely new (CategoryId, Name) - i.e. one of the *Extra() additions below - gets
+        // INSERTed. Safe to run on every boot: a second run touches nothing further.
+        var catalogBuilders = new (string Slug, Func<int, IEnumerable<Product>> Build)[]
+        {
+            ("women", id => BuildWomen(id).Concat(BuildWomenExtra(id))),
+            ("men", id => BuildMen(id).Concat(BuildMenExtra(id))),
+            ("kids", id => BuildKids(id).Concat(BuildKidsExtra(id))),
+            ("shoes-bags", id => BuildShoesAndBags(id).Concat(BuildShoesAndBagsExtra(id))),
+            ("bytovaya-tehnika", id => BuildAppliances(id).Concat(BuildAppliancesExtra(id))),
+            ("sport", id => BuildSport(id).Concat(BuildSportExtra(id))),
+            ("posuda", id => BuildDishes(id).Concat(BuildDishesExtra(id))),
+            ("aksessuary", id => BuildAccessories(id).Concat(BuildAccessoriesExtra(id))),
+        };
+
+        var existingByKey = await context.Products.ToDictionaryAsync(p => (p.CategoryId, p.Name), cancellationToken);
+        var catalogChanged = false;
+
+        foreach (var (slug, build) in catalogBuilders)
+        {
+            var categoryId = categoriesBySlug[slug].Id;
+            var newInBlock = 0;
+
+            foreach (var def in build(categoryId))
+            {
+                if (existingByKey.TryGetValue((categoryId, def.Name), out var existing))
                 {
-                    // Первые 3 товара блока — "новинки", 4-й и 5-й — "хиты продаж".
-                    block[i].CreatedAt = DateTime.UtcNow.AddDays(-i);
-                    block[i].IsBestseller = i is 3 or 4;
+                    var newImage = def.Images[0];
+                    if (existing.Images.Count == 0 || existing.Images[0] != newImage)
+                    {
+                        existing.Images = def.Images;
+                        catalogChanged = true;
+                    }
+
+                    if (existing.ProductType is null && def.ProductType is not null)
+                    {
+                        existing.ProductType = def.ProductType;
+                        catalogChanged = true;
+                    }
+                }
+                else
+                {
+                    // Той же ритм, что и в исходном сиде: первые 3 новых товара блока -
+                    // "новинки", 4-й и 5-й - "хиты продаж".
+                    def.CreatedAt = DateTime.UtcNow.AddDays(-newInBlock);
+                    def.IsBestseller = newInBlock is 3 or 4;
+                    newInBlock++;
+
+                    context.Products.Add(def);
+                    existingByKey[(categoryId, def.Name)] = def;
+                    catalogChanged = true;
                 }
             }
-
-            var products = women13.Concat(men13).Concat(kids13).Concat(shoesBags13).ToList();
-
-            context.Products.AddRange(products);
-            await context.SaveChangesAsync(cancellationToken);
         }
-        else
+
+        if (catalogChanged)
         {
-            // Categories/products were already seeded by an earlier run - reload them by
-            // category so review seeding (guarded independently below) can still run against
-            // a database that already has its catalog populated.
-            var categoriesBySlug = await context.Categories.ToDictionaryAsync(c => c.Slug, c => c.Id, cancellationToken);
-            women13 = await context.Products.Where(p => p.CategoryId == categoriesBySlug["women"]).OrderBy(p => p.Id).ToListAsync(cancellationToken);
-            men13 = await context.Products.Where(p => p.CategoryId == categoriesBySlug["men"]).OrderBy(p => p.Id).ToListAsync(cancellationToken);
-            kids13 = await context.Products.Where(p => p.CategoryId == categoriesBySlug["kids"]).OrderBy(p => p.Id).ToListAsync(cancellationToken);
-            shoesBags13 = await context.Products.Where(p => p.CategoryId == categoriesBySlug["shoes-bags"]).OrderBy(p => p.Id).ToListAsync(cancellationToken);
-        }
-
-        // Guarded independently of the original 4-category seed above, so these new categories/
-        // products still get added to a database that was already seeded before they existed
-        // (e.g. an already-deployed environment), not just on a completely empty database.
-        if (!await context.Categories.AnyAsync(c => c.Slug == "bytovaya-tehnika", cancellationToken))
-        {
-            var appliancesCat = new Category { Name = "Бытовая техника", Slug = "bytovaya-tehnika", HasSizes = false };
-            var sportCat = new Category { Name = "Спортивные товары", Slug = "sport", HasSizes = false };
-            var dishesCat = new Category { Name = "Посуда", Slug = "posuda", HasSizes = false };
-            var accessoriesCat = new Category { Name = "Аксессуары", Slug = "aksessuary", HasSizes = false };
-
-            context.Categories.AddRange(appliancesCat, sportCat, dishesCat, accessoriesCat);
-            await context.SaveChangesAsync(cancellationToken);
-
-            var appliances = BuildAppliances(appliancesCat.Id).ToList();
-            var sport = BuildSport(sportCat.Id).ToList();
-            var dishes = BuildDishes(dishesCat.Id).ToList();
-            var accessories = BuildAccessories(accessoriesCat.Id).ToList();
-
-            foreach (var block in new[] { appliances, sport, dishes, accessories })
-            {
-                for (var i = 0; i < block.Count; i++)
-                {
-                    block[i].CreatedAt = DateTime.UtcNow.AddDays(-i);
-                    block[i].IsBestseller = i is 3 or 4;
-                }
-            }
-
-            var newProducts = appliances.Concat(sport).Concat(dishes).Concat(accessories).ToList();
-
-            context.Products.AddRange(newProducts);
             await context.SaveChangesAsync(cancellationToken);
         }
+
+        var women13 = await context.Products.Where(p => p.CategoryId == categoriesBySlug["women"].Id).OrderBy(p => p.Id).ToListAsync(cancellationToken);
+        var men13 = await context.Products.Where(p => p.CategoryId == categoriesBySlug["men"].Id).OrderBy(p => p.Id).ToListAsync(cancellationToken);
+        var kids13 = await context.Products.Where(p => p.CategoryId == categoriesBySlug["kids"].Id).OrderBy(p => p.Id).ToListAsync(cancellationToken);
+        var shoesBags13 = await context.Products.Where(p => p.CategoryId == categoriesBySlug["shoes-bags"].Id).OrderBy(p => p.Id).ToListAsync(cancellationToken);
 
         // Backfill product types for rows created before the column existed (idempotent).
         var untyped = await context.Products.Where(p => p.ProductType == null).ToListAsync(cancellationToken);
@@ -254,7 +273,7 @@ public static class SeedData
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    private static Product Make(string name, string description, decimal price, decimal? discountPrice, int stock, int categoryId, Gender gender, string imageId) =>
+    private static Product Make(string name, string description, decimal price, decimal? discountPrice, int stock, int categoryId, Gender gender, string imageId, string? productType = null) =>
         new()
         {
             Name = name,
@@ -264,7 +283,8 @@ public static class SeedData
             Stock = stock,
             CategoryId = categoryId,
             Gender = gender,
-            Images = [Img(imageId)]
+            Images = [Img(imageId)],
+            ProductType = productType
         };
 
     // Все изображения проверены визуально (не только по HTTP-статусу) на соответствие названию товара.
@@ -421,6 +441,213 @@ public static class SeedData
         yield return Make("Рюкзак кожаный коричневый", "Рюкзак из натуральной кожи с ремешком-затяжкой.", 22900, null, 7, categoryId, Gender.Male, "1622560480605-d83c853bc5c3");
         yield return Make("Кулон с кристаллом на цепочке", "Кулон с гранёным кристаллом синего цвета на тонкой цепочке.", 7900, 6300, 16, categoryId, Gender.Female, "1599643477877-530eb83abc8e");
         yield return Make("Чехол для телефона карбоновый чёрный", "Противоударный чехол с текстурой карбона, тонкий профиль.", 4900, null, 30, categoryId, Gender.Male, "1601593346740-925612772716");
+    }
+
+    // Дополнительные товары для полноты размерной/типовой сетки каталога (аудит Category x
+    // ProductType). Фото подобраны через Pexels API, визуально проверены на соответствие полу/
+    // возрасту и типу товара, без видимых брендов/логотипов.
+    private static IEnumerable<Product> BuildWomenExtra(int categoryId)
+    {
+        yield return Make("Блузка графитовая с воланами", "Лёгкая блузка из плотной вискозы, графитовый оттенок, комфортный крой.", 10800, 9100, 5, categoryId, Gender.Female, "https://images.pexels.com/photos/18220443/pexels-photo-18220443.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Блузки");
+        yield return Make("Блузка синяя шёлковая", "Лёгкая блузка из плотной вискозы, синий оттенок, комфортный крой.", 12700, null, 18, categoryId, Gender.Female, "https://images.pexels.com/photos/8939787/pexels-photo-8939787.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Блузки");
+        yield return Make("Блузка чёрная с бантом", "Лёгкая блузка из плотной вискозы, чёрный оттенок, комфортный крой.", 13000, null, 9, categoryId, Gender.Female, "https://images.pexels.com/photos/8289271/pexels-photo-8289271.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Блузки");
+        yield return Make("Блузка белая офисная", "Лёгкая блузка из плотной вискозы, белый оттенок, комфортный крой.", 12800, 10800, 6, categoryId, Gender.Female, "https://images.pexels.com/photos/10686399/pexels-photo-10686399.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Блузки");
+        yield return Make("Блузка молочная с рюшами", "Лёгкая блузка из плотной вискозы, молочный оттенок, комфортный крой.", 9200, 7300, 4, categoryId, Gender.Female, "https://images.pexels.com/photos/1360136/pexels-photo-1360136.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Блузки");
+        yield return Make("Комбинезон белый джинсовый", "Комбинезон свободного кроя, белый оттенок, натуральная ткань.", 20700, null, 17, categoryId, Gender.Female, "https://images.pexels.com/photos/20729716/pexels-photo-20729716.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Комбинезоны");
+        yield return Make("Комбинезон коричневый широкий", "Комбинезон свободного кроя, коричневый оттенок, натуральная ткань.", 21900, null, 6, categoryId, Gender.Female, "https://images.pexels.com/photos/6144467/pexels-photo-6144467.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Комбинезоны");
+        yield return Make("Комбинезон тёмно-синий на молнии", "Комбинезон свободного кроя, тёмно-синий оттенок, натуральная ткань.", 18100, 14400, 20, categoryId, Gender.Female, "https://images.pexels.com/photos/16977307/pexels-photo-16977307.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Комбинезоны");
+        yield return Make("Комбинезон чёрный офисный", "Комбинезон свободного кроя, чёрный оттенок, натуральная ткань.", 18500, 15700, 7, categoryId, Gender.Female, "https://images.pexels.com/photos/38023307/pexels-photo-38023307.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Комбинезоны");
+        yield return Make("Комбинезон песочный вечерний", "Комбинезон свободного кроя, песочный оттенок, натуральная ткань.", 20000, 16400, 16, categoryId, Gender.Female, "https://images.pexels.com/photos/5137870/pexels-photo-5137870.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Комбинезоны");
+        yield return Make("Комбинезон бежевый с поясом", "Комбинезон свободного кроя, бежевый оттенок, натуральная ткань.", 15700, null, 4, categoryId, Gender.Female, "https://images.pexels.com/photos/6279558/pexels-photo-6279558.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Комбинезоны");
+        yield return Make("Куртка изумрудная джинсовая", "Куртка прямого кроя, изумрудный оттенок, подходит на межсезонье.", 19800, 16200, 7, categoryId, Gender.Female, "https://images.pexels.com/photos/12083001/pexels-photo-12083001.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Куртки");
+        yield return Make("Куртка терракотовая кожаная", "Куртка прямого кроя, терракотовый оттенок, подходит на межсезонье.", 17600, 14000, 4, categoryId, Gender.Female, "https://images.pexels.com/photos/35223914/pexels-photo-35223914.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Куртки");
+        yield return Make("Куртка бордовая косуха", "Куртка прямого кроя, бордовый оттенок, подходит на межсезонье.", 16600, null, 19, categoryId, Gender.Female, "https://images.pexels.com/photos/15161530/pexels-photo-15161530.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Куртки");
+        yield return Make("Куртка бежевая на молнии", "Куртка прямого кроя, бежевый оттенок, подходит на межсезонье.", 18100, null, 10, categoryId, Gender.Female, "https://images.pexels.com/photos/31307887/pexels-photo-31307887.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Куртки");
+        yield return Make("Куртка песочная укороченная", "Куртка прямого кроя, песочный оттенок, подходит на межсезонье.", 21600, null, 8, categoryId, Gender.Female, "https://images.pexels.com/photos/11929019/pexels-photo-11929019.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Куртки");
+        yield return Make("Куртка синяя оверсайз", "Куртка прямого кроя, синий оттенок, подходит на межсезонье.", 21200, null, 7, categoryId, Gender.Female, "https://images.pexels.com/photos/39647617/pexels-photo-39647617.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Куртки");
+        yield return Make("Пальто синее классическое", "Пальто из плотной шерстяной смеси, синий оттенок, классический крой.", 30600, 24400, 14, categoryId, Gender.Female, "https://images.pexels.com/photos/6532108/pexels-photo-6532108.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пальто");
+        yield return Make("Пальто бежевое оверсайз", "Пальто из плотной шерстяной смеси, бежевый оттенок, классический крой.", 31600, 25200, 6, categoryId, Gender.Female, "https://images.pexels.com/photos/16115837/pexels-photo-16115837.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пальто");
+        yield return Make("Пальто бордовое приталенное", "Пальто из плотной шерстяной смеси, бордовый оттенок, классический крой.", 30500, null, 11, categoryId, Gender.Female, "https://images.pexels.com/photos/14589738/pexels-photo-14589738.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пальто");
+        yield return Make("Пальто оливковое длинное", "Пальто из плотной шерстяной смеси, оливковый оттенок, классический крой.", 28000, null, 15, categoryId, Gender.Female, "https://images.pexels.com/photos/19354454/pexels-photo-19354454.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пальто");
+        yield return Make("Жакет коричневый приталенный", "Жакет из костюмной ткани, коричневый оттенок, приталенный силуэт.", 21300, 18100, 21, categoryId, Gender.Female, "https://images.pexels.com/photos/4816596/pexels-photo-4816596.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пиджаки и жакеты");
+        yield return Make("Пиджак серый однобортный", "Жакет из костюмной ткани, серый оттенок, приталенный силуэт.", 21400, null, 16, categoryId, Gender.Female, "https://images.pexels.com/photos/34909494/pexels-photo-34909494.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пиджаки и жакеты");
+        yield return Make("Жакет чёрный классический", "Жакет из костюмной ткани, чёрный оттенок, приталенный силуэт.", 25000, null, 17, categoryId, Gender.Female, "https://images.pexels.com/photos/7970146/pexels-photo-7970146.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пиджаки и жакеты");
+        yield return Make("Пиджак бордовый оверсайз", "Жакет из костюмной ткани, бордовый оттенок, приталенный силуэт.", 19500, 15600, 20, categoryId, Gender.Female, "https://images.pexels.com/photos/14631245/pexels-photo-14631245.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пиджаки и жакеты");
+        yield return Make("Жакет графитовый костюмный", "Жакет из костюмной ткани, графитовый оттенок, приталенный силуэт.", 22100, 18700, 16, categoryId, Gender.Female, "https://images.pexels.com/photos/33402246/pexels-photo-33402246.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пиджаки и жакеты");
+        yield return Make("Платье терракотовое прямого кроя", "Платье из плотной ткани, терракотовый оттенок, женственный силуэт.", 16500, null, 6, categoryId, Gender.Female, "https://images.pexels.com/photos/29124227/pexels-photo-29124227.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Платья");
+        yield return Make("Платье графитовое приталенное", "Платье из плотной ткани, графитовый оттенок, женственный силуэт.", 17300, 13800, 5, categoryId, Gender.Female, "https://images.pexels.com/photos/39398487/pexels-photo-39398487.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Платья");
+        yield return Make("Платье синее вечернее", "Платье из плотной ткани, синий оттенок, женственный силуэт.", 14400, 11800, 20, categoryId, Gender.Female, "https://images.pexels.com/photos/25111218/pexels-photo-25111218.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Платья");
+    }
+
+    private static IEnumerable<Product> BuildMenExtra(int categoryId)
+    {
+        yield return Make("Брюки тёмно-синие прямого кроя", "Брюки из плотного хлопка, тёмно-синий оттенок, прямой крой.", 11100, 9400, 6, categoryId, Gender.Male, "https://images.pexels.com/photos/2897533/pexels-photo-2897533.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Брюки");
+        yield return Make("Брюки пудровые чинос", "Брюки из плотного хлопка, пудровый оттенок, прямой крой.", 13900, 11300, 14, categoryId, Gender.Male, "https://images.pexels.com/photos/22021124/pexels-photo-22021124.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Брюки");
+        yield return Make("Брюки терракотовые классические", "Брюки из плотного хлопка, терракотовый оттенок, прямой крой.", 11700, null, 6, categoryId, Gender.Male, "https://images.pexels.com/photos/9464625/pexels-photo-9464625.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Брюки");
+        yield return Make("Брюки серые зауженные", "Брюки из плотного хлопка, серый оттенок, прямой крой.", 13700, null, 5, categoryId, Gender.Male, "https://images.pexels.com/photos/29503794/pexels-photo-29503794.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Брюки");
+        yield return Make("Брюки бордовые широкие", "Брюки из плотного хлопка, бордовый оттенок, прямой крой.", 15600, null, 8, categoryId, Gender.Male, "https://images.pexels.com/photos/37897865/pexels-photo-37897865.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Брюки");
+        yield return Make("Пиджак коричневый однобортный", "Пиджак из костюмной ткани, коричневый оттенок, приталенный силуэт.", 29700, null, 6, categoryId, Gender.Male, "https://images.pexels.com/photos/15692014/pexels-photo-15692014.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пиджаки и жакеты");
+        yield return Make("Пиджак бордовый приталенный", "Пиджак из костюмной ткани, бордовый оттенок, приталенный силуэт.", 25900, 20700, 12, categoryId, Gender.Male, "https://images.pexels.com/photos/20131887/pexels-photo-20131887.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пиджаки и жакеты");
+        yield return Make("Пиджак бежевый двубортный", "Пиджак из костюмной ткани, бежевый оттенок, приталенный силуэт.", 30200, null, 16, categoryId, Gender.Male, "https://images.pexels.com/photos/27687921/pexels-photo-27687921.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пиджаки и жакеты");
+        yield return Make("Пиджак пудровый классический", "Пиджак из костюмной ткани, пудровый оттенок, приталенный силуэт.", 32300, null, 18, categoryId, Gender.Male, "https://images.pexels.com/photos/29849069/pexels-photo-29849069.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пиджаки и жакеты");
+        yield return Make("Пиджак серый костюмный", "Пиджак из костюмной ткани, серый оттенок, приталенный силуэт.", 31800, 27000, 4, categoryId, Gender.Male, "https://images.pexels.com/photos/18851488/pexels-photo-18851488.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пиджаки и жакеты");
+        yield return Make("Пиджак чёрный офисный", "Пиджак из костюмной ткани, чёрный оттенок, приталенный силуэт.", 28800, null, 19, categoryId, Gender.Male, "https://images.pexels.com/photos/11189139/pexels-photo-11189139.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пиджаки и жакеты");
+        yield return Make("Рубашка изумрудная приталенная", "Рубашка из хлопка, изумрудный оттенок, длинный рукав.", 12200, 10000, 18, categoryId, Gender.Male, "https://images.pexels.com/photos/39317887/pexels-photo-39317887.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Рубашки");
+        yield return Make("Рубашка тёмно-синяя классическая", "Рубашка из хлопка, тёмно-синий оттенок, длинный рукав.", 12000, null, 14, categoryId, Gender.Male, "https://images.pexels.com/photos/38876516/pexels-photo-38876516.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Рубашки");
+        yield return Make("Рубашка бордовая оксфорд", "Рубашка из хлопка, бордовый оттенок, длинный рукав.", 11400, null, 10, categoryId, Gender.Male, "https://images.pexels.com/photos/9522507/pexels-photo-9522507.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Рубашки");
+        yield return Make("Рубашка терракотовая свободного кроя", "Рубашка из хлопка, терракотовый оттенок, длинный рукав.", 12900, 10300, 10, categoryId, Gender.Male, "https://images.pexels.com/photos/32778911/pexels-photo-32778911.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Рубашки");
+        yield return Make("Рубашка синяя однотонная", "Рубашка из хлопка, синий оттенок, длинный рукав.", 11300, 9200, 10, categoryId, Gender.Male, "https://images.pexels.com/photos/10690912/pexels-photo-10690912.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Рубашки");
+        yield return Make("Рубашка бежевая повседневная", "Рубашка из хлопка, бежевый оттенок, длинный рукав.", 9700, 7900, 5, categoryId, Gender.Male, "https://images.pexels.com/photos/17849411/pexels-photo-17849411.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Рубашки");
+        yield return Make("Свитер чёрный трикотажный", "Свитер из мягкой пряжи, чёрный оттенок, приталенный крой.", 14400, null, 18, categoryId, Gender.Male, "https://images.pexels.com/photos/31888154/pexels-photo-31888154.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Свитеры");
+        yield return Make("Джемпер тёмно-синий шерстяной", "Свитер из мягкой пряжи, тёмно-синий оттенок, приталенный крой.", 11900, 9500, 12, categoryId, Gender.Male, "https://images.pexels.com/photos/12338846/pexels-photo-12338846.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Свитеры");
+        yield return Make("Свитер пудровый с горлом", "Свитер из мягкой пряжи, пудровый оттенок, приталенный крой.", 13700, 11600, 12, categoryId, Gender.Male, "https://images.pexels.com/photos/14966493/pexels-photo-14966493.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Свитеры");
+        yield return Make("Джемпер бордовый прямого кроя", "Свитер из мягкой пряжи, бордовый оттенок, приталенный крой.", 13500, 11400, 22, categoryId, Gender.Male, "https://images.pexels.com/photos/28452452/pexels-photo-28452452.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Свитеры");
+        yield return Make("Свитер синий крупной вязки", "Свитер из мягкой пряжи, синий оттенок, приталенный крой.", 10000, null, 16, categoryId, Gender.Male, "https://images.pexels.com/photos/36316077/pexels-photo-36316077.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Свитеры");
+        yield return Make("Куртка пудровая кожаная", "Куртка из искусственной кожи, пудровый оттенок, на молнии.", 23100, null, 12, categoryId, Gender.Male, "https://images.pexels.com/photos/32612433/pexels-photo-32612433.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Куртки");
+        yield return Make("Худи оливковое мужское", "Худи из плотного футера, оливковый оттенок, свободный крой.", 9900, 7900, 18, categoryId, Gender.Male, "https://images.pexels.com/photos/10816575/pexels-photo-10816575.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Худи");
+        yield return Make("Худи бежевое оверсайз мужское", "Худи из плотного футера, бежевый оттенок, свободный крой.", 10400, null, 12, categoryId, Gender.Male, "https://images.pexels.com/photos/6140705/pexels-photo-6140705.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Худи");
+        yield return Make("Худи чёрное с принтом мужское", "Худи из плотного футера, чёрный оттенок, свободный крой.", 11200, 9200, 9, categoryId, Gender.Male, "https://images.pexels.com/photos/5825332/pexels-photo-5825332.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Худи");
+        yield return Make("Худи песочное мужское", "Худи из плотного футера, песочный оттенок, свободный крой.", 9600, null, 20, categoryId, Gender.Male, "https://images.pexels.com/photos/33740371/pexels-photo-33740371.png?auto=compress&cs=tinysrgb&h=650&w=940", "Худи");
+        yield return Make("Худи графитовое мужское", "Худи из плотного футера, графитовый оттенок, свободный крой.", 10900, 8700, 15, categoryId, Gender.Male, "https://images.pexels.com/photos/4082538/pexels-photo-4082538.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Худи");
+        yield return Make("Худи тёмно-синее мужское", "Худи из плотного футера, тёмно-синий оттенок, свободный крой.", 10200, null, 7, categoryId, Gender.Male, "https://images.pexels.com/photos/14189676/pexels-photo-14189676.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Худи");
+    }
+
+    private static IEnumerable<Product> BuildKidsExtra(int categoryId)
+    {
+        yield return Make("Блузка синяя для девочки", "Хлопковая блузка для девочки, синий оттенок, мягкая ткань.", 5600, 4700, 16, categoryId, Gender.Kids, "https://images.pexels.com/photos/717208/pexels-photo-717208.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Блузки");
+        yield return Make("Блузка молочная хлопковая детская", "Хлопковая блузка для девочки, молочный оттенок, мягкая ткань.", 5800, null, 10, categoryId, Gender.Kids, "https://images.pexels.com/photos/30210365/pexels-photo-30210365.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Блузки");
+        yield return Make("Блузка изумрудная нарядная детская", "Хлопковая блузка для девочки, изумрудный оттенок, мягкая ткань.", 7400, null, 4, categoryId, Gender.Kids, "https://images.pexels.com/photos/7462541/pexels-photo-7462541.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Блузки");
+        yield return Make("Блузка белая с воланами детская", "Хлопковая блузка для девочки, белый оттенок, мягкая ткань.", 6600, null, 20, categoryId, Gender.Kids, "https://images.pexels.com/photos/9322330/pexels-photo-9322330.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Блузки");
+        yield return Make("Блузка коричневая школьная", "Хлопковая блузка для девочки, коричневый оттенок, мягкая ткань.", 6400, null, 10, categoryId, Gender.Kids, "https://images.pexels.com/photos/18001393/pexels-photo-18001393.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Блузки");
+        yield return Make("Блузка тёмно-синяя летняя детская", "Хлопковая блузка для девочки, тёмно-синий оттенок, мягкая ткань.", 5700, null, 7, categoryId, Gender.Kids, "https://images.pexels.com/photos/7169365/pexels-photo-7169365.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Блузки");
+        yield return Make("Боди оливковое для малыша", "Боди из мягкого хлопка, оливковый оттенок, кнопки на плечах.", 3100, null, 12, categoryId, Gender.Kids, "https://images.pexels.com/photos/22484670/pexels-photo-22484670.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Боди");
+        yield return Make("Боди песочное хлопковое", "Боди из мягкого хлопка, песочный оттенок, кнопки на плечах.", 3300, null, 10, categoryId, Gender.Kids, "https://images.pexels.com/photos/22484671/pexels-photo-22484671.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Боди");
+        yield return Make("Боди изумрудное с кнопками", "Боди из мягкого хлопка, изумрудный оттенок, кнопки на плечах.", 3800, null, 17, categoryId, Gender.Kids, "https://images.pexels.com/photos/7973669/pexels-photo-7973669.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Боди");
+        yield return Make("Боди терракотовое для новорождённого", "Боди из мягкого хлопка, терракотовый оттенок, кнопки на плечах.", 3800, 3200, 14, categoryId, Gender.Kids, "https://images.pexels.com/photos/30435363/pexels-photo-30435363.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Боди");
+        yield return Make("Боди бежевое базовое", "Боди из мягкого хлопка, бежевый оттенок, кнопки на плечах.", 3600, null, 8, categoryId, Gender.Kids, "https://images.pexels.com/photos/15067460/pexels-photo-15067460.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Боди");
+        yield return Make("Боди чёрное на лето", "Боди из мягкого хлопка, чёрный оттенок, кнопки на плечах.", 3300, 2800, 20, categoryId, Gender.Kids, "https://images.pexels.com/photos/18285728/pexels-photo-18285728.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Боди");
+        yield return Make("Спортивный костюм бордовый детский", "Спортивный костюм из футера, бордовый оттенок, свободный крой.", 12200, null, 21, categoryId, Gender.Kids, "https://images.pexels.com/photos/14571364/pexels-photo-14571364.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Костюмы");
+        yield return Make("Костюм чёрный для мальчика", "Спортивный костюм из футера, чёрный оттенок, свободный крой.", 10500, 8600, 10, categoryId, Gender.Kids, "https://images.pexels.com/photos/31637477/pexels-photo-31637477.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Костюмы");
+        yield return Make("Костюм тёмно-синий для девочки", "Спортивный костюм из футера, тёмно-синий оттенок, свободный крой.", 10800, null, 21, categoryId, Gender.Kids, "https://images.pexels.com/photos/36073179/pexels-photo-36073179.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Костюмы");
+        yield return Make("Костюм бежевый прогулочный детский", "Спортивный костюм из футера, бежевый оттенок, свободный крой.", 12200, 10000, 10, categoryId, Gender.Kids, "https://images.pexels.com/photos/34043982/pexels-photo-34043982.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Костюмы");
+        yield return Make("Костюм синий трикотажный детский", "Спортивный костюм из футера, синий оттенок, свободный крой.", 11500, null, 20, categoryId, Gender.Kids, "https://images.pexels.com/photos/36073185/pexels-photo-36073185.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Костюмы");
+        yield return Make("Костюм коричневый флисовый детский", "Спортивный костюм из футера, коричневый оттенок, свободный крой.", 8900, null, 4, categoryId, Gender.Kids, "https://images.pexels.com/photos/14571343/pexels-photo-14571343.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Костюмы");
+        yield return Make("Куртка серая детская демисезонная", "Куртка с капюшоном, серый оттенок, лёгкая подкладка.", 11500, null, 16, categoryId, Gender.Kids, "https://images.pexels.com/photos/13732520/pexels-photo-13732520.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Куртки");
+        yield return Make("Куртка коричневая для мальчика", "Куртка с капюшоном, коричневый оттенок, лёгкая подкладка.", 10600, 8600, 8, categoryId, Gender.Kids, "https://images.pexels.com/photos/6034785/pexels-photo-6034785.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Куртки");
+        yield return Make("Куртка бежевая для девочки", "Куртка с капюшоном, бежевый оттенок, лёгкая подкладка.", 11000, 9000, 20, categoryId, Gender.Kids, "https://images.pexels.com/photos/35244458/pexels-photo-35244458.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Куртки");
+        yield return Make("Куртка песочная джинсовая детская", "Куртка с капюшоном, песочный оттенок, лёгкая подкладка.", 10900, 8900, 4, categoryId, Gender.Kids, "https://images.pexels.com/photos/38778561/pexels-photo-38778561.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Куртки");
+        yield return Make("Пальто синее зимнее детское", "Тёплое пальто с капюшоном, синий оттенок, зимний вариант.", 13400, null, 7, categoryId, Gender.Kids, "https://images.pexels.com/photos/4260394/pexels-photo-4260394.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пальто");
+        yield return Make("Пуховик тёмно-синий для девочки", "Тёплое пальто с капюшоном, тёмно-синий оттенок, зимний вариант.", 15000, null, 7, categoryId, Gender.Kids, "https://images.pexels.com/photos/29189974/pexels-photo-29189974.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пальто");
+        yield return Make("Пуховик бордовый для мальчика", "Тёплое пальто с капюшоном, бордовый оттенок, зимний вариант.", 15100, null, 10, categoryId, Gender.Kids, "https://images.pexels.com/photos/19869874/pexels-photo-19869874.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пальто");
+        yield return Make("Пальто изумрудное с капюшоном детское", "Тёплое пальто с капюшоном, изумрудный оттенок, зимний вариант.", 15200, null, 4, categoryId, Gender.Kids, "https://images.pexels.com/photos/11111822/pexels-photo-11111822.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пальто");
+        yield return Make("Пуховик оливковый детский тёплый", "Тёплое пальто с капюшоном, оливковый оттенок, зимний вариант.", 14300, null, 20, categoryId, Gender.Kids, "https://images.pexels.com/photos/11628209/pexels-photo-11628209.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пальто");
+        yield return Make("Пальто молочное демисезонное детское", "Тёплое пальто с капюшоном, молочный оттенок, зимний вариант.", 15800, 12600, 21, categoryId, Gender.Kids, "https://images.pexels.com/photos/31484621/pexels-photo-31484621.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Пальто");
+        yield return Make("Платье чёрное для девочки", "Платье из хлопка, чёрный оттенок, удобный крой для ребёнка.", 8700, null, 10, categoryId, Gender.Kids, "https://images.pexels.com/photos/18476125/pexels-photo-18476125.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Платья");
+        yield return Make("Платье коричневое хлопковое детское", "Платье из хлопка, коричневый оттенок, удобный крой для ребёнка.", 8300, null, 7, categoryId, Gender.Kids, "https://images.pexels.com/photos/38247111/pexels-photo-38247111.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Платья");
+        yield return Make("Платье оливковое нарядное детское", "Платье из хлопка, оливковый оттенок, удобный крой для ребёнка.", 6300, null, 8, categoryId, Gender.Kids, "https://images.pexels.com/photos/8497598/pexels-photo-8497598.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Платья");
+        yield return Make("Платье белое летнее детское", "Платье из хлопка, белый оттенок, удобный крой для ребёнка.", 8200, 6700, 7, categoryId, Gender.Kids, "https://images.pexels.com/photos/36691792/pexels-photo-36691792.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Платья");
+        yield return Make("Платье пудровое повседневное детское", "Платье из хлопка, пудровый оттенок, удобный крой для ребёнка.", 7200, null, 17, categoryId, Gender.Kids, "https://images.pexels.com/photos/4711737/pexels-photo-4711737.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Платья");
+        yield return Make("Футболка графитовая детская", "Базовая футболка из хлопка, графитовый оттенок.", 3400, null, 10, categoryId, Gender.Kids, "https://images.pexels.com/photos/7144648/pexels-photo-7144648.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Футболки");
+        yield return Make("Футболка молочная для мальчика", "Базовая футболка из хлопка, молочный оттенок.", 2700, null, 4, categoryId, Gender.Kids, "https://images.pexels.com/photos/27990627/pexels-photo-27990627.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Футболки");
+        yield return Make("Футболка пудровая базовая детская", "Базовая футболка из хлопка, пудровый оттенок.", 2600, null, 20, categoryId, Gender.Kids, "https://images.pexels.com/photos/8632212/pexels-photo-8632212.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Футболки");
+        yield return Make("Футболка синяя хлопковая детская", "Базовая футболка из хлопка, синий оттенок.", 3500, null, 10, categoryId, Gender.Kids, "https://images.pexels.com/photos/32071161/pexels-photo-32071161.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Футболки");
+        yield return Make("Худи графитовое детское", "Худи с капюшоном, графитовый оттенок, тёплый футер.", 7600, null, 20, categoryId, Gender.Kids, "https://images.pexels.com/photos/7849950/pexels-photo-7849950.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Худи");
+        yield return Make("Худи тёмно-синее для мальчика", "Худи с капюшоном, тёмно-синий оттенок, тёплый футер.", 7500, 6300, 15, categoryId, Gender.Kids, "https://images.pexels.com/photos/6623779/pexels-photo-6623779.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Худи");
+        yield return Make("Худи молочное для девочки", "Худи с капюшоном, молочный оттенок, тёплый футер.", 6400, null, 5, categoryId, Gender.Kids, "https://images.pexels.com/photos/14571345/pexels-photo-14571345.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Худи");
+        yield return Make("Худи оливковое с капюшоном детское", "Худи с капюшоном, оливковый оттенок, тёплый футер.", 7000, 5700, 15, categoryId, Gender.Kids, "https://images.pexels.com/photos/14544401/pexels-photo-14544401.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Худи");
+        yield return Make("Худи терракотовое тёплое детское", "Худи с капюшоном, терракотовый оттенок, тёплый футер.", 8700, 6900, 9, categoryId, Gender.Kids, "https://images.pexels.com/photos/7134016/pexels-photo-7134016.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Худи");
+        yield return Make("Худи синее спортивное детское", "Худи с капюшоном, синий оттенок, тёплый футер.", 6700, null, 4, categoryId, Gender.Kids, "https://images.pexels.com/photos/6093535/pexels-photo-6093535.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Худи");
+    }
+
+    private static IEnumerable<Product> BuildShoesAndBagsExtra(int categoryId)
+    {
+        yield return Make("Ботинки изумрудные кожаные", "Ботинки из качественной кожи, изумрудный оттенок, устойчивая подошва.", 25000, 20500, 21, categoryId, Gender.Female, "https://images.pexels.com/photos/27639594/pexels-photo-27639594.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Ботинки");
+        yield return Make("Ботинки бордовые замшевые", "Ботинки из качественной кожи, бордовый оттенок, устойчивая подошва.", 24600, null, 9, categoryId, Gender.Female, "https://images.pexels.com/photos/30272899/pexels-photo-30272899.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Ботинки");
+        yield return Make("Ботинки коричневые на шнуровке", "Ботинки из качественной кожи, коричневый оттенок, устойчивая подошва.", 25000, 20000, 6, categoryId, Gender.Female, "https://images.pexels.com/photos/27608725/pexels-photo-27608725.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Ботинки");
+        yield return Make("Ботинки чёрные высокие", "Ботинки из качественной кожи, чёрный оттенок, устойчивая подошва.", 24200, 19300, 4, categoryId, Gender.Female, "https://images.pexels.com/photos/30156822/pexels-photo-30156822.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Ботинки");
+        yield return Make("Кроссовки оливковые текстильные", "Лёгкие кроссовки, оливковый оттенок, дышащий верх.", 19300, null, 19, categoryId, Gender.Female, "https://images.pexels.com/photos/27204251/pexels-photo-27204251.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кроссовки");
+        yield return Make("Кроссовки терракотовые лёгкие", "Лёгкие кроссовки, терракотовый оттенок, дышащий верх.", 21000, 16800, 16, categoryId, Gender.Female, "https://images.pexels.com/photos/27503497/pexels-photo-27503497.png?auto=compress&cs=tinysrgb&h=650&w=940", "Кроссовки");
+        yield return Make("Сумка синяя кожаная", "Сумка из плотной кожи, синий оттенок, вместительное отделение.", 17900, 14600, 12, categoryId, Gender.Female, "https://images.pexels.com/photos/27174573/pexels-photo-27174573.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Сумки");
+        yield return Make("Сумка тёмно-синяя структурная", "Сумка из плотной кожи, тёмно-синий оттенок, вместительное отделение.", 23600, 20000, 20, categoryId, Gender.Female, "https://images.pexels.com/photos/27100523/pexels-photo-27100523.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Сумки");
+    }
+
+    private static IEnumerable<Product> BuildAppliancesExtra(int categoryId)
+    {
+        yield return Make("Вентилятор ретро бежевый", "Настольный вентилятор в ретро-корпусе, бежевый оттенок.", 18300, null, 5, categoryId, Gender.Female, "https://images.pexels.com/photos/10450623/pexels-photo-10450623.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Вентиляторы");
+        yield return Make("Микроволновая печь чёрная встраиваемая", "Микроволновая печь, чёрный корпус, несколько режимов мощности.", 76800, null, 13, categoryId, Gender.Male, "https://images.pexels.com/photos/32269126/pexels-photo-32269126.png?auto=compress&cs=tinysrgb&h=650&w=940", "Микроволновки");
+        yield return Make("Микроволновая печь белая соло", "Микроволновая печь, белый корпус, несколько режимов мощности.", 60500, 48400, 22, categoryId, Gender.Male, "https://images.pexels.com/photos/16927363/pexels-photo-16927363.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Микроволновки");
+        yield return Make("Наушники белые беспроводные", "Аудиотехника, белый корпус, длительная работа от батареи.", 20300, null, 12, categoryId, Gender.Male, "https://images.pexels.com/photos/3394648/pexels-photo-3394648.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Наушники и колонки");
+        yield return Make("Колонка молочная портативная", "Аудиотехника, молочный корпус, длительная работа от батареи.", 24500, 20800, 7, categoryId, Gender.Male, "https://images.pexels.com/photos/33298190/pexels-photo-33298190.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Наушники и колонки");
+        yield return Make("Наушники коричневые накладные", "Аудиотехника, коричневый корпус, длительная работа от батареи.", 24100, null, 8, categoryId, Gender.Male, "https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Наушники и колонки");
+        yield return Make("Плита синяя газовая настольная", "Кухонная плита, синий корпус, эмалированное покрытие.", 51200, 40900, 17, categoryId, Gender.Male, "https://images.pexels.com/photos/16927367/pexels-photo-16927367.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Плиты и духовки");
+        yield return Make("Духовой шкаф коричневый отдельностоящий", "Кухонная плита, коричневый корпус, эмалированное покрытие.", 68200, null, 22, categoryId, Gender.Male, "https://images.pexels.com/photos/36240645/pexels-photo-36240645.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Плиты и духовки");
+        yield return Make("Тостер пудровый на 2 тоста", "Классический тостер, пудровый корпус, регулировка прожарки.", 13600, 11500, 22, categoryId, Gender.Male, "https://images.pexels.com/photos/17210074/pexels-photo-17210074.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Тостеры");
+        yield return Make("Холодильник тёмно-синий однокамерный", "Холодильник, тёмно-синий корпус, вместительная камера.", 150800, 123600, 4, categoryId, Gender.Female, "https://images.pexels.com/photos/38853682/pexels-photo-38853682.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Холодильники");
+        yield return Make("Холодильник оливковый встраиваемый", "Холодильник, оливковый корпус, вместительная камера.", 213700, 170900, 21, categoryId, Gender.Female, "https://images.pexels.com/photos/38609262/pexels-photo-38609262.png?auto=compress&cs=tinysrgb&h=650&w=940", "Холодильники");
+        yield return Make("Чайник электрический тёмно-синий", "Электрический чайник, тёмно-синий корпус, автоотключение.", 16000, 13600, 8, categoryId, Gender.Female, "https://images.pexels.com/photos/10900909/pexels-photo-10900909.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Чайники");
+        yield return Make("Чайник чёрный для пуровера", "Электрический чайник, чёрный корпус, автоотключение.", 19200, null, 7, categoryId, Gender.Female, "https://images.pexels.com/photos/21404851/pexels-photo-21404851.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Чайники");
+    }
+
+    private static IEnumerable<Product> BuildSportExtra(int categoryId)
+    {
+        yield return Make("Кроссовки чёрные беговые", "Спортивные кроссовки, чёрный оттенок, амортизирующая подошва.", 23700, null, 9, categoryId, Gender.Male, "https://images.pexels.com/photos/24702077/pexels-photo-24702077.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кроссовки");
+        yield return Make("Кроссовки песочные для тренировок", "Спортивные кроссовки, песочный оттенок, амортизирующая подошва.", 24600, null, 22, categoryId, Gender.Male, "https://images.pexels.com/photos/2404959/pexels-photo-2404959.png?auto=compress&cs=tinysrgb&h=650&w=940", "Кроссовки");
+        yield return Make("Кроссовки бордовые лёгкоатлетические", "Спортивные кроссовки, бордовый оттенок, амортизирующая подошва.", 22500, null, 14, categoryId, Gender.Male, "https://images.pexels.com/photos/19577866/pexels-photo-19577866.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кроссовки");
+        yield return Make("Кроссовки синие повседневные унисекс", "Спортивные кроссовки, синий оттенок, амортизирующая подошва.", 22400, null, 17, categoryId, Gender.Male, "https://images.pexels.com/photos/19577867/pexels-photo-19577867.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кроссовки");
+        yield return Make("Гиря серая для домашних тренировок", "Гиря для силовых тренировок дома, серый корпус.", 50200, null, 14, categoryId, Gender.Male, "https://images.pexels.com/photos/32610335/pexels-photo-32610335.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Тренажёры");
+        yield return Make("Эспандер кистевой чёрный", "Эспандер для тренировки хвата, чёрный корпус, регулировка нагрузки.", 4900, 4000, 15, categoryId, Gender.Male, "https://images.pexels.com/photos/6824816/pexels-photo-6824816.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Экипировка");
+    }
+
+    private static IEnumerable<Product> BuildDishesExtra(int categoryId)
+    {
+        yield return Make("Бокал чёрный для вина", "Бокал из тонкого стекла, чёрный оттенок, на высокой ножке.", 6300, 5100, 20, categoryId, Gender.Female, "https://images.pexels.com/photos/15503675/pexels-photo-15503675.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Бокалы");
+        yield return Make("Набор бокалов молочный, 2 шт", "Бокал из тонкого стекла, молочный оттенок, на высокой ножке.", 4900, 4000, 4, categoryId, Gender.Female, "https://images.pexels.com/photos/9639902/pexels-photo-9639902.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Бокалы");
+        yield return Make("Бокал бордовый для красного вина", "Бокал из тонкого стекла, бордовый оттенок, на высокой ножке.", 5700, null, 22, categoryId, Gender.Female, "https://images.pexels.com/photos/26647497/pexels-photo-26647497.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Бокалы");
+        yield return Make("Бокал серый тонкого стекла", "Бокал из тонкого стекла, серый оттенок, на высокой ножке.", 5800, null, 22, categoryId, Gender.Female, "https://images.pexels.com/photos/37794986/pexels-photo-37794986.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Бокалы");
+        yield return Make("Бокал бежевый для белого вина", "Бокал из тонкого стекла, бежевый оттенок, на высокой ножке.", 5700, null, 21, categoryId, Gender.Female, "https://images.pexels.com/photos/11177974/pexels-photo-11177974.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Бокалы");
+        yield return Make("Кастрюля серая с крышкой", "Кастрюля с плотно прилегающей крышкой, серый корпус.", 31800, 26000, 4, categoryId, Gender.Female, "https://images.pexels.com/photos/36552082/pexels-photo-36552082.png?auto=compress&cs=tinysrgb&h=650&w=940", "Кастрюли");
+        yield return Make("Кружка серая керамическая", "Керамическая кружка, серый оттенок, объём 350 мл.", 5200, 4200, 6, categoryId, Gender.Female, "https://images.pexels.com/photos/31785816/pexels-photo-31785816.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кружки и чашки");
+        yield return Make("Чашка пудровая для капучино", "Керамическая кружка, пудровый оттенок, объём 350 мл.", 2900, null, 8, categoryId, Gender.Female, "https://images.pexels.com/photos/3187013/pexels-photo-3187013.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кружки и чашки");
+        yield return Make("Кружка синяя в полоску", "Керамическая кружка, синий оттенок, объём 350 мл.", 3200, null, 17, categoryId, Gender.Female, "https://images.pexels.com/photos/12480291/pexels-photo-12480291.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кружки и чашки");
+        yield return Make("Кружка бежевая авторская", "Керамическая кружка, бежевый оттенок, объём 350 мл.", 3600, null, 19, categoryId, Gender.Female, "https://images.pexels.com/photos/34299318/pexels-photo-34299318.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кружки и чашки");
+        yield return Make("Ложка и лопатка графитовые деревянные", "Кухонные аксессуары, графитовый оттенок, для повседневного использования.", 7800, null, 17, categoryId, Gender.Female, "https://images.pexels.com/photos/6246099/pexels-photo-6246099.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кухонные аксессуары");
+        yield return Make("Набор для специй чёрный", "Кухонные аксессуары, чёрный оттенок, для повседневного использования.", 6100, null, 16, categoryId, Gender.Female, "https://images.pexels.com/photos/35828604/pexels-photo-35828604.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кухонные аксессуары");
+        yield return Make("Контейнер кухонный бежевый", "Кухонные аксессуары, бежевый оттенок, для повседневного использования.", 4400, null, 21, categoryId, Gender.Female, "https://images.pexels.com/photos/9698110/pexels-photo-9698110.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кухонные аксессуары");
+        yield return Make("Мерный стакан коричневый", "Кухонные аксессуары, коричневый оттенок, для повседневного использования.", 4000, null, 4, categoryId, Gender.Female, "https://images.pexels.com/photos/14207018/pexels-photo-14207018.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кухонные аксессуары");
+        yield return Make("Миска чёрная керамическая", "Керамическая миска, чёрный оттенок, диаметр 16 см.", 4000, 3200, 19, categoryId, Gender.Female, "https://images.pexels.com/photos/12756070/pexels-photo-12756070.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Миски");
+        yield return Make("Миска коричневая глубокая", "Керамическая миска, коричневый оттенок, диаметр 16 см.", 3300, null, 13, categoryId, Gender.Female, "https://images.pexels.com/photos/2611817/pexels-photo-2611817.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Миски");
+        yield return Make("Набор мисок молочный", "Керамическая миска, молочный оттенок, диаметр 16 см.", 4400, 3500, 5, categoryId, Gender.Female, "https://images.pexels.com/photos/9440473/pexels-photo-9440473.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Миски");
+        yield return Make("Миска оливковая для супа", "Керамическая миска, оливковый оттенок, диаметр 16 см.", 4800, null, 22, categoryId, Gender.Female, "https://images.pexels.com/photos/101669/pexels-photo-101669.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Миски");
+        yield return Make("Набор кухонных ножей пудровый", "Набор кухонных ножей из нержавеющей стали, пудровые рукояти.", 20500, 16800, 16, categoryId, Gender.Male, "https://images.pexels.com/photos/16443132/pexels-photo-16443132.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Ножи");
+        yield return Make("Набор ножей изумрудный на подставке", "Набор кухонных ножей из нержавеющей стали, изумрудные рукояти.", 17100, null, 13, categoryId, Gender.Male, "https://images.pexels.com/photos/16603814/pexels-photo-16603814.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Ножи");
+        yield return Make("Нож бордовый поварской", "Набор кухонных ножей из нержавеющей стали, бордовые рукояти.", 22900, null, 21, categoryId, Gender.Male, "https://images.pexels.com/photos/20392658/pexels-photo-20392658.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Ножи");
+        yield return Make("Нож молочный универсальный", "Набор кухонных ножей из нержавеющей стали, молочные рукояти.", 21000, null, 19, categoryId, Gender.Male, "https://images.pexels.com/photos/20392663/pexels-photo-20392663.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Ножи");
+        yield return Make("Тарелка терракотовая обеденная", "Тарелка из фарфора, терракотовый оттенок, диаметр 26 см.", 3600, null, 11, categoryId, Gender.Female, "https://images.pexels.com/photos/17840025/pexels-photo-17840025.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Тарелки");
+        yield return Make("Тарелка бежевая плоская", "Тарелка из фарфора, бежевый оттенок, диаметр 26 см.", 3800, 3100, 15, categoryId, Gender.Female, "https://images.pexels.com/photos/8672632/pexels-photo-8672632.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Тарелки");
+        yield return Make("Тарелка изумрудная сервировочная", "Тарелка из фарфора, изумрудный оттенок, диаметр 26 см.", 3100, null, 17, categoryId, Gender.Female, "https://images.pexels.com/photos/15554373/pexels-photo-15554373.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Тарелки");
+        yield return Make("Чайник заварочный пудровый", "Заварочный чайник из керамики, пудровый оттенок, с ситечком.", 8300, null, 9, categoryId, Gender.Female, "https://images.pexels.com/photos/29378867/pexels-photo-29378867.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Чайники");
+        yield return Make("Чайник чёрный керамический", "Заварочный чайник из керамики, чёрный оттенок, с ситечком.", 7900, 6300, 8, categoryId, Gender.Female, "https://images.pexels.com/photos/5987088/pexels-photo-5987088.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Чайники");
+        yield return Make("Сервиз чайный серый", "Заварочный чайник из керамики, серый оттенок, с ситечком.", 8100, 6800, 20, categoryId, Gender.Female, "https://images.pexels.com/photos/18273371/pexels-photo-18273371.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Чайники");
+        yield return Make("Чайник бордовый с узором", "Заварочный чайник из керамики, бордовый оттенок, с ситечком.", 8200, null, 18, categoryId, Gender.Female, "https://images.pexels.com/photos/18376883/pexels-photo-18376883.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Чайники");
+    }
+
+    private static IEnumerable<Product> BuildAccessoriesExtra(int categoryId)
+    {
+        yield return Make("Рюкзак синий городской", "Рюкзак из плотного текстиля, синий оттенок, отделение для ноутбука.", 18300, 15000, 9, categoryId, Gender.Male, "https://images.pexels.com/photos/33861296/pexels-photo-33861296.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Рюкзаки");
+        yield return Make("Рюкзак бежевый спортивный", "Рюкзак из плотного текстиля, бежевый оттенок, отделение для ноутбука.", 16800, 13700, 6, categoryId, Gender.Male, "https://images.pexels.com/photos/17366606/pexels-photo-17366606.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Рюкзаки");
+        yield return Make("Рюкзак терракотовый текстильный", "Рюкзак из плотного текстиля, терракотовый оттенок, отделение для ноутбука.", 18400, 15000, 6, categoryId, Gender.Male, "https://images.pexels.com/photos/8125853/pexels-photo-8125853.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Рюкзаки");
+        yield return Make("Кулон коричневый на цепочке", "Кулон на тонкой цепочке, коричневый камень, позолота.", 7600, 6000, 18, categoryId, Gender.Female, "https://images.pexels.com/photos/5442469/pexels-photo-5442469.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Украшения");
+        yield return Make("Подвеска бордовая с камнем", "Кулон на тонкой цепочке, бордовый камень, позолота.", 9300, 7900, 10, categoryId, Gender.Female, "https://images.pexels.com/photos/10983782/pexels-photo-10983782.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Украшения");
+        yield return Make("Часы наручные изумрудные классические", "Наручные часы, изумрудный корпус, ремешок из качественных материалов.", 25000, 20000, 14, categoryId, Gender.Male, "https://images.pexels.com/photos/6157408/pexels-photo-6157408.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Часы");
+        yield return Make("Часы синие спортивные", "Наручные часы, синий корпус, ремешок из качественных материалов.", 27800, null, 22, categoryId, Gender.Male, "https://images.pexels.com/photos/14312717/pexels-photo-14312717.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Часы");
+        yield return Make("Часы белые механические", "Наручные часы, белый корпус, ремешок из качественных материалов.", 31900, null, 14, categoryId, Gender.Male, "https://images.pexels.com/photos/33794870/pexels-photo-33794870.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Часы");
+        yield return Make("Часы чёрные на кожаном ремешке", "Наручные часы, чёрный корпус, ремешок из качественных материалов.", 31300, null, 6, categoryId, Gender.Male, "https://images.pexels.com/photos/19915596/pexels-photo-19915596.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Часы");
+        yield return Make("Часы оливковые минималистичные", "Наручные часы, оливковый корпус, ремешок из качественных материалов.", 22500, 18000, 8, categoryId, Gender.Male, "https://images.pexels.com/photos/15210883/pexels-photo-15210883.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Часы");
+        yield return Make("Часы серые хронограф", "Наручные часы, серый корпус, ремешок из качественных материалов.", 24400, 20000, 5, categoryId, Gender.Male, "https://images.pexels.com/photos/28977357/pexels-photo-28977357.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Часы");
+        yield return Make("Чехол для телефона бежевый силиконовый", "Чехол для телефона, бежевый цвет, тонкий профиль.", 4700, null, 8, categoryId, Gender.Male, "https://images.pexels.com/photos/7989741/pexels-photo-7989741.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Чехлы");
+        yield return Make("Чехол тёмно-синий противоударный", "Чехол для телефона, тёмно-синий цвет, тонкий профиль.", 5400, 4300, 16, categoryId, Gender.Male, "https://images.pexels.com/photos/20321375/pexels-photo-20321375.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Чехлы");
+        yield return Make("Чехол синий матовый", "Чехол для телефона, синий цвет, тонкий профиль.", 4900, 4000, 4, categoryId, Gender.Male, "https://images.pexels.com/photos/20321385/pexels-photo-20321385.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Чехлы");
+        yield return Make("Чехол коричневый прозрачный", "Чехол для телефона, коричневый цвет, тонкий профиль.", 5700, 4800, 14, categoryId, Gender.Male, "https://images.pexels.com/photos/11120516/pexels-photo-11120516.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Чехлы");
     }
 
     private static string GenerateRandomPassword()
