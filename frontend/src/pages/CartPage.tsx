@@ -11,7 +11,7 @@ import { PromoBanner } from '../components/PromoBanner/PromoBanner';
 import './CartPage.css';
 
 export function CartPage() {
-  const { lines, updateQuantity, removeItem, totalPrice, promo, finalTotal } = useCart();
+  const { lines, updateQuantity, removeItem, remainingStock, totalPrice, promo, finalTotal } = useCart();
   const [pendingRemove, setPendingRemove] = useState<CartLine | null>(null);
 
   const handleRemove = () => {
@@ -58,7 +58,7 @@ export function CartPage() {
                       <span>{line.quantity}</span>
                       <button
                         onClick={() => updateQuantity(line.key, line.quantity + 1)}
-                        disabled={line.quantity >= line.product.stock}
+                        disabled={remainingStock(line.product) <= 0}
                         aria-label="Увеличить"
                       >
                         +
