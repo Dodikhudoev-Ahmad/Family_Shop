@@ -115,11 +115,22 @@ function buildProductParams(query: ProductQuery): URLSearchParams {
   return params;
 }
 
-/** Загружает весь каталог без пагинации (используется контекстами вне страницы каталога). */
+const FETCH_ALL_PAGE_SIZE = 200;
+
+/** Загружает весь каталог без пагинации (используется контекстами вне страницы каталога).
+ * Постранично, пока сервер не скажет hasMore: false — один запрос на 200 штук молча обрезал
+ * бы каталог, как только он перерастёт этот размер. */
 export async function fetchProducts(query: ProductQuery = {}): Promise<ProductDto[]> {
-  const params = buildProductParams({ ...query, page: 1, pageSize: 200 });
-  const result = await apiFetch<PagedResult<ProductDto>>(`/products?${params.toString()}`);
-  return result.items;
+  const items: ProductDto[] = [];
+  let page = 1;
+  while (true) {
+    const params = buildProductParams({ ...query, page, pageSize: FETCH_ALL_PAGE_SIZE });
+    const result = await apiFetch<PagedResult<ProductDto>>(`/products?${params.toString()}`);
+    items.push(...result.items);
+    if (!result.hasMore) break;
+    page += 1;
+  }
+  return items;
 }
 
 export function fetchProductsPage(query: ProductQuery = {}): Promise<PagedResult<ProductDto>> {
