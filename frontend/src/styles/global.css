@@ -9,12 +9,23 @@ html {
   color-scheme: light;
   /* Safety net: catches any future element that overflows the viewport width
      instead of letting it push the whole page into horizontal scroll. Doesn't
-     replace fixing the actual source of an overflow, just contains it. */
-  overflow-x: hidden;
+     replace fixing the actual source of an overflow, just contains it.
+     `clip`, not `hidden` - overflow-x: hidden turns html/body into a scroll
+     container, which silently breaks position: sticky on every descendant
+     (the header included) even though only the X axis was meant to be
+     contained. `clip` contains the same overflow without creating one. */
+  overflow-x: clip;
 }
 
 html[data-theme='dark'] {
   color-scheme: dark;
+}
+
+/* Forward-looking safety net: any future in-page anchor target (href="#section" + a matching
+   id) stops below the sticky header instead of tucking under it - nothing on the site uses
+   anchor links today, so this has no visible effect yet. */
+:where([id]) {
+  scroll-margin-top: calc(var(--header-height-compact) + var(--space-4));
 }
 
 body {
@@ -24,7 +35,7 @@ body {
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   transition: background-color var(--transition-base), color var(--transition-base);
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 h1, h2, h3, h4 {
