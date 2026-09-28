@@ -1,7 +1,26 @@
-.header {
+/* Sticky anchor for the whole stack (header, plus the category strip under it on mobile) -
+   see HeaderStack in Layout.tsx. Kept on its own wrapper rather than on .header directly so
+   hiding it on scroll-down moves both as one block instead of each sliding independently. */
+.header-stack {
   position: sticky;
   top: 0;
   z-index: 100;
+  /* 0.3s specifically (not --transition-base's 250ms) - this is the one interaction on the
+     site where the timing itself was specified. */
+  transition: transform 0.3s ease;
+}
+
+.header-stack--hidden {
+  transform: translateY(-100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-stack {
+    transition: none;
+  }
+}
+
+.header {
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
   height: var(--header-height);
