@@ -171,6 +171,9 @@
 
   .cart-page__summary {
     position: sticky;
-    top: var(--space-5);
+    /* Clears the sticky header (its compact height, since that's what's actually visible by
+       the time this panel is short enough to start scrolling under it) instead of sitting
+       right under the viewport edge and disappearing behind the header. */
+    top: calc(var(--header-height-compact) + var(--space-4));
   }
 }
