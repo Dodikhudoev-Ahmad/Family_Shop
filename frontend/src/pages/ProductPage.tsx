@@ -27,7 +27,7 @@ export function ProductPage() {
   const { products, isLoading } = useProducts();
   const { categories } = useCategories();
   const product = products.find((p) => p.id === id);
-  const { addItem } = useCart();
+  const { lines: cartLines, addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { showToast } = useToast();
   const { addViewed } = useRecentlyViewed();
@@ -68,6 +68,12 @@ export function ProductPage() {
   const favorite = isFavorite(product.id);
   const outOfStock = isOutOfStock(product.stock);
   const lowStock = isLowStock(product.stock);
+
+  // Quantity of THIS product already in the cart, per size (or under the sizeless "onesize" key)
+  // - drives the size-button badges and the "В корзину" → "Добавить ещё" switch below.
+  const cartQuantityFor = (size: string | null) =>
+    cartLines.find((l) => l.product.id === product.id && l.size === size)?.quantity ?? 0;
+  const selectedSizeCartQuantity = cartQuantityFor(selectedSize);
 
   const handleAddToCart = () => {
     if (product.sizes.length > 0 && !selectedSize) {
@@ -131,15 +137,23 @@ export function ProductPage() {
             <div className="product-page__block">
               <span className="product-page__block-title">Размер</span>
               <div className="product-page__sizes">
-                {product.sizes.map((size) => (
-                  <button
-                    key={size}
-                    className={`size-btn ${selectedSize === size ? 'is-selected' : ''}`}
-                    onClick={() => setSelectedSize(size)}
-                  >
-                    {size}
-                  </button>
-                ))}
+                {product.sizes.map((size) => {
+                  const inCartQuantity = cartQuantityFor(size);
+                  return (
+                    <button
+                      key={size}
+                      className={`size-btn ${selectedSize === size ? 'is-selected' : ''} ${inCartQuantity > 0 ? 'has-in-cart' : ''}`}
+                      onClick={() => setSelectedSize(size)}
+                    >
+                      {size}
+                      {inCartQuantity > 0 && (
+                        <span className="size-btn__badge" aria-label={`В корзине: ${inCartQuantity}`}>
+                          {inCartQuantity}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -171,7 +185,7 @@ export function ProductPage() {
               onClick={handleAddToCart}
               disabled={outOfStock}
             >
-              {outOfStock ? 'Нет в наличии' : 'В корзину'}
+              {outOfStock ? 'Нет в наличии' : selectedSizeCartQuantity > 0 ? 'Добавить ещё' : 'В корзину'}
             </Button>
             <button
               className={`product-page__fav-btn ${favorite ? 'is-active' : ''}`}
@@ -181,6 +195,11 @@ export function ProductPage() {
               <HeartIcon filled={favorite} />
             </button>
           </div>
+          {selectedSizeCartQuantity > 0 && (
+            <Link to="/cart" className="product-page__in-cart-note">
+              В корзине: {selectedSizeCartQuantity} шт{selectedSize ? ` (${selectedSize})` : ''} · Перейти в корзину
+            </Link>
+          )}
 
           <div className="product-page__accordions">
             <Accordion title="Описание" defaultOpen>

@@ -139,6 +139,7 @@
 }
 
 .size-btn {
+  position: relative;
   width: 48px;
   height: 48px;
   border-radius: var(--radius-sm);
@@ -158,6 +159,40 @@
   background: var(--color-text);
   border-color: var(--color-text);
   color: var(--color-bg);
+}
+
+/* Sizes already sitting in the cart get a small badge with their quantity - visible whether or
+   not that size is the currently selected one. */
+.size-btn.has-in-cart {
+  border-color: var(--color-accent);
+}
+
+.size-btn__badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.product-page__in-cart-note {
+  display: block;
+  margin-top: var(--space-3);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+}
+
+.product-page__in-cart-note:hover {
+  color: var(--color-accent);
 }
 
 .quantity-stepper {
