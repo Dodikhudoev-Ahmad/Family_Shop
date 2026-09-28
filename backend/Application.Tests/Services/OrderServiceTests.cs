@@ -73,6 +73,55 @@ public class OrderServiceTests
     }
 
     [Fact]
+    public async Task CreateOrderAsync_WithSameProductInTwoSizes_CreatesTwoItemsAndReducesStockByTheirCombinedQuantity()
+    {
+        // Two cart lines of the same product in different sizes (M and L) must land as two
+        // separate OrderItems, and Product.Stock - shared across sizes - must reflect both.
+        var product = new Product { Id = 1, Name = "Худи", Price = new Money(1000), Stock = 10 };
+        _products.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(product);
+
+        var request = new CreateOrderRequestDto(
+            [new CreateOrderItemDto(1, 3, "M"), new CreateOrderItemDto(1, 4, "L")],
+            "Ivan",
+            "+7 700 000 00 07",
+            DeliveryMethod.Pickup,
+            null,
+            null);
+
+        var result = await _sut.CreateOrderAsync(1, request);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(3, product.Stock); // 10 - 3 - 4
+        await _orders.Received(1).AddAsync(
+            Arg.Is<Order>(o => o.Items.Count == 2
+                && o.Items.Any(i => i.Size == "M" && i.Quantity == 3)
+                && o.Items.Any(i => i.Size == "L" && i.Quantity == 4)),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateOrderAsync_WithSameProductInTwoSizes_ExceedingCombinedStock_ReturnsFailure()
+    {
+        // 6 (M) + 6 (L) = 12 requested against a Stock of 10 shared across both sizes - the
+        // second line must fail even though it doesn't exceed Stock on its own.
+        var product = new Product { Id = 1, Name = "Худи", Price = new Money(1000), Stock = 10 };
+        _products.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(product);
+
+        var request = new CreateOrderRequestDto(
+            [new CreateOrderItemDto(1, 6, "M"), new CreateOrderItemDto(1, 6, "L")],
+            "Ivan",
+            "+7 700 000 00 08",
+            DeliveryMethod.Pickup,
+            null,
+            null);
+
+        var result = await _sut.CreateOrderAsync(1, request);
+
+        Assert.False(result.IsSuccess);
+        await _orders.DidNotReceive().AddAsync(Arg.Any<Order>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task CreateOrderAsync_WithInsufficientStock_ReturnsFailure()
     {
         var product = new Product { Id = 1, Name = "Bag", Price = new Money(500), Stock = 1 };
@@ -189,6 +238,23 @@ public class OrderServiceTests
     }
 
     [Fact]
+    public void CreateOrderRequestValidator_WithSameProductIdInTwoDifferentSizes_IsValid()
+    {
+        var validator = new Application.Validators.CreateOrderRequestValidator();
+        var request = new CreateOrderRequestDto(
+            [new CreateOrderItemDto(1, 2, "M"), new CreateOrderItemDto(1, 1, "L")],
+            "Dave",
+            "+7 700 000 00 03",
+            DeliveryMethod.Pickup,
+            null,
+            null);
+
+        var result = validator.Validate(request);
+
+        Assert.True(result.IsValid);
+    }
+
+    [Fact]
     public void CreateOrderRequestValidator_WithEmptyCart_ReturnsValidationError()
     {
         var validator = new Application.Validators.CreateOrderRequestValidator();
@@ -212,6 +278,21 @@ public class OrderServiceTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(5, product.Stock);
+    }
+
+    [Fact]
+    public async Task UpdateOrderStatusAsync_ToCancelled_RestoresStockForEachSizeLineOfTheSameProduct()
+    {
+        var product = new Product { Id = 1, Name = "Худи", Price = new Money(2000), Stock = 3 };
+        var order = new Order { Id = 7, Status = OrderStatus.Created };
+        order.Items.Add(new OrderItem { ProductId = 1, Product = product, Quantity = 2, Price = new Money(2000), Size = "M" });
+        order.Items.Add(new OrderItem { ProductId = 1, Product = product, Quantity = 3, Price = new Money(2000), Size = "L" });
+        _orders.GetByIdWithItemsAsync(7, Arg.Any<CancellationToken>()).Returns(order);
+
+        var result = await _sut.UpdateOrderStatusAsync(7, OrderStatus.Cancelled);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(8, product.Stock); // 3 + 2 (M) + 3 (L)
     }
 
     [Fact]
