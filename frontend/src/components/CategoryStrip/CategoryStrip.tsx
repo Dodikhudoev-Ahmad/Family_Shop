@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useCategories } from '../../context/CategoriesContext';
+import { useProducts } from '../../context/ProductsContext';
 import './CategoryStrip.css';
 
 const svg = (children: ReactNode) => (
@@ -26,19 +27,43 @@ const FALLBACK = svg(<><path d="M3 12V4h8l10 10-8 8z" /><circle cx="7.5" cy="8.5
 /** Mobile-only horizontal strip with every store category, shown right under the header. */
 export function CategoryStrip() {
   const { categories } = useCategories();
+  const { products } = useProducts();
+
+  // One cover photo per category — the bestseller (or else just the first product
+  // found), so the strip doesn't depend on a dedicated category-image field.
+  const coverByCategory = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of products) {
+      if (!p.images[0]) continue;
+      if (!map.has(p.categoryId) || p.isBestseller) map.set(p.categoryId, p.images[0]);
+    }
+    return map;
+  }, [products]);
+
   if (categories.length === 0) return null;
 
   return (
     <nav className="category-strip" aria-label="Категории">
       <ul className="category-strip__list">
-        {categories.map((c) => (
-          <li key={c.id}>
-            <NavLink to={`/catalog/${c.slug}`} className="category-strip__item">
-              <span className="category-strip__icon">{ICONS[c.slug] ?? FALLBACK}</span>
-              <span className="category-strip__label">{c.name}</span>
-            </NavLink>
-          </li>
-        ))}
+        {categories.map((c) => {
+          const cover = coverByCategory.get(c.id);
+          return (
+            <li key={c.id}>
+              <NavLink to={`/catalog/${c.slug}`} className="category-strip__item">
+                <span className="category-strip__avatar">
+                  <span className="category-strip__avatar-inner">
+                    {cover ? (
+                      <img className="category-strip__photo" src={cover} alt="" loading="lazy" />
+                    ) : (
+                      <span className="category-strip__icon">{ICONS[c.slug] ?? FALLBACK}</span>
+                    )}
+                  </span>
+                </span>
+                <span className="category-strip__label">{c.name}</span>
+              </NavLink>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );
