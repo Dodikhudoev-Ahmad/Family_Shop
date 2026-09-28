@@ -50,6 +50,22 @@ a.footer__link:hover {
   color: var(--color-accent);
 }
 
+.footer__contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.footer__contact-link svg {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  transition: color var(--transition-fast);
+}
+
+a.footer__contact-link:hover svg {
+  color: var(--color-accent);
+}
+
 .footer__bottom {
   border-top: 1px solid var(--color-border);
   padding: var(--space-4);
@@ -69,10 +85,15 @@ a.footer__link:hover {
   }
 }
 
-/* Touch targets: footer links are ~17px tall by default, too small to hit reliably on phones. */
+/* Touch targets: footer links are ~17px tall by default, too small to hit reliably on phones.
+   .footer__contact-link keeps its own inline-flex (icon + label) instead of inline-block. */
 @media (pointer: coarse) {
-  .footer__link {
+  .footer__link:not(.footer__contact-link) {
     display: inline-block;
+    padding: 8px 0;
+  }
+
+  .footer__contact-link {
     padding: 8px 0;
   }
 }
