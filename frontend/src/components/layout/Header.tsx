@@ -5,6 +5,7 @@ import { useCategories } from '../../context/CategoriesContext';
 import { useAuth } from '../../context/AuthContext';
 import { useFavorites } from '../../context/FavoritesContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useHeaderVisibility } from '../../context/HeaderVisibilityContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { MobileMenu } from './MobileMenu';
 import { CategoryMegaMenu } from './CategoryMegaMenu';
@@ -13,7 +14,6 @@ import { ConfirmDialog } from '../ConfirmDialog/ConfirmDialog';
 import './Header.css';
 
 export function Header() {
-  const [isCompact, setIsCompact] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
@@ -23,12 +23,17 @@ export function Header() {
   const { user, logout } = useAuth();
   const { favoriteIds, bump: favBump } = useFavorites();
   const { theme, toggleTheme } = useTheme();
+  const { isCompact, setOverlayOpen } = useHeaderVisibility();
+
+  // The header must stay put (not slide away) while an overlay anchored to it is open -
+  // otherwise the search box/drawer/mega menu would visually detach from its trigger.
+  useEffect(() => {
+    setOverlayOpen('search', isSearchOpen);
+  }, [isSearchOpen, setOverlayOpen]);
 
   useEffect(() => {
-    const onScroll = () => setIsCompact(window.scrollY > 100);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+    setOverlayOpen('burger-menu', isMenuOpen);
+  }, [isMenuOpen, setOverlayOpen]);
 
   return (
     <header className={`header ${isCompact ? 'header--compact' : ''}`}>
@@ -52,7 +57,11 @@ export function Header() {
 
         {isDesktop && (
           <nav className="header__nav" aria-label="Категории">
-            <CategoryMegaMenu categories={categories} isLoading={isCategoriesLoading} />
+            <CategoryMegaMenu
+              categories={categories}
+              isLoading={isCategoriesLoading}
+              onOpenChange={(open) => setOverlayOpen('mega-menu', open)}
+            />
             <NavLink to="/about" className={({ isActive }) => `header__nav-link ${isActive ? 'is-active' : ''}`}>
               О нас
             </NavLink>

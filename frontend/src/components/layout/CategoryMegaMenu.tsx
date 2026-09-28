@@ -5,6 +5,8 @@ import type { Category } from '../../types/product';
 interface CategoryMegaMenuProps {
   categories: Category[];
   isLoading: boolean;
+  /** Reports open/close so the sticky header can stay put while the menu is open. */
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
 // The catalog is flat (no real subcategories yet), so the mega menu groups the
@@ -19,10 +21,15 @@ const GROUPS: { label: string | null; slugs: string[] }[] = [
   { label: 'Спорт и аксессуары', slugs: ['sport', 'aksessuary'] },
 ];
 
-export function CategoryMegaMenu({ categories, isLoading }: CategoryMegaMenuProps) {
+export function CategoryMegaMenu({ categories, isLoading, onOpenChange }: CategoryMegaMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const closeTimeoutRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const openNow = () => {
     window.clearTimeout(closeTimeoutRef.current);
