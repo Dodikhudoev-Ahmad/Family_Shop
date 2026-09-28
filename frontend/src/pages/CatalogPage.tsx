@@ -19,6 +19,10 @@ import './CatalogPage.css';
 
 type SortOption = 'price-asc' | 'price-desc' | 'new' | 'popular';
 
+// A type with too few products in a category isn't worth its own quick-filter chip - it still
+// shows up under "Все" and in search, just not as a dedicated chip/checkbox.
+const MIN_TYPE_ITEMS = 5;
+
 const PAGE_SIZE = 8;
 
 const SORT_TO_API: Record<SortOption, ProductSortBy> = {
@@ -81,7 +85,10 @@ export function CatalogPage() {
         counts.set(p.productType, (counts.get(p.productType) ?? 0) + 1);
       }
     }
-    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ru')).map(([t]) => t);
+    return [...counts.entries()]
+      .filter(([, count]) => count >= MIN_TYPE_ITEMS)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ru'))
+      .map(([t]) => t);
   }, [allProducts, activeCategory]);
 
   // Tracks whether the real price bounds (from loaded products) have been applied to
