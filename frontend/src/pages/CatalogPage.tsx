@@ -12,8 +12,9 @@ import { useSeo } from '../hooks/useSeo';
 import { SITE_NAME } from '../data/seo';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 import { fetchProductsPage } from '../lib/api';
-import { mapProduct, sortSizes } from '../lib/mappers';
+import { mapProduct } from '../lib/mappers';
 import { availableProductTypes } from '../utils/productTypes';
+import { availableSizeGroups } from '../utils/sizeGroups';
 import type { Product } from '../types/product';
 import type { ProductSortBy } from '../types/api';
 import './CatalogPage.css';
@@ -86,10 +87,19 @@ export function CatalogPage() {
 
   useLockBodyScroll(isFilterSheetOpen);
 
-  const availableSizes = useMemo(
-    () => sortSizes(Array.from(new Set(allProducts.flatMap((p) => p.sizes)))),
-    [allProducts]
+  // Sizes follow what is being browsed: the chosen category and, once picked, the chosen type.
+  const sizeGroups = useMemo(
+    () => availableSizeGroups(allProducts, filters.categoryId, productType),
+    [allProducts, filters.categoryId, productType]
   );
+
+  // A size picked earlier may not exist for the newly chosen type (M, then "Кроссовки") - drop
+  // it instead of silently filtering everything out.
+  useEffect(() => {
+    if (filters.size && !sizeGroups.some((g) => g.sizes.includes(filters.size!))) {
+      setFilters((f) => ({ ...f, size: null }));
+    }
+  }, [sizeGroups, filters.size]);
 
   // Debounce price range so dragging the slider doesn't fire a request per pixel.
   const [debouncedPriceRange, setDebouncedPriceRange] = useState(filters.priceRange);
@@ -238,7 +248,7 @@ export function CatalogPage() {
             <FilterPanel
               filters={filters}
               onChange={setFilters}
-              availableSizes={availableSizes}
+              sizeGroups={sizeGroups}
               priceBounds={priceBounds}
               productTypes={availableTypes}
               productType={productType}
@@ -285,7 +295,7 @@ export function CatalogPage() {
           <FilterPanel
             filters={filters}
             onChange={setFilters}
-            availableSizes={availableSizes}
+            sizeGroups={sizeGroups}
             priceBounds={priceBounds}
             productTypes={availableTypes}
             productType={productType}
