@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Header } from './Header';
 import { Footer } from './Footer';
@@ -14,8 +15,25 @@ const STRIP_PATHS = /^\/($|catalog|product\/)/;
 // block on scroll-down, so they never end up half on/off screen independently of each other.
 function HeaderStack({ showStrip }: { showStrip: boolean }) {
   const { isHidden } = useHeaderVisibility();
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Publishes how much of the top of the screen the stack currently covers (its real height -
+  // header, search row and, on some pages, the category strip - or 0 while it is tucked away),
+  // so toasts and sticky panels can sit right under it instead of under a hard-coded guess.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const apply = () => root.style.setProperty('--header-stack-h', isHidden ? '0px' : `${el.offsetHeight}px`);
+    apply();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(apply);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isHidden, showStrip]);
+
   return (
-    <div className={`header-stack ${isHidden ? 'header-stack--hidden' : ''}`}>
+    <div ref={ref} className={`header-stack ${isHidden ? 'header-stack--hidden' : ''}`}>
       <Header />
       {showStrip && <CategoryStrip />}
     </div>

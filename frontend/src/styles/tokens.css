@@ -59,6 +59,7 @@
   --header-height-compact: 64px;
   --header-height-mobile: 52px;
   --header-search-height: 44px;
+  --sticky-top: var(--header-height-compact);
   --tabbar-height: 68px;
   --shadow-sm: 0 2px 8px rgba(26, 26, 26, 0.06);
   --shadow-md: 0 8px 24px rgba(26, 26, 26, 0.10);
@@ -70,6 +71,9 @@
   :root {
     /* Sticky offsets and the toast anchor follow the slimmer mobile header. */
     --header-height-compact: calc(var(--header-height-mobile) + var(--header-search-height));
+    /* Where sticky panels and toasts start: the real height of the header stack (published by
+       Layout, 0 while it is hidden), falling back to the header alone before it is measured. */
+    --sticky-top: var(--header-stack-h, var(--header-height-compact));
   }
 }
 
