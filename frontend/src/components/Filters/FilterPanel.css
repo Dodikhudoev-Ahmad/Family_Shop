@@ -12,6 +12,18 @@
   margin-bottom: var(--space-3);
 }
 
+.filter-panel__size-group + .filter-panel__size-group {
+  margin-top: var(--space-3);
+}
+
+.filter-panel__subtitle {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
 .filter-panel__chips {
   display: flex;
   flex-wrap: wrap;

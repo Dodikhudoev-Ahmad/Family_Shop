@@ -1,4 +1,5 @@
 import { useCategories } from '../../context/CategoriesContext';
+import type { SizeGroup } from '../../utils/sizeGroups';
 import { PriceRangeSlider } from '../PriceRangeSlider/PriceRangeSlider';
 import './FilterPanel.css';
 
@@ -12,7 +13,8 @@ export interface Filters {
 interface FilterPanelProps {
   filters: Filters;
   onChange: (filters: Filters) => void;
-  availableSizes: string[];
+  /** Sizes to offer, grouped (clothing / shoes); group labels show only when there are several. */
+  sizeGroups: SizeGroup[];
   priceBounds: [number, number];
   /** Shown in the desktop sidebar and the mobile filter sheet (the TypeChips strip under the
    * title is the third view of the same selection). */
@@ -21,7 +23,7 @@ interface FilterPanelProps {
   onProductTypeChange?: (type: string | null) => void;
 }
 
-export function FilterPanel({ filters, onChange, availableSizes, priceBounds, productTypes = [], productType = null, onProductTypeChange }: FilterPanelProps) {
+export function FilterPanel({ filters, onChange, sizeGroups, priceBounds, productTypes = [], productType = null, onProductTypeChange }: FilterPanelProps) {
   const { categories } = useCategories();
 
   return (
@@ -65,20 +67,26 @@ export function FilterPanel({ filters, onChange, availableSizes, priceBounds, pr
         </div>
       )}
 
-      {availableSizes.length > 0 && (
+      {sizeGroups.length > 0 && (
         <div className="filter-panel__group">
           <h4 className="filter-panel__title">Размер</h4>
-          <div className="filter-panel__chips">
-            {availableSizes.map((size) => (
-              <button
-                key={size}
-                className={`filter-chip filter-chip--square ${filters.size === size ? 'is-active' : ''}`}
-                onClick={() => onChange({ ...filters, size: filters.size === size ? null : size })}
-              >
-                {size}
-              </button>
-            ))}
-          </div>
+          {sizeGroups.map((group) => (
+            <div key={group.label} className="filter-panel__size-group">
+              {sizeGroups.length > 1 && <span className="filter-panel__subtitle">{group.label}</span>}
+              <div className="filter-panel__chips">
+                {group.sizes.map((size) => (
+                  <button
+                    key={size}
+                    className={`filter-chip filter-chip--square ${filters.size === size ? 'is-active' : ''}`}
+                    aria-pressed={filters.size === size}
+                    onClick={() => onChange({ ...filters, size: filters.size === size ? null : size })}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
