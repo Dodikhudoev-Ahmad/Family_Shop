@@ -282,7 +282,15 @@ export function CatalogPage() {
         {isCatalogLoading ? (
           <FilterPanelSkeleton />
         ) : (
-          <FilterPanel filters={filters} onChange={setFilters} availableSizes={availableSizes} priceBounds={priceBounds} />
+          <FilterPanel
+            filters={filters}
+            onChange={setFilters}
+            availableSizes={availableSizes}
+            priceBounds={priceBounds}
+            productTypes={availableTypes}
+            productType={productType}
+            onProductTypeChange={setProductType}
+          />
         )}
         <button className="btn btn--primary btn--lg catalog__sheet-apply" onClick={() => setIsFilterSheetOpen(false)}>
           Показать {visibleProducts.length}{hasMore ? '+' : ''} товаров
