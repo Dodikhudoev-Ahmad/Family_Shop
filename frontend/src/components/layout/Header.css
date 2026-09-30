@@ -332,8 +332,12 @@ a.mega-menu__col-title--link:hover {
 }
 
 @media (max-width: 1024px) {
-  .header {
-    height: 64px;
+  /* Compact bar: 52px of content plus the notch inset (needs viewport-fit=cover). */
+  .header,
+  .header--compact {
+    height: calc(var(--header-height-mobile) + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+    box-sizing: border-box;
   }
 
   .header__inner {
