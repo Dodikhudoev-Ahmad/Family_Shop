@@ -146,6 +146,23 @@ public static class SeedData
             }
         }
 
+        // Seed products that were withdrawn (their photos showed baby-size shoes, which didn't
+        // match the kids' 26-35 size grid). Removing them from the builders alone would leave
+        // them behind in databases that already ran the older seed, so they're deleted by name -
+        // but never one that an order refers to (OrderItems.ProductId is RESTRICT, and order
+        // history must stay intact).
+        var retiredKidsNames = RetiredKidsProducts;
+        var retiredProducts = await context.Products
+            .Where(p => p.CategoryId == categoriesBySlug["kids"].Id
+                        && retiredKidsNames.Contains(p.Name)
+                        && !context.OrderItems.Any(i => i.ProductId == p.Id))
+            .ToListAsync(cancellationToken);
+        if (retiredProducts.Count > 0)
+        {
+            context.Products.RemoveRange(retiredProducts);
+            catalogChanged = true;
+        }
+
         if (catalogChanged)
         {
             await context.SaveChangesAsync(cancellationToken);
@@ -344,6 +361,15 @@ public static class SeedData
         yield return Make("Спортивный костюм детский", "Комплект: худи и брюки-джоггеры из футера, унисекс.", 9900, 7900, 16, categoryId, Gender.Kids, "1632232962967-0740a757380d");
         yield return Make("Платье жёлтое в горох для девочки", "Хлопковое платье с горошком, повседневный вариант.", 6400, null, 9, categoryId, Gender.Kids, "1560506840-ec148e82a604");
     }
+
+    private static readonly string[] RetiredKidsProducts =
+    [
+        "Кроссовки детские бежевые текстильные",
+        "Кроссовки детские бирюзовые с принтом",
+        "Кроссовки детские синие на липучке",
+        "Кроссовки детские серо-белые",
+        "Кроссовки детские жёлтые на липучках",
+    ];
 
     private static IEnumerable<Product> ShoesAndBagsFor(int categoryId, Gender gender) =>
         BuildShoesAndBags(categoryId).Concat(BuildShoesAndBagsExtra(categoryId)).Where(p => p.Gender == gender);
@@ -578,8 +604,6 @@ public static class SeedData
         yield return Make("Сумка синяя кожаная", "Сумка из плотной кожи, синий оттенок, вместительное отделение.", 17900, 14600, 12, categoryId, Gender.Female, "https://images.pexels.com/photos/27174573/pexels-photo-27174573.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Сумки");
         yield return Make("Сумка тёмно-синяя структурная", "Сумка из плотной кожи, тёмно-синий оттенок, вместительное отделение.", 23600, 20000, 20, categoryId, Gender.Female, "https://images.pexels.com/photos/27100523/pexels-photo-27100523.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Сумки");
         yield return Make("Кроссовки детские белые с полосками", "Лёгкие детские кроссовки на шнуровке с контрастными вставками.", 12900, 10300, 18, categoryId, Gender.Kids, "https://images.pexels.com/photos/39516826/pexels-photo-39516826.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кроссовки");
-        yield return Make("Кроссовки детские бежевые текстильные", "Мягкие текстильные кроссовки с резиновым носком, удобная колодка.", 9900, null, 24, categoryId, Gender.Kids, "https://images.pexels.com/photos/20406227/pexels-photo-20406227.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кроссовки");
-        yield return Make("Кроссовки детские бирюзовые с принтом", "Яркие кроссовки на эластичных шнурках с мелким принтом.", 10900, 8700, 15, categoryId, Gender.Kids, "https://images.pexels.com/photos/15844910/pexels-photo-15844910.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кроссовки");
         yield return Make("Ботинки детские резиновые красные с зайчиками", "Непромокаемые резиновые ботинки с ремешком, весёлый принт.", 11900, null, 20, categoryId, Gender.Kids, "https://images.pexels.com/photos/37722620/pexels-photo-37722620.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Ботинки");
         yield return Make("Ботинки детские резиновые красные", "Резиновые ботинки для дождливой погоды, рифлёная подошва.", 10500, 8400, 22, categoryId, Gender.Kids, "https://images.pexels.com/photos/29662118/pexels-photo-29662118.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Ботинки");
         yield return Make("Ботинки детские кожаные коричневые", "Кожаные ботинки на шнуровке, мягкая подошва.", 14900, null, 12, categoryId, Gender.Kids, "https://images.pexels.com/photos/13822967/pexels-photo-13822967.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Ботинки");
@@ -592,9 +616,6 @@ public static class SeedData
         yield return Make("Кроссовки коричневые кожаные", "Кожаные кроссовки на тонкой белой подошве, минималистичный дизайн.", 24900, 19900, 9, categoryId, Gender.Male, "https://images.pexels.com/photos/6961151/pexels-photo-6961151.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кроссовки");
         yield return Make("Кроссовки серые текстильные", "Лёгкие текстильные кроссовки на шнуровке, мягкая стелька.", 15900, null, 18, categoryId, Gender.Male, "https://images.pexels.com/photos/7916058/pexels-photo-7916058.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кроссовки");
         yield return Make("Кроссовки бордовые текстильные", "Текстильные кроссовки бордового цвета на резиновой подошве.", 14900, 11900, 16, categoryId, Gender.Male, "https://images.pexels.com/photos/5488660/pexels-photo-5488660.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кроссовки");
-        yield return Make("Кроссовки детские синие на липучке", "Мягкие детские кроссовки с белым носком, застёжка-липучка и шнуровка.", 9900, null, 20, categoryId, Gender.Kids, "https://images.pexels.com/photos/3026856/pexels-photo-3026856.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кроссовки");
-        yield return Make("Кроссовки детские серо-белые", "Лёгкие детские кроссовки на мягкой подошве, удобная колодка.", 10500, 8400, 17, categoryId, Gender.Kids, "https://images.pexels.com/photos/3878405/pexels-photo-3878405.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кроссовки");
-        yield return Make("Кроссовки детские жёлтые на липучках", "Лёгкая детская обувь с ремешками на липучках, мягкая стелька.", 8900, null, 22, categoryId, Gender.Kids, "https://images.pexels.com/photos/7691343/pexels-photo-7691343.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Кроссовки");
         yield return Make("Ботинки детские кожаные рыжие на шнуровке", "Кожаные детские ботинки на шнурках, мягкий кант и гибкая подошва.", 15900, 12700, 13, categoryId, Gender.Kids, "https://images.pexels.com/photos/13920052/pexels-photo-13920052.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Ботинки");
         yield return Make("Ботинки детские бордовые на шнуровке", "Высокие детские ботинки на шнуровке в классическом стиле.", 16900, null, 9, categoryId, Gender.Kids, "https://images.pexels.com/photos/6135224/pexels-photo-6135224.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Ботинки");
         yield return Make("Ботинки детские кожаные коричневые с перфорацией", "Кожаные демисезонные ботинки на шнурках, натуральная кожа.", 14900, 11900, 15, categoryId, Gender.Kids, "https://images.pexels.com/photos/3932941/pexels-photo-3932941.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Ботинки");

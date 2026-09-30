@@ -37,7 +37,7 @@ public class SeedShoesAndBagsTests
 
         var all = male.Concat(female).Concat(kids).Select(p => p.Name).ToList();
         Assert.Equal(all.Count, all.Distinct().Count());
-        Assert.Equal(44, all.Count); // 13 original + 8 "extra" + 18 kids + 5 more men's sneakers
+        Assert.Equal(39, all.Count); // 13 original + 8 "extra" + 13 kids + 5 more men's sneakers
         Assert.Contains(male, p => ProductTypeClassifier.Infer(p.Name) == "Кроссовки");
         Assert.Contains(female, p => ProductTypeClassifier.Infer(p.Name) == "Сумки");
     }
@@ -47,7 +47,7 @@ public class SeedShoesAndBagsTests
     {
         var kids = ShoesAndBagsFor(3, Gender.Kids);
 
-        Assert.Equal(18, kids.Count);
+        Assert.Equal(13, kids.Count);
         Assert.All(kids, p => Assert.Contains(p.ProductType, new[] { "Ботинки", "Кроссовки", "Сумки" }));
         Assert.All(kids, p => Assert.StartsWith("https://images.pexels.com/", p.Images[0]));
         Assert.Equal(kids.Count, kids.Select(p => p.Images[0]).Distinct().Count());
@@ -61,7 +61,6 @@ public class SeedShoesAndBagsTests
     // carry at least that many of each shoe/bag type in the categories that should show one.
     [Theory]
     [InlineData(Gender.Male, "Кроссовки")]
-    [InlineData(Gender.Kids, "Кроссовки")]
     [InlineData(Gender.Kids, "Ботинки")]
     [InlineData(Gender.Kids, "Сумки")]
     [InlineData(Gender.Female, "Ботинки")]
@@ -79,5 +78,15 @@ public class SeedShoesAndBagsTests
             .Select(p => p.Images[0])
             .ToList();
         Assert.Equal(images.Count, images.Distinct().Count());
+    }
+
+    [Fact]
+    public void RetiredKidsProducts_AreNoLongerSeeded()
+    {
+        var retired = (string[])typeof(SeedData).GetField("RetiredKidsProducts", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
+        var seeded = ShoesAndBagsFor(3, Gender.Kids).Select(p => p.Name).ToHashSet();
+
+        Assert.Equal(5, retired.Length);
+        Assert.Empty(retired.Where(seeded.Contains));
     }
 }
