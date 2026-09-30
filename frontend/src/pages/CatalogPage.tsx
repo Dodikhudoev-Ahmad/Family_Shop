@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { useCategories } from '../context/CategoriesContext';
 import { ProductCard } from '../components/ProductCard/ProductCard';
@@ -15,6 +15,7 @@ import { fetchProductsPage } from '../lib/api';
 import { mapProduct } from '../lib/mappers';
 import { availableProductTypes } from '../utils/productTypes';
 import { availableSizeGroups } from '../utils/sizeGroups';
+import { priceBoundsFor, resetDependentFilters } from '../utils/catalogFilters';
 import type { Product } from '../types/product';
 import type { ProductSortBy } from '../types/api';
 import './CatalogPage.css';
@@ -44,23 +45,62 @@ export function CatalogPage() {
       : `Весь каталог одежды ${SITE_NAME} — женское, мужское, детское, обувь и сумки. Быстрая доставка по Казахстану.`,
   });
 
-  const priceBounds: [number, number] = useMemo(() => {
-    if (allProducts.length === 0) return [0, 0];
-    const prices = allProducts.map((p) => p.discountPrice ?? p.price);
-    return [Math.min(...prices), Math.max(...prices)];
-  }, [allProducts]);
+  // The category lives in the URL and nowhere else: chips, mega menu, burger, the strip, links
+  // and the filter panel's own category buttons all navigate, so every path lands in the same
+  // place and the title, breadcrumbs, type list and filters can never disagree about it.
+  const categoryId = activeCategory?.id ?? null;
+  const navigate = useNavigate();
 
-  const [filters, setFilters] = useState<Filters>(() => ({
-    categoryId: activeCategory?.id ?? null,
-    size: null,
-    priceRange: priceBounds,
-    discountOnly: searchParams.get('discount') === 'true',
-  }));
-  const [sort, setSort] = useState<SortOption>('new');
+  // Price window of what is being browsed - a category's prices differ from the rest of the shop.
+  const priceBounds = useMemo(() => priceBoundsFor(allProducts, categoryId), [allProducts, categoryId]);
+
+  const [size, setSize] = useState<string | null>(null);
+  const [priceRange, setPriceRange] = useState<[number, number]>(priceBounds);
+  const [discountOnly, setDiscountOnly] = useState(() => searchParams.get('discount') === 'true');
   const [productType, setProductType] = useState<string | null>(null);
+  const [sort, setSort] = useState<SortOption>('new');
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const isLoadingMoreRef = useRef(false);
+
+  // Debounce price range so dragging the slider doesn't fire a request per pixel. The debounced
+  // value remembers which category it was typed for, so a late timer or a stale render can never
+  // apply one category's price window to another (see `appliedPriceRange` below).
+  const [debouncedPrice, setDebouncedPrice] = useState<{ categoryId: string | null; range: [number, number] }>({
+    categoryId,
+    range: priceRange,
+  });
+
+  // Changing category resets everything that depended on the old one. Done while rendering
+  // (React's "adjust state on prop change" pattern), not in an effect, so the stale type/price
+  // never reaches a request alongside the new category - that combination was the empty list.
+  const [trackedCategoryId, setTrackedCategoryId] = useState(categoryId);
+  if (trackedCategoryId !== categoryId) {
+    const reset = resetDependentFilters(priceBounds);
+    setTrackedCategoryId(categoryId);
+    setProductType(reset.productType);
+    setSize(reset.size);
+    setPriceRange(reset.priceRange);
+    setDebouncedPrice({ categoryId, range: reset.priceRange });
+  }
+
+  // What the panel and sheet render and report back through. The category is derived, never
+  // stored: picking one in the panel is a navigation.
+  const filters: Filters = useMemo(
+    () => ({ categoryId, size, priceRange, discountOnly }),
+    [categoryId, size, priceRange, discountOnly]
+  );
+
+  const handleFiltersChange = (next: Filters) => {
+    if (next.categoryId !== categoryId) {
+      const target = categories.find((c) => c.id === next.categoryId);
+      navigate(target ? `/catalog/${target.slug}` : '/catalog');
+      return;
+    }
+    setSize(next.size);
+    setPriceRange(next.priceRange);
+    setDiscountOnly(next.discountOnly);
+  };
 
   const [pageProducts, setPageProducts] = useState<Product[]>([]);
   const [page, setPage] = useState(1);
@@ -69,19 +109,14 @@ export function CatalogPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setFilters((f) => ({ ...f, categoryId: activeCategory?.id ?? null }));
-    setProductType(null);
-  }, [activeCategory?.id]);
-
   // Product types present in the current category, most common first.
   const availableTypes = useMemo(
-    () => availableProductTypes(allProducts, activeCategory?.id),
-    [allProducts, activeCategory?.id]
+    () => availableProductTypes(allProducts, categoryId),
+    [allProducts, categoryId]
   );
 
   // Tracks whether the real price bounds (from loaded products) have been applied to
-  // filters/debouncedPriceRange yet — until then we must not send minPrice/maxPrice at all,
+  // the price range yet — until then we must not send minPrice/maxPrice at all,
   // since the placeholder [0, 0] default would filter out every product.
   const [priceRangeReady, setPriceRangeReady] = useState(false);
 
@@ -89,35 +124,34 @@ export function CatalogPage() {
 
   // Sizes follow what is being browsed: the chosen category and, once picked, the chosen type.
   const sizeGroups = useMemo(
-    () => availableSizeGroups(allProducts, filters.categoryId, productType),
-    [allProducts, filters.categoryId, productType]
+    () => availableSizeGroups(allProducts, categoryId, productType),
+    [allProducts, categoryId, productType]
   );
 
   // A size picked earlier may not exist for the newly chosen type (M, then "Кроссовки") - drop
   // it instead of silently filtering everything out.
   useEffect(() => {
-    if (filters.size && !sizeGroups.some((g) => g.sizes.includes(filters.size!))) {
-      setFilters((f) => ({ ...f, size: null }));
-    }
-  }, [sizeGroups, filters.size]);
+    if (size && !sizeGroups.some((g) => g.sizes.includes(size))) setSize(null);
+  }, [sizeGroups, size]);
 
-  // Debounce price range so dragging the slider doesn't fire a request per pixel.
-  const [debouncedPriceRange, setDebouncedPriceRange] = useState(filters.priceRange);
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedPriceRange(filters.priceRange), 350);
+    const t = setTimeout(() => setDebouncedPrice({ categoryId, range: priceRange }), 350);
     return () => clearTimeout(t);
-  }, [filters.priceRange]);
+  }, [priceRange, categoryId]);
 
   useEffect(() => {
     if (allProducts.length > 0 && !priceRangeReady) {
-      setFilters((f) => ({ ...f, priceRange: priceBounds }));
-      setDebouncedPriceRange(priceBounds);
+      setPriceRange(priceBounds);
+      setDebouncedPrice({ categoryId, range: priceBounds });
       setPriceRangeReady(true);
     }
-  }, [allProducts.length, priceBounds, priceRangeReady]);
+  }, [allProducts.length, priceBounds, priceRangeReady, categoryId]);
 
-  const categoryIdNum = filters.categoryId ? Number(filters.categoryId) : undefined;
-  const [minPrice, maxPrice] = debouncedPriceRange;
+  const categoryIdNum = categoryId ? Number(categoryId) : undefined;
+  // A debounced value from another category is ignored: a category switch applies its fresh
+  // window immediately instead of waiting out the debounce.
+  const appliedPriceRange = debouncedPrice.categoryId === categoryId ? debouncedPrice.range : priceRange;
+  const [minPrice, maxPrice] = appliedPriceRange;
   const boundsReady = priceRangeReady && priceBounds[1] > 0;
 
   // Reset to page 1 whenever a server-relevant query param changes.
@@ -213,11 +247,11 @@ export function CatalogPage() {
   // so they refine the already-fetched page(s) on the client.
   const visibleProducts = useMemo(() => {
     return pageProducts.filter((p) => {
-      if (filters.size && !p.sizes.includes(filters.size)) return false;
-      if (filters.discountOnly && !p.discountPrice) return false;
+      if (size && !p.sizes.includes(size)) return false;
+      if (discountOnly && !p.discountPrice) return false;
       return true;
     });
-  }, [pageProducts, filters.size, filters.discountOnly]);
+  }, [pageProducts, size, discountOnly]);
 
   return (
     <div className="catalog container">
@@ -247,7 +281,7 @@ export function CatalogPage() {
           ) : (
             <FilterPanel
               filters={filters}
-              onChange={setFilters}
+              onChange={handleFiltersChange}
               sizeGroups={sizeGroups}
               priceBounds={priceBounds}
               productTypes={availableTypes}
@@ -267,7 +301,9 @@ export function CatalogPage() {
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
-          ) : visibleProducts.length === 0 ? (
+          ) : visibleProducts.length === 0 && !hasMore ? (
+            // Only once the server has nothing more to give: while pages remain, the client-side
+            // filters (size, "only discounted") may just not have met a match yet.
             <p className="catalog__empty">Товары не найдены. Попробуйте изменить фильтры.</p>
           ) : (
             <div className="catalog__grid">
@@ -294,7 +330,7 @@ export function CatalogPage() {
         ) : (
           <FilterPanel
             filters={filters}
-            onChange={setFilters}
+            onChange={handleFiltersChange}
             sizeGroups={sizeGroups}
             priceBounds={priceBounds}
             productTypes={availableTypes}
