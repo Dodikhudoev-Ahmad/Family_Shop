@@ -14,7 +14,8 @@ interface FilterPanelProps {
   onChange: (filters: Filters) => void;
   availableSizes: string[];
   priceBounds: [number, number];
-  /** Desktop sidebar only: mobile has the TypeChips strip instead. */
+  /** Shown in the desktop sidebar and the mobile filter sheet (the TypeChips strip under the
+   * title is the third view of the same selection). */
   productTypes?: string[];
   productType?: string | null;
   onProductTypeChange?: (type: string | null) => void;
