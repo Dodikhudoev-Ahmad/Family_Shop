@@ -62,8 +62,8 @@
 
 .catalog__sidebar {
   position: sticky;
-  top: calc(var(--header-height-compact) + var(--space-4));
-  max-height: calc(100vh - var(--header-height-compact) - var(--space-4) * 2);
+  top: calc(var(--sticky-top) + var(--space-4));
+  max-height: calc(100vh - var(--sticky-top) - var(--space-4) * 2);
   overflow-y: auto;
 }
 
