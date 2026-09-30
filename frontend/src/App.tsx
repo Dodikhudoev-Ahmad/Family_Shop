@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import { AdminRoute } from './components/AdminRoute/AdminRoute';
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
@@ -71,6 +71,9 @@ export default function App() {
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/catalog" element={<CatalogPage />} />
+            {/* "Обувь и сумки" is no longer a category - its products live under Женское/Мужское/
+                Детское. The old URL may be bookmarked, so send it to the full catalog. */}
+            <Route path="/catalog/shoes-bags" element={<Navigate to="/catalog" replace />} />
             <Route path="/catalog/:slug" element={<CatalogPage />} />
             <Route path="/product/:id" element={<ProductPage />} />
             <Route path="/cart" element={<CartPage />} />

@@ -4,7 +4,7 @@ import type { Category, Gender, Product } from '../types/product';
 const GENDER_MAP: Record<number, Gender> = { 0: 'male', 1: 'female', 2: 'kids' };
 
 export const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
-const SHOE_SIZES = ['36', '37', '38', '39', '40'];
+export const SHOE_SIZES = ['36', '37', '38', '39', '40'];
 
 /** Sorts a mixed list of sizes (clothing or shoe) into the canonical order above,
  * instead of alphabetically (which would put '2XL' before 'L', 'XL' before 'XS', etc). */
@@ -21,10 +21,19 @@ export function sortSizes(sizes: string[]): string[] {
 export function mapCategory(dto: CategoryDto): Category {
   return { id: String(dto.id), name: dto.name, slug: dto.slug, hasSizes: dto.hasSizes };
 }
-function sizesFor(categoryId: number, categories: Category[]): string[] {
+const SHOE_TYPES = ['Ботинки', 'Кроссовки'];
+// Bags come in one size; they sit in the gender categories now, so they must not inherit
+// the clothing grid from them.
+const SIZELESS_TYPES = ['Сумки', 'Рюкзаки'];
+
+/** Size grid by what the product is, not by which category it sits in: shoes and bags live
+ * in Женское/Мужское/Детское next to clothes. */
+export function sizesFor(categoryId: number, categories: Category[], productType?: string | null): string[] {
   const category = categories.find((c) => c.id === String(categoryId));
   if (!category?.hasSizes) return [];
-  return category.slug === 'shoes-bags' ? SHOE_SIZES : CLOTHING_SIZES;
+  if (productType && SHOE_TYPES.includes(productType)) return SHOE_SIZES;
+  if (productType && SIZELESS_TYPES.includes(productType)) return [];
+  return CLOTHING_SIZES;
 }
 
 export function mapProduct(dto: ProductDto, categories: Category[]): Product {
@@ -38,7 +47,7 @@ export function mapProduct(dto: ProductDto, categories: Category[]): Product {
     categoryId: String(dto.categoryId),
     gender: GENDER_MAP[dto.gender] ?? 'female',
     images: dto.images,
-    sizes: sizesFor(dto.categoryId, categories),
+    sizes: sizesFor(dto.categoryId, categories, dto.productType),
     isBestseller: dto.isBestseller,
     createdAt: dto.createdAt,
     averageRating: dto.averageRating,

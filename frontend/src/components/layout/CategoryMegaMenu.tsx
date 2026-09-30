@@ -12,11 +12,8 @@ interface CategoryMegaMenuProps {
 // The catalog is flat (no real subcategories yet), so the mega menu groups the
 // existing top-level categories into themed columns purely for browsing —
 // "Одежда"/"Дом"/"Спорт и аксессуары" aren't real categories, just labels.
-// "Обувь и сумки" gets its own column since it doesn't fit either group; its
-// bold title *is* the category link (no subcategories to list under it).
-const GROUPS: { label: string | null; slugs: string[] }[] = [
+const GROUPS: { label: string; slugs: string[] }[] = [
   { label: 'Одежда', slugs: ['women', 'men', 'kids'] },
-  { label: null, slugs: ['shoes-bags'] },
   { label: 'Дом', slugs: ['bytovaya-tehnika', 'posuda'] },
   { label: 'Спорт и аксессуары', slugs: ['sport', 'aksessuary'] },
 ];
@@ -97,17 +94,6 @@ export function CategoryMegaMenu({ categories, isLoading, onOpenChange }: Catego
             {GROUPS.map((group, i) => {
               const items = group.slugs.map((slug) => byslug.get(slug)).filter((c): c is Category => Boolean(c));
               if (items.length === 0) return null;
-
-              if (group.label === null) {
-                const only = items[0];
-                return (
-                  <div className="mega-menu__col" key={i}>
-                    <Link to={`/catalog/${only.slug}`} className="mega-menu__col-title mega-menu__col-title--link" onClick={() => setIsOpen(false)}>
-                      {only.name}
-                    </Link>
-                  </div>
-                );
-              }
 
               return (
                 <div className="mega-menu__col" key={i}>
