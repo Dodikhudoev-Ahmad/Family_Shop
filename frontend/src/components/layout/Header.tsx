@@ -70,13 +70,15 @@ export function Header() {
         )}
 
         <div className="header__actions">
-          <button
-            className="header__icon-btn"
-            aria-label="Поиск"
-            onClick={() => setIsSearchOpen(true)}
-          >
-            <SearchIcon />
-          </button>
+          {isDesktop && (
+            <button
+              className="header__icon-btn"
+              aria-label="Поиск"
+              onClick={() => setIsSearchOpen(true)}
+            >
+              <SearchIcon />
+            </button>
+          )}
 
           <button
             className="header__icon-btn"
@@ -122,6 +124,22 @@ export function Header() {
           )}
         </div>
       </div>
+
+      {/* Mobile entry point: a full-width fake input under the top row. It is a button, not an
+          <input> - tapping opens the same full-screen SearchOverlay the icon used to open. */}
+      {!isDesktop && (
+        <div className="container header__search-row">
+          <button
+            type="button"
+            className="header__search-bar"
+            aria-label="Поиск"
+            onClick={() => setIsSearchOpen(true)}
+          >
+            <SearchIcon />
+            <span className="header__search-placeholder">Искать в FamilyShop</span>
+          </button>
+        </div>
+      )}
 
       <MobileMenu
         isOpen={isMenuOpen}

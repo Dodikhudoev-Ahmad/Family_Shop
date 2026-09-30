@@ -58,6 +58,7 @@
   --header-height: 88px;
   --header-height-compact: 64px;
   --header-height-mobile: 52px;
+  --header-search-height: 44px;
   --tabbar-height: 68px;
   --shadow-sm: 0 2px 8px rgba(26, 26, 26, 0.06);
   --shadow-md: 0 8px 24px rgba(26, 26, 26, 0.10);
@@ -68,7 +69,7 @@
 @media (max-width: 1024px) {
   :root {
     /* Sticky offsets and the toast anchor follow the slimmer mobile header. */
-    --header-height-compact: var(--header-height-mobile);
+    --header-height-compact: calc(var(--header-height-mobile) + var(--header-search-height));
   }
 }
 
