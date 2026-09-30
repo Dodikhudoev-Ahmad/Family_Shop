@@ -49,10 +49,21 @@ export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCa
           <FadeImage src={product.images[1]} alt="" className="product-card__media-alt" loading="lazy" />
         )}
 
-        {outOfStock ? (
-          <span className="product-card__badge product-card__badge--out">Нет в наличии</span>
-        ) : (
-          discountPercent && <span className="product-card__badge">−{discountPercent}%</span>
+        {(outOfStock || discountPercent || product.isBestseller) && (
+          // Stacked top-left so a discounted bestseller shows both badges without overlap; the
+          // action buttons own the top-right corner.
+          <div className="product-card__badges">
+            {outOfStock ? (
+              <span className="product-card__badge product-card__badge--out">Нет в наличии</span>
+            ) : (
+              <>
+                {discountPercent && <span className="product-card__badge">−{discountPercent}%</span>}
+                {product.isBestseller && (
+                  <span className="product-card__badge product-card__badge--hit">Хит продаж</span>
+                )}
+              </>
+            )}
+          </div>
         )}
 
         <div className="product-card__mobile-actions">
