@@ -11,105 +11,77 @@
 
   .category-strip__list {
     display: flex;
-    gap: var(--space-3);
+    align-items: stretch;
+    gap: var(--space-4);
     list-style: none;
     margin: 0;
-    padding: var(--space-3) 16px;
+    padding: 0 max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
     overflow-x: auto;
+    overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x proximity;
     scrollbar-width: none;
+    /* Soft edges hint that the row scrolls, without a scrollbar. */
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
   }
 
   .category-strip__list::-webkit-scrollbar {
     display: none;
   }
 
-  .category-strip__item {
+  .category-strip__list > li {
     flex: 0 0 auto;
-    width: 68px;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    color: var(--color-text);
-    text-decoration: none;
     scroll-snap-align: start;
+    scroll-margin-inline: 16px;
   }
 
-  /* Story-ring avatar: outer gradient ring (2px) -> 2px gap in the strip's own
-     background -> photo (or fallback icon), all within the original 56px circle. */
-  .category-strip__avatar {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    padding: 2px;
-    display: flex;
-    background: linear-gradient(135deg, var(--color-accent), #e8b27a);
-    box-shadow: var(--shadow-sm);
-    transition: transform var(--transition-fast), filter var(--transition-fast);
-  }
-
-  .category-strip__avatar-inner {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    padding: 2px;
+  .category-strip__item {
+    position: relative;
     display: flex;
     align-items: center;
-    justify-content: center;
-    background: var(--color-bg);
+    min-height: 40px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
   }
 
-  .category-strip__photo {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-    display: block;
+  .category-strip__item::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--color-accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--transition-base);
   }
 
-  .category-strip__icon {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: var(--color-bg-secondary);
+  .category-strip__item:active {
+    color: var(--color-text);
+  }
+
+  .category-strip__item.active {
     color: var(--color-accent);
   }
 
-  .category-strip__item:hover .category-strip__avatar,
-  .category-strip__item:active .category-strip__avatar {
-    transform: scale(1.05);
+  .category-strip__item.active::after {
+    transform: scaleX(1);
   }
+}
 
-  .category-strip__item:active .category-strip__avatar {
-    filter: brightness(1.08);
-  }
-
-  .category-strip__item.active .category-strip__avatar {
-    background: linear-gradient(135deg, var(--color-accent), #f6cd96);
-    filter: brightness(1.05);
-  }
-
-  .category-strip__item.active .category-strip__icon {
-    background: var(--color-accent);
-    color: var(--color-white);
-  }
-
-  .category-strip__label {
-    width: 100%;
-    font-size: 11.5px;
-    font-weight: 500;
-    line-height: 1.2;
-    text-align: center;
-    overflow-wrap: anywhere;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+@media (max-width: 1024px) and (prefers-reduced-motion: reduce) {
+  .category-strip__item,
+  .category-strip__item::after {
+    transition: none;
   }
 }
 
