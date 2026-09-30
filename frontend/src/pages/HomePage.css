@@ -5,6 +5,12 @@
   margin-top: var(--space-4);
 }
 
+@media (max-width: 1024px) {
+  .hero {
+    margin-top: var(--space-2);
+  }
+}
+
 .hero__tile {
   position: relative;
   display: block;
