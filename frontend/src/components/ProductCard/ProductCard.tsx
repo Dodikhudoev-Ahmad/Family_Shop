@@ -23,7 +23,7 @@ export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCa
   const { open: openQuickView } = useQuickView();
   const { categories } = useCategories();
   const favorite = isFavorite(product.id);
-  // Gender only means something for apparel-style categories (women/men/kids/shoes-bags) -
+  // Gender only means something for apparel-style categories (women/men/kids, shoes and bags included) -
   // showing "Мужское"/"Женское" on a microwave or a dumbbell would be confusing.
   const showGenderLabel = categories.find((c) => c.id === product.categoryId)?.hasSizes ?? true;
   const discountPercent = product.discountPrice

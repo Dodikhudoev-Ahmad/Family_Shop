@@ -28,7 +28,7 @@ const GENDER_OPTIONS: ApiGender[] = [0, 1, 2];
 
 // Categories "Женское"/"Мужское"/"Детское" already say who the product is for, so Gender
 // there would just duplicate the category - only categories with no gender of their own
-// (e.g. "Обувь и сумки") need the field shown so an admin can set it explicitly.
+// (e.g. "Бытовая техника") need the field shown so an admin can set it explicitly.
 const CATEGORY_SLUG_TO_GENDER: Partial<Record<string, ApiGender>> = { women: 1, men: 0, kids: 2 };
 
 function impliedGender(categories: CategoryDto[], categoryId: string): ApiGender | undefined {

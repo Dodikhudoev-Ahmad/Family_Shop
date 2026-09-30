@@ -63,7 +63,11 @@ export function ProductPage() {
     );
   }
 
-  const related = products.filter((p) => p.categoryId === product.categoryId && p.id !== product.id).slice(0, 8);
+  // Same-type items first (shoes next to shoes), since shoes/bags share a category with clothes.
+  const related = products
+    .filter((p) => p.categoryId === product.categoryId && p.id !== product.id)
+    .sort((a, b) => Number(b.productType === product.productType) - Number(a.productType === product.productType))
+    .slice(0, 8);
   const productCategory = categories.find((c) => c.id === product.categoryId);
   const favorite = isFavorite(product.id);
   const outOfStock = isOutOfStock(product.stock);
