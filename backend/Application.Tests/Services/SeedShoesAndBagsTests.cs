@@ -37,8 +37,23 @@ public class SeedShoesAndBagsTests
 
         var all = male.Concat(female).Concat(kids).Select(p => p.Name).ToList();
         Assert.Equal(all.Count, all.Distinct().Count());
-        Assert.Equal(21, all.Count); // 13 original + 8 "extra" shoes/bags
+        Assert.Equal(31, all.Count); // 13 original + 8 "extra" + 10 kids shoes/bags
         Assert.Contains(male, p => ProductTypeClassifier.Infer(p.Name) == "Кроссовки");
         Assert.Contains(female, p => ProductTypeClassifier.Infer(p.Name) == "Сумки");
+    }
+
+    [Fact]
+    public void KidsShoesAndBags_HaveExplicitTypesAndPhotosAndNoDuplicates()
+    {
+        var kids = ShoesAndBagsFor(3, Gender.Kids);
+
+        Assert.InRange(kids.Count, 8, 10);
+        Assert.All(kids, p => Assert.Contains(p.ProductType, new[] { "Ботинки", "Кроссовки", "Сумки" }));
+        Assert.All(kids, p => Assert.StartsWith("https://images.pexels.com/", p.Images[0]));
+        Assert.Equal(kids.Count, kids.Select(p => p.Images[0]).Distinct().Count());
+        Assert.Equal(kids.Count, kids.Select(p => p.Name).Distinct().Count());
+        Assert.Contains(kids, p => p.ProductType == "Ботинки");
+        Assert.Contains(kids, p => p.ProductType == "Кроссовки");
+        Assert.Contains(kids, p => p.ProductType == "Сумки");
     }
 }
