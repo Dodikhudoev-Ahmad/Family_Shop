@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoritesContext';
 import { useAuth } from '../../context/AuthContext';
+import { CountBadge } from '../CountBadge/CountBadge';
 import './MobileTabBar.css';
 
 export function MobileTabBar() {
@@ -24,11 +25,7 @@ export function MobileTabBar() {
         <span className="mobile-tabbar__pill">
           <span className="mobile-tabbar__icon-wrap">
             <CartIcon />
-            {totalItems > 0 && (
-              <span key={bump} className="mobile-tabbar__badge bounce">
-                {totalItems}
-              </span>
-            )}
+            <CountBadge key={bump} count={totalItems} className="mobile-tabbar__badge bounce" />
           </span>
           <span>Корзина</span>
         </span>
@@ -38,11 +35,7 @@ export function MobileTabBar() {
         <span className="mobile-tabbar__pill">
           <span className="mobile-tabbar__icon-wrap">
             <HeartIcon />
-            {favoriteIds.length > 0 && (
-              <span key={favBump} className="mobile-tabbar__badge bounce">
-                {favoriteIds.length}
-              </span>
-            )}
+            <CountBadge key={favBump} count={favoriteIds.length} className="mobile-tabbar__badge bounce" />
           </span>
           <span>Избранное</span>
         </span>

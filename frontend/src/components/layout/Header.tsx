@@ -10,6 +10,7 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { MobileMenu } from './MobileMenu';
 import { CategoryMegaMenu } from './CategoryMegaMenu';
 import { SearchOverlay } from '../Search/SearchOverlay';
+import { CountBadge } from '../CountBadge/CountBadge';
 import { ConfirmDialog } from '../ConfirmDialog/ConfirmDialog';
 import './Header.css';
 
@@ -109,22 +110,14 @@ export function Header() {
           {isDesktop && (
             <Link to="/favorites" className="header__icon-btn header__fav-btn" aria-label="Избранное">
               <HeartIcon />
-              {favoriteIds.length > 0 && (
-                <span key={favBump} className="header__cart-count bounce">
-                  {favoriteIds.length}
-                </span>
-              )}
+              <CountBadge key={favBump} count={favoriteIds.length} className="header__cart-count bounce" />
             </Link>
           )}
 
           {isDesktop && (
             <Link to="/cart" className="header__icon-btn header__cart-btn" aria-label="Корзина">
               <CartIcon />
-              {totalItems > 0 && (
-                <span key={bump} className="header__cart-count bounce">
-                  {totalItems}
-                </span>
-              )}
+              <CountBadge key={bump} count={totalItems} className="header__cart-count bounce" />
             </Link>
           )}
         </div>
