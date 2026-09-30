@@ -67,7 +67,6 @@ public static class SeedData
             ("Женское", "women", true),
             ("Мужское", "men", true),
             ("Детское", "kids", true),
-            ("Обувь и сумки", "shoes-bags", true),
             ("Бытовая техника", "bytovaya-tehnika", false),
             ("Спортивные товары", "sport", false),
             ("Посуда", "posuda", false),
@@ -96,10 +95,11 @@ public static class SeedData
         // INSERTed. Safe to run on every boot: a second run touches nothing further.
         var catalogBuilders = new (string Slug, Func<int, IEnumerable<Product>> Build)[]
         {
-            ("women", id => BuildWomen(id).Concat(BuildWomenExtra(id))),
-            ("men", id => BuildMen(id).Concat(BuildMenExtra(id))),
-            ("kids", id => BuildKids(id).Concat(BuildKidsExtra(id))),
-            ("shoes-bags", id => BuildShoesAndBags(id).Concat(BuildShoesAndBagsExtra(id))),
+            // Shoes and bags are no longer a category of their own: they live in the category
+            // of their gender, alongside the clothes (ProductType tells them apart).
+            ("women", id => BuildWomen(id).Concat(BuildWomenExtra(id)).Concat(ShoesAndBagsFor(id, Gender.Female))),
+            ("men", id => BuildMen(id).Concat(BuildMenExtra(id)).Concat(ShoesAndBagsFor(id, Gender.Male))),
+            ("kids", id => BuildKids(id).Concat(BuildKidsExtra(id)).Concat(ShoesAndBagsFor(id, Gender.Kids))),
             ("bytovaya-tehnika", id => BuildAppliances(id).Concat(BuildAppliancesExtra(id))),
             ("sport", id => BuildSport(id).Concat(BuildSportExtra(id))),
             ("posuda", id => BuildDishes(id).Concat(BuildDishesExtra(id))),
@@ -154,7 +154,12 @@ public static class SeedData
         var women13 = await context.Products.Where(p => p.CategoryId == categoriesBySlug["women"].Id).OrderBy(p => p.Id).ToListAsync(cancellationToken);
         var men13 = await context.Products.Where(p => p.CategoryId == categoriesBySlug["men"].Id).OrderBy(p => p.Id).ToListAsync(cancellationToken);
         var kids13 = await context.Products.Where(p => p.CategoryId == categoriesBySlug["kids"].Id).OrderBy(p => p.Id).ToListAsync(cancellationToken);
-        var shoesBags13 = await context.Products.Where(p => p.CategoryId == categoriesBySlug["shoes-bags"].Id).OrderBy(p => p.Id).ToListAsync(cancellationToken);
+        // The original 13 seeded shoes/bags, in their definition order (they now sit in different
+        // gender categories, so they're looked up by name rather than by category).
+        var shoesBagsNames = BuildShoesAndBags(0).Select(p => p.Name).ToList();
+        var shoesBags13 = (await context.Products.Where(p => shoesBagsNames.Contains(p.Name)).ToListAsync(cancellationToken))
+            .OrderBy(p => shoesBagsNames.IndexOf(p.Name))
+            .ToList();
 
         // Backfill product types for rows created before the column existed (idempotent).
         var untyped = await context.Products.Where(p => p.ProductType == null).ToListAsync(cancellationToken);
@@ -339,6 +344,9 @@ public static class SeedData
         yield return Make("Спортивный костюм детский", "Комплект: худи и брюки-джоггеры из футера, унисекс.", 9900, 7900, 16, categoryId, Gender.Kids, "1632232962967-0740a757380d");
         yield return Make("Платье жёлтое в горох для девочки", "Хлопковое платье с горошком, повседневный вариант.", 6400, null, 9, categoryId, Gender.Kids, "1560506840-ec148e82a604");
     }
+
+    private static IEnumerable<Product> ShoesAndBagsFor(int categoryId, Gender gender) =>
+        BuildShoesAndBags(categoryId).Concat(BuildShoesAndBagsExtra(categoryId)).Where(p => p.Gender == gender);
 
     private static IEnumerable<Product> BuildShoesAndBags(int categoryId)
     {
