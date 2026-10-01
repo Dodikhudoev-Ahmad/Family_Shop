@@ -55,6 +55,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.AddScoped<CookieCsrfFilter>();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 

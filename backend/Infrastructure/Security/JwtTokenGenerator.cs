@@ -18,10 +18,13 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         _settings = settings.Value;
     }
 
-    public string GenerateAccessToken(User user)
+    public int AccessTokenLifetimeSeconds => _settings.AccessTokenExpirationMinutes * 60;
+
+    public string GenerateAccessToken(User user, Guid sessionId)
     {
         var claims = new[]
         {
+            new Claim("sid", sessionId.ToString()),
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email.Value),
             new Claim(ClaimTypes.Role, user.Role.ToString())

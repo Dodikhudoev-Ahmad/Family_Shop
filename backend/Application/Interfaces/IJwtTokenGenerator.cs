@@ -4,6 +4,8 @@ namespace Application.Interfaces;
 
 public interface IJwtTokenGenerator
 {
-    string GenerateAccessToken(User user);
+    /// <param name="sessionId">The refresh-token family this access token belongs to (the "sid" claim).</param>
+    string GenerateAccessToken(User user, Guid sessionId);
     string GenerateRefreshToken();
+    int AccessTokenLifetimeSeconds { get; }
 }
