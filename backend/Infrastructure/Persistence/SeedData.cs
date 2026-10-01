@@ -29,6 +29,7 @@ public static class SeedData
         IPasswordHasher passwordHasher,
         IConfiguration configuration,
         ILogger logger,
+        bool isDevelopment,
         CancellationToken cancellationToken = default)
     {
         await context.Database.MigrateAsync(cancellationToken);
@@ -36,28 +37,44 @@ public static class SeedData
         if (!await context.Users.AnyAsync(u => u.Role == UserRole.Admin, cancellationToken))
         {
             var adminEmail = configuration["Seed:AdminEmail"] ?? DefaultAdminEmail;
-            var adminPassword = configuration["Seed:AdminPassword"];
+            // "Seed__AdminPassword" is what ASP.NET maps to Seed:AdminPassword; the bare SEED_ADMIN_PASSWORD
+            // name was documented but never actually read, so setting it silently did nothing.
+            var adminPassword = configuration["Seed:AdminPassword"] ?? configuration["SEED_ADMIN_PASSWORD"];
 
-            // Never fall back to a hardcoded literal - if SEED_ADMIN_PASSWORD isn't set,
-            // generate a random one and log it once so an operator can retrieve it from the
-            // deploy logs on first boot, instead of shipping a credential in source control.
             if (string.IsNullOrEmpty(adminPassword))
             {
-                adminPassword = GenerateRandomPassword();
-                logger.LogWarning(
-                    "Seed:AdminPassword / SEED_ADMIN_PASSWORD is not set. Generated a one-time admin password for {AdminEmail}: {AdminPassword} — log in and change it immediately, this value will not be shown again.",
-                    adminEmail,
-                    adminPassword);
+                if (!isDevelopment)
+                {
+                    // Fail closed: a generated admin password would have to be printed in the logs, where
+                    // anyone with log access (and any log shipper) could read the credential of the most
+                    // privileged account. No password configured -> no admin is created.
+                    logger.LogError(
+                        "No admin account exists and Seed__AdminPassword is not set, so none was created. " +
+                        "Set Seed__AdminPassword (and optionally Seed__AdminEmail) and restart.");
+                    adminPassword = null;
+                }
+                else
+                {
+                    // Local development only: generate one and show it once for convenience.
+                    adminPassword = GenerateRandomPassword();
+                    logger.LogWarning(
+                        "Development: generated a one-time admin password for {AdminEmail}: {AdminPassword}",
+                        adminEmail,
+                        adminPassword);
+                }
             }
 
-            context.Users.Add(new User
+            if (adminPassword is not null)
             {
-                Email = new Email(adminEmail),
-                Name = "Администратор",
-                PasswordHash = passwordHasher.Hash(adminPassword),
-                Role = UserRole.Admin
-            });
-            await context.SaveChangesAsync(cancellationToken);
+                context.Users.Add(new User
+                {
+                    Email = new Email(adminEmail),
+                    Name = "Администратор",
+                    PasswordHash = passwordHasher.Hash(adminPassword),
+                    Role = UserRole.Admin
+                });
+                await context.SaveChangesAsync(cancellationToken);
+            }
         }
 
         // Every category the seed knows about, ensured idempotently by slug - covers both a
