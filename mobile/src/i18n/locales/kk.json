@@ -397,6 +397,26 @@
     "signedInAs": "Сіз {{name}} ретінде кірдіңіз",
     "sessionEnded": "Сессия аяқталды — қайта кіріңіз",
     "addedToCart": "Себетке қосылды",
-    "search": "Тауарларды іздеу"
+    "search": "Тауарларды іздеу",
+    "hits": "Хит сатылымдар",
+    "newArrivals": "Жаңалықтар",
+    "discounts": "Жеңілдіктер",
+    "seeAll": "Барлығын көру",
+    "apply": "Қолдану",
+    "reset": "Тазарту",
+    "sort": "Сұрыптау",
+    "priceFrom": "Бастап",
+    "priceTo": "Дейін",
+    "priceRange": "{{min}} бастап {{max}} дейін",
+    "searchResults": "Іздеу: «{{query}}»",
+    "clearSearch": "Іздеуді тазарту",
+    "productsLoadError": "Тауарларды жүктеу мүмкін болмады",
+    "stockLeft": "Қоймада: {{count}} дана",
+    "reviewsError": "Пікірлерді жүктеу мүмкін болмады",
+    "categoriesTitle": "Санаттар",
+    "tabHome": "Басты бет",
+    "homeError": "Каталогты жүктеу мүмкін болмады",
+    "reviewsEmpty": "Әзірше пікір жоқ",
+    "tabFavorites": "Таңдаулы"
   }
 }

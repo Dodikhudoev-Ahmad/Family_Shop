@@ -2,7 +2,7 @@ import { useNavigation, type ParamListBase } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList } from 'react-native';
+import { FlatList, useWindowDimensions } from 'react-native';
 import { ProductCard } from '../components/ProductCard';
 import { Screen, StateMessage } from '../components/ui';
 import { fetchProduct } from '../lib/api/endpoints';
@@ -17,6 +17,8 @@ export function FavoritesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const { favoriteIds } = useFavorites();
   const { categories } = useCategories();
+  const { width } = useWindowDimensions();
+  const cardWidth = Math.floor((width - spacing.md * 2 - spacing.sm) / 2);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -47,8 +49,10 @@ export function FavoritesScreen() {
       <FlatList
         data={products}
         keyExtractor={(product) => product.id}
-        contentContainerStyle={{ padding: spacing.md }}
-        renderItem={({ item }) => <ProductCard product={item} onPress={() => navigation.navigate('Product', { productId: Number(item.id) })} />}
+        numColumns={2}
+        columnWrapperStyle={{ gap: spacing.sm }}
+        contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}
+        renderItem={({ item }) => <ProductCard product={item} width={cardWidth} onPress={() => navigation.navigate('Product', { productId: Number(item.id) })} />}
         ListEmptyComponent={
           loading ? <StateMessage loading message={t('common.loading')} /> : <StateMessage message={t('favorites.empty')} actionLabel={t('common.toCatalog')} onAction={() => navigation.navigate('CatalogTab')} />
         }
