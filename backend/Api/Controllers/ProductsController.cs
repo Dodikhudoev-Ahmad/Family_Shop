@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Api.Common;
 using Application.Common;
@@ -14,10 +15,12 @@ namespace Api.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;
+    private readonly IValidator<ProductFilterDto> _filterValidator;
 
-    public ProductsController(IProductService productService)
+    public ProductsController(IProductService productService, IValidator<ProductFilterDto> filterValidator)
     {
         _productService = productService;
+        _filterValidator = filterValidator;
     }
 
     /// <summary>Список товаров с фильтрацией по полу, категории, цене и поисковой строке (name/description), сортировкой и пагинацией.</summary>
@@ -36,6 +39,12 @@ public class ProductsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var filter = new ProductFilterDto(gender, categoryId, minPrice, maxPrice, search, sortBy, page, pageSize, productType);
+        var errors = await _filterValidator.ValidateOrNullAsync(filter, cancellationToken);
+        if (errors is not null)
+        {
+            return BadRequest(ApiResponse<PagedResult<ProductDto>>.Fail(errors));
+        }
+
         var result = await _productService.GetProductsAsync(filter, cancellationToken);
         return Ok(ApiResponse<PagedResult<ProductDto>>.Ok(result));
     }

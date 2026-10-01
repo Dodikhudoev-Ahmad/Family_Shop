@@ -26,7 +26,9 @@ public class LocalImageStorageService : IImageStorageService
 
     public async Task<Result<string>> SaveImageAsync(Stream content, string fileName, string contentType, CancellationToken cancellationToken = default)
     {
-        if (!AllowedContentTypes.TryGetValue(contentType.ToLowerInvariant(), out var extension))
+        // A multipart part may arrive with no Content-Type at all; treat that as "not an allowed type".
+        contentType = (contentType ?? string.Empty).ToLowerInvariant();
+        if (!AllowedContentTypes.TryGetValue(contentType, out var extension))
         {
             return Result<string>.Failure("Допустимы только изображения JPEG, PNG, WEBP или GIF.");
         }
@@ -38,7 +40,7 @@ public class LocalImageStorageService : IImageStorageService
 
         // IFormFile.ContentType is a client-supplied header and can be forged, so it cannot be
         // trusted on its own — confirm the actual file bytes match a real image signature.
-        if (!await MatchesImageSignatureAsync(content, contentType.ToLowerInvariant(), cancellationToken))
+        if (!await MatchesImageSignatureAsync(content, contentType, cancellationToken))
         {
             return Result<string>.Failure("Файл повреждён или не является изображением.");
         }

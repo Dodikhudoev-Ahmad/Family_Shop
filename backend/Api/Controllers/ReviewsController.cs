@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -15,10 +16,12 @@ namespace Api.Controllers;
 public class ReviewsController : ControllerBase
 {
     private readonly IReviewService _reviewService;
+    private readonly IValidator<ReviewFilterDto> _filterValidator;
 
-    public ReviewsController(IReviewService reviewService)
+    public ReviewsController(IReviewService reviewService, IValidator<ReviewFilterDto> filterValidator)
     {
         _reviewService = reviewService;
+        _filterValidator = filterValidator;
     }
 
     /// <summary>Список отзывов товара с сортировкой (новые/высокий рейтинг/низкий рейтинг) и пагинацией.</summary>
@@ -32,6 +35,12 @@ public class ReviewsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var filter = new ReviewFilterDto(sortBy, page, pageSize);
+        var errors = await _filterValidator.ValidateOrNullAsync(filter, cancellationToken);
+        if (errors is not null)
+        {
+            return BadRequest(ApiResponse<PagedResult<ReviewDto>>.Fail(errors));
+        }
+
         var result = await _reviewService.GetReviewsAsync(productId, filter, cancellationToken);
         return Ok(ApiResponse<PagedResult<ReviewDto>>.Ok(result));
     }
