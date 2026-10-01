@@ -6,6 +6,7 @@ import type {
   ApiPromoBannerPlacement,
   PagedResult,
   ProductDto,
+  PromoCodeApplicationDto,
   PromoBannerDto,
   ReviewDto,
   ProductSortBy,
@@ -72,4 +73,9 @@ export function createOrder(request: CreateOrderRequest): Promise<OrderDto> {
 
 export function fetchOrders(): Promise<OrderDto[]> {
   return api.request<OrderDto[]>('/orders', { auth: 'required' });
+}
+
+/** Preview of a promo code against the cart subtotal. The order itself is priced again on the server. */
+export function validatePromoCode(code: string, orderSubtotal: number): Promise<PromoCodeApplicationDto> {
+  return api.request<PromoCodeApplicationDto>('/promo-codes/validate', { method: 'POST', body: { code, orderSubtotal } });
 }

@@ -135,7 +135,7 @@
   "errors": {
     "boundaryTitle": "Something went wrong",
     "boundaryText": "We already know about the problem. Try going back to the home page.",
-    "connect": "Couldn't connect to the server. Check that the backend is running.",
+    "connect": "No connection to the server. Check your internet and try again.",
     "tooMany": "Too many attempts. Please try again in a minute.",
     "server": "Server error ({{status}})",
     "failed": "Request failed",
@@ -417,6 +417,22 @@
     "tabHome": "Home",
     "homeError": "Couldn't load the catalogue",
     "reviewsEmpty": "No reviews yet",
-    "tabFavorites": "Favorites"
+    "tabFavorites": "Favorites",
+    "tooLong": "At most {{n}} characters",
+    "passwordTooLong": "Password is too long (at most {{n}} bytes)",
+    "passwordTooCommon": "That password is too easy to guess — choose another one",
+    "passwordSameAsEmail": "Password must not be the same as the email",
+    "invalidCredentials": "Wrong email or password",
+    "registerFailed": "Couldn't create the account. Check your details; if you have registered before, sign in.",
+    "cartTooManyLines": "The cart holds at most {{n}} items",
+    "cartMaxQty": "At most {{n}} pcs per item",
+    "cartRemovedNotice": "Some items sold out or are unavailable — we removed them from your cart.",
+    "estimatedTotal": "Total (estimate)",
+    "priceNote": "The final amount is calculated by the server when you place the order.",
+    "guestTitle": "Sign in to your account",
+    "guestText": "Track your orders and check out faster.",
+    "toOrders": "My orders",
+    "email": "Email",
+    "dismiss": "Got it"
   }
 }

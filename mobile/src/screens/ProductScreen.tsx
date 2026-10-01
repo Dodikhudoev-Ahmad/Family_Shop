@@ -77,7 +77,7 @@ const styles = (c: ColorTokens) => ({
   text: { color: c.text, fontFamily: fonts.body, fontSize: fontSizes.md, lineHeight: 22 },
 });
 
-type Feedback = 'added' | 'size' | 'stock' | null;
+type Feedback = 'added' | 'size' | 'stock' | 'line-quantity' | 'lines' | null;
 
 export function ProductScreen({ route }: { route: RouteProp<{ Product: { productId: number } }, 'Product'> }) {
   const { productId } = route.params;
@@ -155,8 +155,8 @@ export function ProductScreen({ route }: { route: RouteProp<{ Product: { product
       setFeedback('size');
       return;
     }
-    const added = addItem({ id: product.id, name: product.name, image: product.images[0], price: unitPrice, stock: product.stock }, size, effectiveQuantity);
-    setFeedback(added < effectiveQuantity || added === 0 ? 'stock' : 'added');
+    const { limit } = addItem({ id: product.id, name: product.name, image: product.images[0], price: unitPrice, stock: product.stock }, size, effectiveQuantity);
+    setFeedback(limit ?? 'added');
     setQuantity(1);
   };
 
@@ -304,6 +304,8 @@ export function ProductScreen({ route }: { route: RouteProp<{ Product: { product
           {feedback === 'added' ? <Text style={s.feedback}>{t('mobile.addedToCart')}</Text> : null}
           {feedback === 'size' ? <Text style={s.error}>{t('common.chooseSize')}</Text> : null}
           {feedback === 'stock' ? <Text style={s.error}>{t('common.left', { count: product.stock })}</Text> : null}
+          {feedback === 'line-quantity' ? <Text style={s.error}>{t('mobile.cartMaxQty', { n: 50 })}</Text> : null}
+          {feedback === 'lines' ? <Text style={s.error}>{t('mobile.cartTooManyLines', { n: 50 })}</Text> : null}
           {selectedInCart > 0 ? (
             <Pressable accessibilityRole="link" onPress={() => navigation.navigate('CartTab')}>
               <Text style={s.link}>{t('product.inCartLine', { count: selectedInCart, size: size ? ` (${size})` : '' })}</Text>
