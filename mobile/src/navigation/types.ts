@@ -1,9 +1,19 @@
-export type CatalogStackParamList = {
+/** What the catalogue screen opens with: a category tile, a search from home, "all discounts". */
+export interface CatalogParams {
+  categoryId?: number;
+  search?: string;
+  discount?: boolean;
+}
+
+export type HomeStackParamList = {
   Home: undefined;
-  Category: { categoryId: number; slug: string; name: string };
+  Catalog: CatalogParams | undefined;
   Product: { productId: number };
-  Cart: undefined;
-  Checkout: undefined;
+};
+
+export type CatalogStackParamList = {
+  Catalog: CatalogParams | undefined;
+  Product: { productId: number };
 };
 
 export type CartStackParamList = {
@@ -22,6 +32,7 @@ export type ProfileStackParamList = {
 };
 
 export type RootTabParamList = {
+  HomeTab: undefined;
   CatalogTab: undefined;
   CartTab: undefined;
   FavoritesTab: undefined;

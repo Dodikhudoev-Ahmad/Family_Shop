@@ -401,6 +401,26 @@
     "signedInAs": "Вы вошли как {{name}}",
     "sessionEnded": "Сессия завершена — войдите снова",
     "addedToCart": "Добавлено в корзину",
-    "search": "Поиск товаров"
+    "search": "Поиск товаров",
+    "hits": "Хиты продаж",
+    "newArrivals": "Новинки",
+    "discounts": "Скидки",
+    "seeAll": "Смотреть все",
+    "apply": "Применить",
+    "reset": "Сбросить",
+    "sort": "Сортировка",
+    "priceFrom": "От",
+    "priceTo": "До",
+    "priceRange": "от {{min}} до {{max}}",
+    "searchResults": "Поиск: «{{query}}»",
+    "clearSearch": "Сбросить поиск",
+    "productsLoadError": "Не удалось загрузить товары",
+    "stockLeft": "На складе: {{count}} шт",
+    "reviewsError": "Не удалось загрузить отзывы",
+    "categoriesTitle": "Категории",
+    "tabHome": "Главная",
+    "homeError": "Не удалось загрузить каталог",
+    "reviewsEmpty": "Пока нет отзывов",
+    "tabFavorites": "Избранное"
   }
 }

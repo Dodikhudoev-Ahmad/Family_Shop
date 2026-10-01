@@ -397,6 +397,26 @@
     "signedInAs": "Signed in as {{name}}",
     "sessionEnded": "Session ended — please log in again",
     "addedToCart": "Added to cart",
-    "search": "Search products"
+    "search": "Search products",
+    "hits": "Bestsellers",
+    "newArrivals": "New in",
+    "discounts": "Sale",
+    "seeAll": "See all",
+    "apply": "Apply",
+    "reset": "Reset",
+    "sort": "Sort",
+    "priceFrom": "From",
+    "priceTo": "To",
+    "priceRange": "from {{min}} to {{max}}",
+    "searchResults": "Search: “{{query}}”",
+    "clearSearch": "Clear search",
+    "productsLoadError": "Couldn't load products",
+    "stockLeft": "In stock: {{count}}",
+    "reviewsError": "Couldn't load reviews",
+    "categoriesTitle": "Categories",
+    "tabHome": "Home",
+    "homeError": "Couldn't load the catalogue",
+    "reviewsEmpty": "No reviews yet",
+    "tabFavorites": "Favorites"
   }
 }
