@@ -31,6 +31,11 @@ export function quantityOfProduct(lines: CartLine[], productId: string, exceptKe
   return lines.filter((l) => l.productId === productId && l.key !== exceptKey).reduce((sum, l) => sum + l.quantity, 0);
 }
 
+/** Units of a product that can still be added: its stock minus what every size line already holds. */
+export function remainingStock(lines: CartLine[], productId: string, stock: number): number {
+  return Math.max(0, stock - quantityOfProduct(lines, productId));
+}
+
 export interface AddResult {
   lines: CartLine[];
   /** How many units were actually added (0 when the stock cap was already reached). */
@@ -40,7 +45,7 @@ export interface AddResult {
 /** The stock cap is aggregated per product, not per line - otherwise combining sizes would exceed it. */
 export function addToCart(lines: CartLine[], product: CartProductInfo, size: string | null, quantity = 1): AddResult {
   const key = lineKey(product.id, size);
-  const room = Math.max(0, product.stock - quantityOfProduct(lines, product.id));
+  const room = remainingStock(lines, product.id, product.stock);
   const added = Math.max(0, Math.min(quantity, room));
   if (added === 0) return { lines, added: 0 };
 

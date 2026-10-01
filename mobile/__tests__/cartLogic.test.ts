@@ -71,3 +71,16 @@ describe('cart', () => {
     expect(lines[0]).toMatchObject({ key: '7__M', quantity: 3 });
   });
 });
+
+import { remainingStock } from '../src/state/cartLogic';
+
+describe('remainingStock', () => {
+  it('subtracts what ALL size lines of the product already hold', () => {
+    const info = { id: '7', name: 'Худи', price: 1000, stock: 5 };
+    let lines = addToCart([], info, 'M', 2).lines;
+    lines = addToCart(lines, info, 'L', 1).lines;
+    expect(remainingStock(lines, '7', 5)).toBe(2);
+    expect(remainingStock(lines, '8', 5)).toBe(5);
+    expect(remainingStock(lines, '7', 2)).toBe(0);
+  });
+});
