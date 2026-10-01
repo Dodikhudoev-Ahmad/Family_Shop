@@ -11,3 +11,12 @@ public class CreateReviewRequestValidator : AbstractValidator<CreateReviewReques
         RuleFor(x => x.Comment).NotEmpty().MaximumLength(2000);
     }
 }
+
+public class ReviewFilterValidator : AbstractValidator<ReviewFilterDto>
+{
+    public ReviewFilterValidator()
+    {
+        RuleFor(x => x.Page).GreaterThanOrEqualTo(1);
+        RuleFor(x => x.PageSize).InclusiveBetween(1, 50);
+    }
+}
