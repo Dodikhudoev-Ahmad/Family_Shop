@@ -17,6 +17,8 @@ public class ProductUpsertValidator : AbstractValidator<ProductUpsertDto>
         RuleFor(x => x.CategoryId).GreaterThan(0);
         RuleFor(x => x.Gender).IsInEnum();
         RuleFor(x => x.Images).NotEmpty().WithMessage("Добавьте хотя бы одно изображение.");
-        RuleForEach(x => x.Images).NotEmpty().MaximumLength(2000);
+        RuleFor(x => x.Images).Must(images => images is null || images.Count <= 10).WithMessage("At most 10 images per product.");
+        RuleForEach(x => x.Images).NotEmpty().MaximumLength(2000)
+            .Must(UrlRules.IsSafeImage).WithMessage("Image must be an http(s) URL or an in-app path.");
     }
 }
