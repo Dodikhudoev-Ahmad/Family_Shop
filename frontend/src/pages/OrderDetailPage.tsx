@@ -5,8 +5,10 @@ import { formatPrice } from '../utils/formatPrice';
 import { ApiError, fetchOrders, type OrderDto } from '../lib/api';
 import { STATUS_INFO } from './AccountPage';
 import './AccountPage.css';
+import { useTranslation } from 'react-i18next';
 
 export function OrderDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const { user, isLoading } = useAuth();
   const [order, setOrder] = useState<OrderDto | null | undefined>(undefined);
@@ -20,7 +22,7 @@ export function OrderDetailPage() {
         if (!cancelled) setOrder(orders.find((o) => String(o.id) === id) ?? null);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Не удалось загрузить заказ.');
+        if (!cancelled) setError(err instanceof ApiError ? err.message : t('orders.loadError'));
       });
     return () => {
       cancelled = true;
@@ -32,7 +34,7 @@ export function OrderDetailPage() {
 
   const back = (
     <Link to="/account" className="order-detail__back">
-      ← Личный кабинет
+      {t('orders.back')}
     </Link>
   );
 
@@ -40,7 +42,7 @@ export function OrderDetailPage() {
     return (
       <div className="container order-detail">
         {back}
-        <p className="account__empty">{error ?? 'Заказ не найден.'}</p>
+        <p className="account__empty">{error ?? t('orders.notFound')}</p>
       </div>
     );
   }
@@ -48,7 +50,7 @@ export function OrderDetailPage() {
     return (
       <div className="container order-detail">
         {back}
-        <p className="account__empty">Загрузка...</p>
+        <p className="account__empty">{t('common.loading')}</p>
       </div>
     );
   }
@@ -60,16 +62,16 @@ export function OrderDetailPage() {
       {back}
       <div className="order-detail__head">
         <div>
-          <h1>Заказ FS-{order.id}</h1>
+          <h1>{t('orders.title', { id: order.id })}</h1>
           <span className="order-detail__date">{new Date(order.createdAt).toLocaleDateString('ru-RU')}</span>
         </div>
-        <span className={`status-badge order-status status-badge--${status.slug}`}>{status.label}</span>
+        <span className={`status-badge order-status status-badge--${status.slug}`}>{t(status.labelKey)}</span>
       </div>
 
       <div className="order-detail__info">
         <div>{order.contactName}, {order.contactPhone}</div>
-        <div>{order.deliveryMethod === 0 ? [order.city, order.address].filter(Boolean).join(', ') : 'Самовывоз из пункта выдачи'}</div>
-        <div>Оплата при получении</div>
+        <div>{order.deliveryMethod === 0 ? [order.city, order.address].filter(Boolean).join(', ') : t('checkout.pickupAt')}</div>
+        <div>{t('checkout.paymentValue')}</div>
       </div>
 
       <div className="order-detail__info">
@@ -78,19 +80,19 @@ export function OrderDetailPage() {
             <img src={item.productImage ?? undefined} alt={item.productName} />
             <div className="order-detail__row-info">
               <span>{item.productName}</span>
-              <small>{item.size ? `${item.size} · ` : ''}{item.quantity} шт.</small>
+              <small>{item.size ? `${item.size} · ` : ''}{t('checkout.qty', { count: item.quantity })}</small>
             </div>
             <span>{formatPrice(item.price * item.quantity)}</span>
           </div>
         ))}
         {order.promoCode && (
           <div className="order-detail__row">
-            <span>Промокод {order.promoCode}</span>
+            <span>{t('orders.promo', { code: order.promoCode })}</span>
             <span style={{ marginLeft: 'auto' }}>−{formatPrice(order.discountAmount)}</span>
           </div>
         )}
         <div className="order-detail__total">
-          <span>Итого</span>
+          <span>{t('common.total')}</span>
           <strong>{formatPrice(order.totalPrice)}</strong>
         </div>
       </div>

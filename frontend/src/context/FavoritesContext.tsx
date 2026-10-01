@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useToast } from './ToastContext';
+import i18n from '../i18n';
 
 interface FavoritesContextValue {
   favoriteIds: string[];
@@ -39,7 +40,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     const has = favoriteIds.includes(id);
     setFavoriteIds((prev) => (has ? prev.filter((f) => f !== id) : [...prev, id]));
     if (!has) setBump((b) => b + 1);
-    showToast(has ? `«${name}» удалён из избранного` : `«${name}» добавлен в избранное`, 'info');
+    showToast(has ? i18n.t('favorites.removed', { name }) : i18n.t('favorites.added', { name }), 'info');
   };
 
   return (

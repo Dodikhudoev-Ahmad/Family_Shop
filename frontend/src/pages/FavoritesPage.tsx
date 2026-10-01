@@ -7,6 +7,7 @@ import { Button } from '../components/Button/Button';
 import { ConfirmDialog } from '../components/ConfirmDialog/ConfirmDialog';
 import type { Product } from '../types/product';
 import './FavoritesPage.css';
+import { useTranslation } from 'react-i18next';
 
 const REMOVE_DELAY = 300;
 
@@ -59,6 +60,7 @@ function useFadingIds(currentIds: string[]) {
 }
 
 export function FavoritesPage() {
+  const { t } = useTranslation();
   const { favoriteIds, toggleFavorite } = useFavorites();
   const { products } = useProducts();
   const { visibleIds, removingIds, isRemoving } = useFadingIds(favoriteIds);
@@ -74,12 +76,12 @@ export function FavoritesPage() {
   if (visibleProducts.length === 0) {
     return (
       <div className="container favorites">
-        <h1 className="favorites__title">Избранное</h1>
+        <h1 className="favorites__title">{t('favorites.title')}</h1>
         <div className="favorites__empty">
           <HeartEmptyIcon />
-          <p>В избранном пока ничего нет — сохраняйте понравившиеся вещи, чтобы не потерять</p>
+          <p>{t('favorites.empty')}</p>
           <Link to="/catalog">
-            <Button variant="primary">В каталог</Button>
+            <Button variant="primary">{t('common.toCatalog')}</Button>
           </Link>
         </div>
       </div>
@@ -88,7 +90,7 @@ export function FavoritesPage() {
 
   return (
     <div className="container favorites">
-      <h1 className="favorites__title">Избранное</h1>
+      <h1 className="favorites__title">{t('favorites.title')}</h1>
       <div className={`favorites__grid ${isRemoving ? 'is-removing-item' : ''}`}>
         {visibleProducts.map((product) => (
           <div key={product.id} className={`favorites__item ${removingIds.has(product.id) ? 'is-removing' : ''}`}>
@@ -99,9 +101,9 @@ export function FavoritesPage() {
 
       <ConfirmDialog
         open={pendingRemoval !== null}
-        title={`Убрать «${pendingRemoval?.name}» из избранного?`}
-        description="Товар будет удалён из списка избранного."
-        confirmLabel="Убрать"
+        title={t('favorites.removeTitle', { name: pendingRemoval?.name })}
+        description={t('favorites.removeDesc')}
+        confirmLabel={t('common.remove')}
         onConfirm={handleConfirmRemove}
         onCancel={() => setPendingRemoval(null)}
       />
