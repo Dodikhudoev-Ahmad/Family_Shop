@@ -250,7 +250,7 @@ try
     using var migrationScope = app.Services.CreateScope();
     var db = migrationScope.ServiceProvider.GetRequiredService<AppDbContext>();
     var passwordHasher = migrationScope.ServiceProvider.GetRequiredService<Application.Interfaces.IPasswordHasher>();
-    await SeedData.SeedAsync(db, passwordHasher, app.Configuration, app.Logger);
+    await SeedData.SeedAsync(db, passwordHasher, app.Configuration, app.Logger, app.Environment.IsDevelopment());
 }
 catch (Exception ex)
 {
