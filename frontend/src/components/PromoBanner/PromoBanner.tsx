@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchActivePromoBanners, type ApiPromoBannerPlacement, type PromoBannerDto } from '../../lib/api';
+import { isHttpUrl, isInternalPath } from '../../utils/safeLink';
 import './PromoBanner.css';
 import { useTranslation } from 'react-i18next';
 
@@ -42,11 +43,11 @@ export function PromoBanner({ placement }: PromoBannerProps) {
   if (banners.length === 0) return null;
 
   const banner = banners[activeIndex];
-  const isInternalLink = banner.buttonLink?.startsWith('/');
+  const isInternalLink = isInternalPath(banner.buttonLink);
   // buttonLink is admin-supplied; block "javascript:"/"data:" etc. so a malicious or
   // compromised admin account can't turn this into a click-to-execute XSS link for
   // every storefront visitor.
-  const isSafeExternalLink = !isInternalLink && banner.buttonLink && /^https?:\/\//i.test(banner.buttonLink);
+  const isSafeExternalLink = !isInternalLink && isHttpUrl(banner.buttonLink);
 
   return (
     <section className="promo-banner container">

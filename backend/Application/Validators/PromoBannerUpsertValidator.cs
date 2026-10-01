@@ -13,10 +13,10 @@ public class PromoBannerUpsertValidator : AbstractValidator<PromoBannerUpsertDto
         RuleFor(x => x.ButtonLink).MaximumLength(500);
         // Only a relative in-app path or an http(s) URL is allowed - blocks "javascript:"/"data:"
         // etc. from ever being stored, since the frontend renders this straight into an <a href>.
-        RuleFor(x => x.ButtonLink)
-            .Must(link => string.IsNullOrEmpty(link) || link.StartsWith('/') || link.StartsWith("http://") || link.StartsWith("https://"))
-            .WithMessage("Button link must be a relative path or an http(s) URL.");
+        RuleFor(x => x.ButtonLink).MustBeSafeLink();
         RuleFor(x => x.ImageUrl).MaximumLength(1000);
+        RuleFor(x => x.ImageUrl).Must(UrlRules.IsSafeImage).When(x => !string.IsNullOrEmpty(x.ImageUrl))
+            .WithMessage("Image must be an http(s) URL or an in-app path.");
         RuleFor(x => x.SortOrder).GreaterThanOrEqualTo(0);
         RuleFor(x => x.Placement).IsInEnum();
     }
