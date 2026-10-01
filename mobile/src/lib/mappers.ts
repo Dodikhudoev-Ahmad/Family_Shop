@@ -7,6 +7,17 @@ export const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 export const KIDS_SHOE_SIZES = ['26', '27', '28', '29', '30', '31', '32', '33', '34', '35'];
 export const SHOE_SIZES = ['36', '37', '38', '39', '40'];
 
+/** Sorts a mixed list of sizes into the canonical order (S..4XL, kids shoes, adult shoes), not alphabetically. */
+export function sortSizes(sizes: string[]): string[] {
+  const order = [...CLOTHING_SIZES, ...KIDS_SHOE_SIZES, ...SHOE_SIZES];
+  return [...sizes].sort((a, b) => {
+    const ia = order.indexOf(a);
+    const ib = order.indexOf(b);
+    if (ia === -1 || ib === -1) return a.localeCompare(b);
+    return ia - ib;
+  });
+}
+
 const SHOE_TYPES = ['Ботинки', 'Кроссовки'];
 const SIZELESS_TYPES = ['Сумки', 'Рюкзаки'];
 

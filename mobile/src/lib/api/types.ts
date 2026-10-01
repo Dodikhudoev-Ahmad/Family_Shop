@@ -110,3 +110,27 @@ export interface CreateOrderRequest {
   address?: string;
   promoCode?: string;
 }
+
+/** 0=Home, 1=Cart, 2=Both - matches backend PromoBannerPlacement. */
+export type ApiPromoBannerPlacement = 0 | 1 | 2;
+
+export interface PromoBannerDto {
+  id: number;
+  title: string;
+  subtitle: string | null;
+  buttonText: string | null;
+  buttonLink: string | null;
+  imageUrl: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  placement: ApiPromoBannerPlacement;
+}
+
+export interface ReviewDto {
+  id: number;
+  userId: number;
+  userName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}

@@ -3,8 +3,11 @@ import type {
   CategoryDto,
   CreateOrderRequest,
   OrderDto,
+  ApiPromoBannerPlacement,
   PagedResult,
   ProductDto,
+  PromoBannerDto,
+  ReviewDto,
   ProductSortBy,
 } from './types';
 
@@ -35,6 +38,28 @@ export function fetchCategories(): Promise<CategoryDto[]> {
 
 export function fetchProductsPage(query: ProductQuery = {}): Promise<PagedResult<ProductDto>> {
   return api.request<PagedResult<ProductDto>>(`/products${buildQuery(query)}`);
+}
+
+const FETCH_ALL_PAGE_SIZE = 200;
+
+/** The whole catalogue, page by page until the server says `hasMore: false` - a single request would
+ * silently cut the list off as soon as the shop outgrows one page. */
+export async function fetchAllProducts(): Promise<ProductDto[]> {
+  const items: ProductDto[] = [];
+  for (let page = 1; ; page += 1) {
+    const result = await fetchProductsPage({ page, pageSize: FETCH_ALL_PAGE_SIZE });
+    items.push(...result.items);
+    if (!result.hasMore) return items;
+  }
+}
+
+export function fetchActivePromoBanners(placement: ApiPromoBannerPlacement): Promise<PromoBannerDto[]> {
+  return api.request<PromoBannerDto[]>(`/promo-banners/active?placement=${placement}`);
+}
+
+/** 0=Newest, 1=HighestRating, 2=LowestRating */
+export function fetchProductReviews(productId: number, page: number, pageSize: number): Promise<PagedResult<ReviewDto>> {
+  return api.request<PagedResult<ReviewDto>>(`/products/${productId}/reviews?sortBy=0&page=${page}&pageSize=${pageSize}`);
 }
 
 export function fetchProduct(id: number): Promise<ProductDto> {
