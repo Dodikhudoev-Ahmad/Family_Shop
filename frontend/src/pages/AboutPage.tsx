@@ -7,75 +7,59 @@ import { Button } from '../components/Button/Button';
 import { useSeo } from '../hooks/useSeo';
 import { SITE_NAME } from '../data/seo';
 import './AboutPage.css';
+import { useTranslation } from 'react-i18next';
 
 const values = [
-  {
-    title: 'Качество',
-    text: 'Тщательно отбираем ткани и проверяем пошив каждой партии, прежде чем вещь попадёт в каталог.',
-    icon: <QualityIcon />,
-  },
-  {
-    title: 'Семейность',
-    text: 'Одеваем всю семью в едином стиле — женское, мужское и детское в одном месте, без компромиссов.',
-    icon: <FamilyIcon />,
-  },
-  {
-    title: 'Минимализм',
-    text: 'Чистые линии и спокойные цвета — вещи, которые легко сочетать и хочется носить годами.',
-    icon: <MinimalIcon />,
-  },
-  {
-    title: 'Забота о клиенте',
-    text: 'Отвечаем быстро, помогаем с размером и всегда готовы решить вопрос с заказом или возвратом.',
-    icon: <CareIcon />,
-  },
-];
+  { id: 'quality', icon: <QualityIcon /> },
+  { id: 'family', icon: <FamilyIcon /> },
+  { id: 'minimalism', icon: <MinimalIcon /> },
+  { id: 'care', icon: <CareIcon /> },
+] as const;
 
 export function AboutPage() {
+  const { t } = useTranslation();
   useSeo({
-    title: `О нас — ${SITE_NAME}`,
-    description: 'Family Shop — одежда для всей семьи в Казахстане. Минимализм, качество и забота о клиенте в каждой детали.',
+    title: t('seo.aboutTitle', { site: SITE_NAME }),
+    description: t('seo.aboutDescription'),
   });
 
   const { products, isLoading: productsLoading } = useProducts();
   const { categories, isLoading: categoriesLoading } = useCategories();
 
   const stats = [
-    { value: productsLoading ? '—' : `${products.length}+`, label: 'товаров в каталоге' },
-    { value: categoriesLoading ? '—' : `${categories.length}`, label: 'категорий' },
-    { value: '3', label: 'направления: женское, мужское, детское' },
-    { value: 'KZ', label: 'доставка по всему Казахстану' },
+    { value: productsLoading ? '—' : `${products.length}+`, label: t('about.statProducts') },
+    { value: categoriesLoading ? '—' : `${categories.length}`, label: t('about.statCategories') },
+    { value: '3', label: t('about.statDirections') },
+    { value: 'KZ', label: t('about.statDelivery') },
   ];
 
   return (
     <div className="about">
       <section className="about-hero container">
         <Reveal>
-          <span className="about-hero__eyebrow">О бренде</span>
+          <span className="about-hero__eyebrow">{t('about.eyebrow')}</span>
         </Reveal>
         <Reveal>
-          <h1 className="about-hero__title">Family Shop — стиль для всей семьи</h1>
+          <h1 className="about-hero__title">{t('about.heroTitle')}</h1>
         </Reveal>
         <Reveal>
           <p className="about-hero__text">
-            Мы создаём одежду для женщин, мужчин и детей, объединённую одной идеей — простые формы, качественные
-            материалы и вещи, которые остаются актуальными вне сезонов. Family Shop работает в Казахстане и
-            собирает гардероб, в котором комфортно каждому члену семьи.
+            {t('about.heroText')}
           </p>
         </Reveal>
       </section>
 
       <section className="about-section container">
         <Reveal>
-          <h2 className="about-section__title">Наши принципы</h2>
+          <h2 className="about-section__title">{t('about.principles')}</h2>
         </Reveal>
         <div className="about-values">
           {values.map((v) => (
-            <Reveal key={v.title} className="about-values__item">
+            <Reveal key={v.id} className="about-values__item">
               <div className="about-value">
                 <span className="about-value__icon">{v.icon}</span>
-                <h3 className="about-value__title">{v.title}</h3>
-                <p className="about-value__text">{v.text}</p>
+                <h3 className="about-value__title">{t(`about.${v.id}Title`)}</h3>
+                <p className="about-value__text">{t(`about.${v.id}Text`)}</p>
               </div>
             </Reveal>
           ))}
@@ -99,23 +83,23 @@ export function AboutPage() {
 
       <section className="about-cta container">
         <Reveal>
-          <h2 className="about-cta__title">Готовы собрать гардероб для всей семьи?</h2>
+          <h2 className="about-cta__title">{t('about.ctaTitle')}</h2>
         </Reveal>
         <Reveal>
           <p className="about-cta__text">
-            Загляните в каталог — новинки и бестселлеры для женщин, мужчин и детей уже ждут вас.
+            {t('about.ctaText')}
           </p>
         </Reveal>
         <Reveal>
           <div className="about-cta__actions">
             <Link to="/catalog">
               <Button variant="primary" size="lg">
-                Перейти в каталог
+                {t('about.ctaButton')}
               </Button>
             </Link>
             {CONTACT_EMAIL && (
               <a href={`mailto:${CONTACT_EMAIL}`} className="about-cta__contact">
-                Или напишите нам: {CONTACT_EMAIL}
+                {t('about.ctaMail', { email: CONTACT_EMAIL })}
               </a>
             )}
           </div>

@@ -1,5 +1,6 @@
 import type { ApiGender, ApiResponse, CategoryDto, PagedResult, ProductDto, ProductSortBy } from '../types/api';
 import { getAccessToken, setAccessToken } from './authToken';
+import i18n from '../i18n';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5280/api/v1';
 
@@ -23,7 +24,7 @@ async function rawFetch(path: string, options: RequestInit = {}): Promise<Respon
   try {
     return await fetch(`${API_BASE_URL}${path}`, { ...options, headers, credentials: 'include' });
   } catch {
-    throw new ApiError('Не удалось подключиться к серверу. Проверьте, что backend запущен.');
+    throw new ApiError(i18n.t('errors.connect'));
   }
 }
 
@@ -56,18 +57,18 @@ async function parseEnvelope<T>(res: Response): Promise<T> {
   // The rate limiter rejects requests before they reach our controllers, so a 429 body
   // isn't our JSON envelope - handle it separately with a message people can act on.
   if (res.status === 429) {
-    throw new ApiError('Слишком много попыток. Попробуйте снова через минуту.');
+    throw new ApiError(i18n.t('errors.tooMany'));
   }
 
   let json: ApiResponse<T>;
   try {
     json = (await res.json()) as ApiResponse<T>;
   } catch {
-    throw new ApiError(`Ошибка сервера (${res.status})`);
+    throw new ApiError(i18n.t('errors.server', { status: res.status }));
   }
 
   if (!json.success) {
-    throw new ApiError(json.errors.join('; ') || 'Запрос не выполнен');
+    throw new ApiError(json.errors.join('; ') || i18n.t('errors.failed'));
   }
 
   return json.data;

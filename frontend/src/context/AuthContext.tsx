@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { useToast } from './ToastContext';
 import { loginRequest, logoutRequest, registerRequest, silentRefresh, type ApiUserRole } from '../lib/api';
 import { hasSessionHint, onAccessTokenChange, setAccessToken } from '../lib/authToken';
+import i18n from '../i18n';
 
 interface AuthUser {
   id: number;
@@ -68,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(data.accessToken);
     const loggedInUser = { id: data.userId, email: data.email, name: data.name, role: data.role };
     setUser(loggedInUser);
-    showToast('Вы успешно вошли в аккаунт');
+    showToast(i18n.t('auth.loggedIn'));
     return loggedInUser;
   };
 
@@ -77,14 +78,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(data.accessToken);
     const registeredUser = { id: data.userId, email: data.email, name: data.name, role: data.role };
     setUser(registeredUser);
-    showToast('Аккаунт создан, добро пожаловать!');
+    showToast(i18n.t('auth.registered'));
     return registeredUser;
   };
 
   const logout = () => {
     setAccessToken(null);
     setUser(null);
-    showToast('Вы вышли из аккаунта', 'info');
+    showToast(i18n.t('auth.loggedOut'), 'info');
     void logoutRequest();
   };
 

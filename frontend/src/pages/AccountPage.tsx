@@ -9,8 +9,10 @@ import { FadeImage } from '../components/FadeImage/FadeImage';
 import { formatPrice } from '../utils/formatPrice';
 import { ApiError, fetchOrders, type ApiOrderStatus, type OrderDto } from '../lib/api';
 import './AccountPage.css';
+import { useTranslation } from 'react-i18next';
 
 export function AccountPage() {
+  const { t } = useTranslation();
   const { user, isLoading, logout } = useAuth();
 
   if (isLoading) {
@@ -32,14 +34,14 @@ export function AccountPage() {
       <div className="account__profile">
         <div className="account__avatar" aria-hidden="true">{initial}</div>
         <div className="account__profile-text">
-          <p className="account__eyebrow">Личный кабинет</p>
-          <h1 className="account__greeting">Здравствуйте, {user.name}</h1>
+          <p className="account__eyebrow">{t('account.eyebrow')}</p>
+          <h1 className="account__greeting">{t('account.greeting', { name: user.name })}</h1>
         </div>
         <button type="button" className="account__logout" onClick={logout}>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4M16 8l4 4-4 4M20 12H9" />
           </svg>
-          Выйти
+          {t('header.logout')}
         </button>
       </div>
 
@@ -50,15 +52,16 @@ export function AccountPage() {
   );
 }
 
-export const STATUS_INFO: Record<ApiOrderStatus, { label: string; slug: string }> = {
-  0: { label: 'Оформлен', slug: 'created' },
-  1: { label: 'В обработке', slug: 'processing' },
-  2: { label: 'В пути', slug: 'shipped' },
-  3: { label: 'Доставлен', slug: 'delivered' },
-  4: { label: 'Отменён', slug: 'cancelled' },
-};
+export const STATUS_INFO = {
+  0: { labelKey: 'account.statusCreated', slug: 'created' },
+  1: { labelKey: 'account.statusProcessing', slug: 'processing' },
+  2: { labelKey: 'account.statusShipped', slug: 'shipped' },
+  3: { labelKey: 'account.statusDelivered', slug: 'delivered' },
+  4: { labelKey: 'account.statusCancelled', slug: 'cancelled' },
+} as const satisfies Record<ApiOrderStatus, { labelKey: string; slug: string }>;
 
 function OrderHistory() {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState<OrderDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,7 +73,7 @@ function OrderHistory() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setError(err instanceof ApiError ? err.message : 'Не удалось загрузить историю заказов.');
+        setError(err instanceof ApiError ? err.message : t('account.loadError'));
       });
     return () => {
       cancelled = true;
@@ -79,9 +82,9 @@ function OrderHistory() {
 
   return (
     <section className="account__section">
-      <h3 className="account__section-title">Мои заказы</h3>
+      <h3 className="account__section-title">{t('account.myOrders')}</h3>
       {error && <p className="account__empty">{error}</p>}
-      {!error && orders === null && <p className="account__empty">Загрузка...</p>}
+      {!error && orders === null && <p className="account__empty">{t('common.loading')}</p>}
       {!error && orders !== null && orders.length === 0 && (
         <div className="account__empty-state">
           <span className="account__empty-icon" aria-hidden="true">
@@ -89,10 +92,10 @@ function OrderHistory() {
               <path d="M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2" />
             </svg>
           </span>
-          <p className="account__empty-title">Пока нет заказов</p>
-          <p className="account__empty">Оформленные заказы появятся здесь.</p>
+          <p className="account__empty-title">{t('account.emptyTitle')}</p>
+          <p className="account__empty">{t('account.emptyText')}</p>
           <Link to="/catalog">
-            <Button variant="primary">Перейти к покупкам</Button>
+            <Button variant="primary">{t('account.shop')}</Button>
           </Link>
         </div>
       )}
@@ -104,7 +107,7 @@ function OrderHistory() {
               <Link key={order.id} to={`/account/orders/${order.id}`} className="order-card">
                 <div className="order-card__top">
                   <span className="order-card__id">FS-{order.id}</span>
-                  <span className={`status-badge order-status status-badge--${status.slug}`}>{status.label}</span>
+                  <span className={`status-badge order-status status-badge--${status.slug}`}>{t(status.labelKey)}</span>
                 </div>
                 <div className="order-card__meta">
                   <span>{new Date(order.createdAt).toLocaleDateString('ru-RU')}</span>
@@ -134,15 +137,16 @@ function OrderHistory() {
 }
 
 function FavoritesSection() {
+  const { t } = useTranslation();
   const { favoriteIds } = useFavorites();
   const { products } = useProducts();
   const favoriteProducts = products.filter((p) => favoriteIds.includes(p.id));
 
   return (
     <section className="account__section">
-      <h3 className="account__section-title">Избранное</h3>
+      <h3 className="account__section-title">{t('favorites.title')}</h3>
       {favoriteProducts.length === 0 ? (
-        <p className="account__empty">Пока пусто. Добавляйте товары в избранное значком сердца.</p>
+        <p className="account__empty">{t('account.favoritesEmpty')}</p>
       ) : (
         <div className="account__favorites-grid">
           {favoriteProducts.map((p) => (

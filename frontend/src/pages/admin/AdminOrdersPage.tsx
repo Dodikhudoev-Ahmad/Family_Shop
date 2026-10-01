@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AdminLayout } from '../../components/AdminLayout/AdminLayout';
-import { StatusBadge, ORDER_STATUS_INFO, ALLOWED_NEXT_STATUSES } from '../../components/StatusBadge/StatusBadge';
+import { StatusBadge, ORDER_STATUS_INFO, ALLOWED_NEXT_STATUSES, orderStatusLabel } from '../../components/StatusBadge/StatusBadge';
 import { useToast } from '../../context/ToastContext';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -125,7 +125,7 @@ export function AdminOrdersPage() {
     updateAdminOrderStatus(order.id, newStatus)
       .then((updated) => {
         setOrders((prev) => prev && prev.map((o) => (o.id === order.id ? updated : o)));
-        showToast(`Заказ FS-${order.id}: статус изменён на «${ORDER_STATUS_INFO[newStatus].label}»`);
+        showToast(`Заказ FS-${order.id}: статус изменён на «${orderStatusLabel(newStatus)}»`);
         loadStats();
       })
       .catch((err: unknown) => {
@@ -392,7 +392,7 @@ function StatusControl({
           </option>
           {options.map((status) => (
             <option key={status} value={status}>
-              {ORDER_STATUS_INFO[status].label}
+              {orderStatusLabel(status)}
             </option>
           ))}
         </select>
