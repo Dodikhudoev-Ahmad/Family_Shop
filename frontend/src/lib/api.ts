@@ -11,6 +11,11 @@ export class ApiError extends Error {
   }
 }
 
+// The refresh cookie is SameSite=None, so the browser attaches it to requests started by any page.
+// Calls that act on it carry this custom header: it makes the browser run a CORS preflight, which only
+// this app's origin passes, and the API rejects cookie requests without it (CSRF defence).
+const COOKIE_REQUEST_HEADERS = { 'X-Requested-With': 'fetch' } as const;
+
 async function rawFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const token = getAccessToken();
   const headers = new Headers(options.headers);
@@ -37,7 +42,11 @@ async function refreshAccessToken(): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST', credentials: 'include' });
+        const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: COOKIE_REQUEST_HEADERS,
+        });
         if (!res.ok) return false;
         const json = (await res.json()) as ApiResponse<{ accessToken: string }>;
         if (!json.success) return false;
@@ -176,7 +185,11 @@ export function registerRequest(email: string, password: string, name: string): 
 
 /** Attempts to restore a session from the httpOnly refresh cookie (e.g. on page load). */
 export async function silentRefresh(): Promise<AuthResponseDto | null> {
-  const res = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST', credentials: 'include' });
+  const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: COOKIE_REQUEST_HEADERS,
+  });
   if (!res.ok) return null;
   try {
     const json = (await res.json()) as ApiResponse<AuthResponseDto>;
@@ -187,7 +200,7 @@ export async function silentRefresh(): Promise<AuthResponseDto | null> {
 }
 
 export async function logoutRequest(): Promise<void> {
-  await rawFetch('/auth/logout', { method: 'POST' });
+  await rawFetch('/auth/logout', { method: 'POST', headers: COOKIE_REQUEST_HEADERS });
 }
 
 /** 0=Created, 1=Processing, 2=Shipped, 3=Delivered, 4=Cancelled - matches backend OrderStatus. */
