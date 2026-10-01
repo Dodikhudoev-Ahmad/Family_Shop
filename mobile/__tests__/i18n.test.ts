@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import i18n, { DEFAULT_LANGUAGE, LANGUAGE_STORAGE_KEY, restoreLanguage, setLanguage } from '../src/i18n';
+import i18n, { DEFAULT_LANGUAGE, LANGUAGE_STORAGE_KEY, LEGACY_LANGUAGE_STORAGE_KEY, restoreLanguage, setLanguage } from '../src/i18n';
 import en from '../src/i18n/locales/en.json';
 import kk from '../src/i18n/locales/kk.json';
 import ru from '../src/i18n/locales/ru.json';
@@ -73,5 +73,16 @@ describe('language', () => {
     expect([1, 2, 5].map((count) => i18n.t('reviews.count', { count }))).toEqual(['1 отзыв', '2 отзыва', '5 отзывов']);
     await i18n.changeLanguage('en');
     expect([1, 2].map((count) => i18n.t('reviews.count', { count }))).toEqual(['1 review', '2 reviews']);
+  });
+});
+
+describe('stale saved language', () => {
+  it('a pre-v2 saved "en" is ignored and cleaned up: the app opens in Russian', async () => {
+    await i18n.changeLanguage('ru');
+    await AsyncStorage.removeItem(LANGUAGE_STORAGE_KEY);
+    await AsyncStorage.setItem(LEGACY_LANGUAGE_STORAGE_KEY, 'en');
+    await restoreLanguage();
+    expect(i18n.language).toBe('ru');
+    expect(await AsyncStorage.getItem(LEGACY_LANGUAGE_STORAGE_KEY)).toBeNull();
   });
 });
