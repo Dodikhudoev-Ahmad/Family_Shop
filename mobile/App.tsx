@@ -10,6 +10,7 @@ import { AuthProvider } from './src/state/AuthContext';
 import { CartProvider } from './src/state/CartContext';
 import { CategoriesProvider } from './src/state/CategoriesContext';
 import { FavoritesProvider } from './src/state/FavoritesContext';
+import { ProductsProvider } from './src/state/ProductsContext';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 
 function ThemedStatusBar() {
@@ -33,12 +34,14 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <CategoriesProvider>
-            <CartProvider>
-              <FavoritesProvider>
-                <ThemedStatusBar />
-                <RootNavigator />
-              </FavoritesProvider>
-            </CartProvider>
+            <ProductsProvider>
+              <CartProvider>
+                <FavoritesProvider>
+                  <ThemedStatusBar />
+                  <RootNavigator />
+                </FavoritesProvider>
+              </CartProvider>
+            </ProductsProvider>
           </CategoriesProvider>
         </AuthProvider>
       </ThemeProvider>
