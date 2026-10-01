@@ -6,6 +6,7 @@ import { formatPrice } from '../../utils/formatPrice';
 import { FadeImage } from '../FadeImage/FadeImage';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import './SearchOverlay.css';
+import { useTranslation } from 'react-i18next';
 
 interface SearchOverlayProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ const DEBOUNCE_MS = 300;
 const RESULTS_LIMIT = 6;
 
 export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ProductDto[]>([]);
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
@@ -79,34 +81,34 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   return (
     <>
       <div className="search-overlay__backdrop" onClick={onClose} />
-      <div className="search-overlay" role="dialog" aria-modal="true" aria-label="Поиск товаров">
+      <div className="search-overlay" role="dialog" aria-modal="true" aria-label={t('search.dialog')}>
         <div className="search-overlay__bar">
           <SearchIcon />
           <input
             ref={inputRef}
             type="search"
             className="search-overlay__input"
-            placeholder="Что вы ищете?"
+            placeholder={t('search.placeholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            aria-label="Поиск товаров"
+            aria-label={t('search.dialog')}
           />
-          <button className="search-overlay__close" onClick={onClose} aria-label="Закрыть поиск">
+          <button className="search-overlay__close" onClick={onClose} aria-label={t('search.close')}>
             &times;
           </button>
         </div>
 
         <div className="search-overlay__body">
-          {status === 'loading' && <div className="search-overlay__hint">Ищем...</div>}
+          {status === 'loading' && <div className="search-overlay__hint">{t('search.searching')}</div>}
 
           {status === 'error' && (
-            <div className="search-overlay__hint">Не удалось выполнить поиск. Попробуйте ещё раз.</div>
+            <div className="search-overlay__hint">{t('search.failed')}</div>
           )}
 
           {status === 'done' && results.length === 0 && (
             <div className="search-overlay__hint">
               <NoResultsIcon />
-              <p>Ничего не нашлось по запросу «{trimmed}» — попробуйте другое слово</p>
+              <p>{t('search.nothing', { query: trimmed })}</p>
             </div>
           )}
 
@@ -131,7 +133,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
           )}
 
           {status === 'idle' && !trimmed && (
-            <div className="search-overlay__hint">Начните вводить название товара</div>
+            <div className="search-overlay__hint">{t('search.start')}</div>
           )}
         </div>
       </div>

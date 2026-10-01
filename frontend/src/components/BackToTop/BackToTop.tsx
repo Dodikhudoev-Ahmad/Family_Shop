@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import './BackToTop.css';
+import { useTranslation } from 'react-i18next';
 
 // Appears once the user has scrolled past roughly one and a half screens,
 // so it doesn't show up on short pages or right after landing.
 const SHOW_AFTER_PX = 900;
 
 export function BackToTop() {
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -19,7 +21,7 @@ export function BackToTop() {
     <button
       type="button"
       className={`back-to-top ${isVisible ? 'is-visible' : ''}`}
-      aria-label="Наверх"
+      aria-label={t('common.toTop')}
       aria-hidden={!isVisible}
       tabIndex={isVisible ? 0 : -1}
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}

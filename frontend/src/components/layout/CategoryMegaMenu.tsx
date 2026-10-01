@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Category } from '../../types/product';
+import { useTranslation } from 'react-i18next';
+import { useLabels } from '../../i18n/labels';
 
 interface CategoryMegaMenuProps {
   categories: Category[];
@@ -12,13 +14,15 @@ interface CategoryMegaMenuProps {
 // The catalog is flat (no real subcategories yet), so the mega menu groups the
 // existing top-level categories into themed columns purely for browsing —
 // "Одежда"/"Дом"/"Спорт и аксессуары" aren't real categories, just labels.
-const GROUPS: { label: string; slugs: string[] }[] = [
-  { label: 'Одежда', slugs: ['women', 'men', 'kids'] },
-  { label: 'Дом', slugs: ['bytovaya-tehnika', 'posuda'] },
-  { label: 'Спорт и аксессуары', slugs: ['sport', 'aksessuary'] },
-];
+const GROUPS = [
+  { label: 'clothing', slugs: ['women', 'men', 'kids'] },
+  { label: 'home', slugs: ['bytovaya-tehnika', 'posuda'] },
+  { label: 'sportAccessories', slugs: ['sport', 'aksessuary'] },
+] as const;
 
 export function CategoryMegaMenu({ categories, isLoading, onOpenChange }: CategoryMegaMenuProps) {
+  const { t } = useTranslation();
+  const { categoryName } = useLabels();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const closeTimeoutRef = useRef<number | undefined>(undefined);
@@ -72,7 +76,7 @@ export function CategoryMegaMenu({ categories, isLoading, onOpenChange }: Catego
         aria-expanded={isOpen}
         onClick={() => setIsOpen((v) => !v)}
       >
-        Каталог
+        {t('nav.catalog')}
         <ChevronIcon isOpen={isOpen} />
       </button>
 
@@ -98,14 +102,14 @@ export function CategoryMegaMenu({ categories, isLoading, onOpenChange }: Catego
               return (
                 <div className="mega-menu__col" key={i}>
                   <span className="mega-menu__col-title">
-                    {group.label}
+                    {t(`nav.groups.${group.label}`)}
                     <ChevronRightIcon />
                   </span>
                   <ul className="mega-menu__list">
                     {items.map((c) => (
                       <li key={c.id}>
                         <Link to={`/catalog/${c.slug}`} onClick={() => setIsOpen(false)}>
-                          {c.name}
+                          {categoryName(c)}
                         </Link>
                       </li>
                     ))}
