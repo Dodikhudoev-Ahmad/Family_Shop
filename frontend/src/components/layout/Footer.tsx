@@ -10,8 +10,12 @@ import {
 } from '../../data/contacts';
 import { useCategories } from '../../context/CategoriesContext';
 import './Footer.css';
+import { useTranslation } from 'react-i18next';
+import { useLabels } from '../../i18n/labels';
 
 export function Footer() {
+  const { t } = useTranslation();
+  const { categoryName } = useLabels();
   const { categories } = useCategories();
 
   return (
@@ -19,22 +23,22 @@ export function Footer() {
       <div className="container footer__grid">
         <div className="footer__col">
           <span className="footer__logo">Family Shop</span>
-          <p className="footer__text">Одежда для всей семьи — женское, мужское, детское. Минимализм и качество.</p>
+          <p className="footer__text">{t('footer.tagline')}</p>
         </div>
 
         <div className="footer__col">
-          <h4 className="footer__heading">Категории</h4>
+          <h4 className="footer__heading">{t('footer.categories')}</h4>
           <ul className="footer__list">
             {categories.map((c) => (
               <li key={c.id}>
                 <Link to={`/catalog/${c.slug}`} className="footer__link">
-                  {c.name}
+                  {categoryName(c)}
                 </Link>
               </li>
             ))}
             <li>
               <Link to="/about" className="footer__link">
-                О нас
+                {t('header.about')}
               </Link>
             </li>
           </ul>
@@ -42,7 +46,7 @@ export function Footer() {
 
         {(CONTACT_PHONE || CONTACT_EMAIL || CONTACT_ADDRESS || CONTACT_WHATSAPP || CONTACT_TELEGRAM) && (
           <div className="footer__col">
-            <h4 className="footer__heading">Контакты</h4>
+            <h4 className="footer__heading">{t('footer.contacts')}</h4>
             <ul className="footer__list">
               {CONTACT_PHONE && (
                 <li>
@@ -86,7 +90,7 @@ export function Footer() {
 
         {SOCIAL_LINKS.length > 0 && (
           <div className="footer__col">
-            <h4 className="footer__heading">Соцсети</h4>
+            <h4 className="footer__heading">{t('footer.social')}</h4>
             <ul className="footer__list">
               {SOCIAL_LINKS.map((social) => (
                 <li key={social.label}>
@@ -101,7 +105,7 @@ export function Footer() {
       </div>
 
       <div className="footer__bottom container">
-        <span>© {new Date().getFullYear()} Family Shop. Все права защищены.</span>
+        <span>{t('footer.rights', { year: new Date().getFullYear() })}</span>
       </div>
     </footer>
   );

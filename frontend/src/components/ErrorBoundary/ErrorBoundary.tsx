@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import './ErrorBoundary.css';
+import i18n from '../../i18n';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -30,12 +31,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return (
         <div className="error-boundary">
           <span className="error-boundary__code">✕</span>
-          <h1 className="error-boundary__title">Что-то пошло не так</h1>
+          <h1 className="error-boundary__title">{i18n.t('errors.boundaryTitle')}</h1>
           <p className="error-boundary__text">
-            Мы уже знаем о проблеме. Попробуйте вернуться на главную страницу.
+            {i18n.t('errors.boundaryText')}
           </p>
           <button type="button" className="btn btn--primary btn--lg" onClick={this.handleReload}>
-            На главную
+            {i18n.t('common.toHome')}
           </button>
         </div>
       );

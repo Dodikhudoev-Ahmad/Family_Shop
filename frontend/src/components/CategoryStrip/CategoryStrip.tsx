@@ -2,9 +2,13 @@ import { useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useCategories } from '../../context/CategoriesContext';
 import './CategoryStrip.css';
+import { useTranslation } from 'react-i18next';
+import { useLabels } from '../../i18n/labels';
 
 /** Mobile-only text bar with every store category, shown right under the header. */
 export function CategoryStrip() {
+  const { t } = useTranslation();
+  const { categoryName } = useLabels();
   const { categories } = useCategories();
   const { pathname } = useLocation();
   const listRef = useRef<HTMLUListElement>(null);
@@ -22,12 +26,12 @@ export function CategoryStrip() {
   if (categories.length === 0) return null;
 
   return (
-    <nav className="category-strip" aria-label="Категории">
+    <nav className="category-strip" aria-label={t('header.categories')}>
       <ul className="category-strip__list" ref={listRef}>
         {categories.map((c) => (
           <li key={c.id}>
             <NavLink to={`/catalog/${c.slug}`} className="category-strip__item">
-              {c.name}
+              {categoryName(c)}
             </NavLink>
           </li>
         ))}

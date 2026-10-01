@@ -13,8 +13,11 @@ import { SearchOverlay } from '../Search/SearchOverlay';
 import { CountBadge } from '../CountBadge/CountBadge';
 import { ConfirmDialog } from '../ConfirmDialog/ConfirmDialog';
 import './Header.css';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '../LanguageSwitcher/LanguageSwitcher';
 
 export function Header() {
+  const { t } = useTranslation();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
@@ -42,14 +45,14 @@ export function Header() {
         {!isDesktop && (
           <button
             className="header__icon-btn header__burger"
-            aria-label="Открыть меню"
+            aria-label={t('header.openMenu')}
             onClick={() => setIsMenuOpen(true)}
           >
             <BurgerIcon />
           </button>
         )}
 
-        <Link to="/" className="header__logo" aria-label="FamilyShop — на главную">
+        <Link to="/" className="header__logo" aria-label={t('header.home')}>
           <span className="header__wordmark">
             <span className="header__wordmark-accent">F</span>amily
             <span className="header__wordmark-accent">S</span>hop
@@ -57,14 +60,14 @@ export function Header() {
         </Link>
 
         {isDesktop && (
-          <nav className="header__nav" aria-label="Категории">
+          <nav className="header__nav" aria-label={t('header.categories')}>
             <CategoryMegaMenu
               categories={categories}
               isLoading={isCategoriesLoading}
               onOpenChange={(open) => setOverlayOpen('mega-menu', open)}
             />
             <NavLink to="/about" className={({ isActive }) => `header__nav-link ${isActive ? 'is-active' : ''}`}>
-              О нас
+              {t('header.about')}
             </NavLink>
           </nav>
         )}
@@ -73,16 +76,18 @@ export function Header() {
           {isDesktop && (
             <button
               className="header__icon-btn"
-              aria-label="Поиск"
+              aria-label={t('header.search')}
               onClick={() => setIsSearchOpen(true)}
             >
               <SearchIcon />
             </button>
           )}
 
+          <LanguageSwitcher />
+
           <button
             className="header__icon-btn"
-            aria-label={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
+            aria-label={theme === 'dark' ? t('header.themeToLight') : t('header.themeToDark')}
             onClick={toggleTheme}
           >
             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
@@ -94,30 +99,30 @@ export function Header() {
                 <Link
                   to={user.role === 'Admin' ? '/admin/orders' : '/account'}
                   className="header__account-link"
-                  aria-label={user.role === 'Admin' ? 'Администратор' : 'Личный кабинет'}
+                  aria-label={user.role === 'Admin' ? t('header.admin') : t('header.account')}
                 >
                   <span className="header__avatar">{user.name.charAt(0).toUpperCase()}</span>
-                  <span className="header__account-name">{user.role === 'Admin' ? 'Администратор' : user.name}</span>
+                  <span className="header__account-name">{user.role === 'Admin' ? t('header.admin') : user.name}</span>
                 </Link>
-                <button className="header__icon-btn" aria-label="Выйти" onClick={() => setConfirmingLogout(true)}>
+                <button className="header__icon-btn" aria-label={t('header.logout')} onClick={() => setConfirmingLogout(true)}>
                   <LogoutIcon />
                 </button>
               </div>
             ) : (
               <Link to="/login" className="header__login-link">
-                Войти
+                {t('header.login')}
               </Link>
             ))}
 
           {isDesktop && (
-            <Link to="/favorites" className="header__icon-btn header__fav-btn" aria-label="Избранное">
+            <Link to="/favorites" className="header__icon-btn header__fav-btn" aria-label={t('header.favorites')}>
               <HeartIcon />
               <CountBadge key={favBump} count={favoriteIds.length} className="header__cart-count bounce" />
             </Link>
           )}
 
           {isDesktop && (
-            <Link to="/cart" className="header__icon-btn header__cart-btn" aria-label="Корзина">
+            <Link to="/cart" className="header__icon-btn header__cart-btn" aria-label={t('header.cart')}>
               <CartIcon />
               <CountBadge key={bump} count={totalItems} className="header__cart-count bounce" />
             </Link>
@@ -132,11 +137,11 @@ export function Header() {
           <button
             type="button"
             className="header__search-bar"
-            aria-label="Поиск"
+            aria-label={t('header.search')}
             onClick={() => setIsSearchOpen(true)}
           >
             <SearchIcon />
-            <span className="header__search-placeholder">Искать в FamilyShop</span>
+            <span className="header__search-placeholder">{t('header.searchPlaceholder')}</span>
           </button>
         </div>
       )}
@@ -150,9 +155,9 @@ export function Header() {
 
       <ConfirmDialog
         open={confirmingLogout}
-        title="Выйти из аккаунта?"
-        description="Понадобится снова войти, чтобы оформлять заказы и видеть избранное."
-        confirmLabel="Выйти"
+        title={t('header.logoutTitle')}
+        description={t('header.logoutDescription')}
+        confirmLabel={t('header.logoutConfirm')}
         isDangerous={false}
         onConfirm={() => {
           logout();

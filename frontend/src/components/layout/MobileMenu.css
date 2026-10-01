@@ -110,3 +110,10 @@ button.mobile-menu__link--secondary {
 .mobile-menu.is-open .mobile-menu__link:nth-child(8) { transition-delay: 430ms; }
 .mobile-menu.is-open .mobile-menu__link:nth-child(9) { transition-delay: 480ms; }
 .mobile-menu.is-open .mobile-menu__link:nth-child(10) { transition-delay: 530ms; }
+
+/* Language row at the bottom of the burger menu. */
+.mobile-menu__lang {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
+}

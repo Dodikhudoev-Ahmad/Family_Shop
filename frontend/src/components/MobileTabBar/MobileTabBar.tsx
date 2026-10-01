@@ -4,8 +4,10 @@ import { useFavorites } from '../../context/FavoritesContext';
 import { useAuth } from '../../context/AuthContext';
 import { CountBadge } from '../CountBadge/CountBadge';
 import './MobileTabBar.css';
+import { useTranslation } from 'react-i18next';
 
 export function MobileTabBar() {
+  const { t } = useTranslation();
   const { totalItems, bump } = useCart();
   const { favoriteIds, bump: favBump } = useFavorites();
   const { user } = useAuth();
@@ -13,11 +15,11 @@ export function MobileTabBar() {
   const profileTo = user ? (user.role === 'Admin' ? '/admin/orders' : '/account') : '/login';
 
   return (
-    <nav className="mobile-tabbar" aria-label="Основная навигация">
+    <nav className="mobile-tabbar" aria-label={t('nav.main')}>
       <NavLink to="/catalog" className={({ isActive }) => `mobile-tabbar__item ${isActive ? 'is-active' : ''}`}>
         <span className="mobile-tabbar__pill">
           <CatalogIcon />
-          <span>Каталог</span>
+          <span>{t('nav.catalog')}</span>
         </span>
       </NavLink>
 
@@ -27,7 +29,7 @@ export function MobileTabBar() {
             <CartIcon />
             <CountBadge key={bump} count={totalItems} className="mobile-tabbar__badge bounce" />
           </span>
-          <span>Корзина</span>
+          <span>{t('nav.cart')}</span>
         </span>
       </NavLink>
 
@@ -37,14 +39,14 @@ export function MobileTabBar() {
             <HeartIcon />
             <CountBadge key={favBump} count={favoriteIds.length} className="mobile-tabbar__badge bounce" />
           </span>
-          <span>Избранное</span>
+          <span>{t('nav.favorites')}</span>
         </span>
       </NavLink>
 
       <NavLink to={profileTo} className={({ isActive }) => `mobile-tabbar__item ${isActive ? 'is-active' : ''}`}>
         <span className="mobile-tabbar__pill">
           <ProfileIcon />
-          <span>Профиль</span>
+          <span>{t('nav.profile')}</span>
         </span>
       </NavLink>
     </nav>

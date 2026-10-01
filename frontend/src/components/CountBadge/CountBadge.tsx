@@ -1,4 +1,5 @@
 import './CountBadge.css';
+import { useTranslation } from 'react-i18next';
 
 /** Largest number shown as-is; anything above renders as "99+" so the pill stays compact. */
 export const COUNT_BADGE_MAX = 99;
@@ -15,10 +16,11 @@ interface CountBadgeProps {
 
 /** Small accent pill with an item count, e.g. on the cart/favorites icons. Renders nothing for 0. */
 export function CountBadge({ count, className = '' }: CountBadgeProps) {
+  const { t } = useTranslation();
   if (count <= 0) return null;
 
   return (
-    <span className={`count-badge ${className}`.trim()} aria-label={`${count} шт`}>
+    <span className={`count-badge ${className}`.trim()} aria-label={t('common.pcs', { count })}>
       {formatBadgeCount(count)}
     </span>
   );

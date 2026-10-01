@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import './ConfirmDialog.css';
+import { useTranslation } from 'react-i18next';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -18,13 +19,14 @@ export function ConfirmDialog({
   open,
   title,
   description,
-  confirmLabel = 'Удалить',
-  cancelLabel = 'Отмена',
+  confirmLabel,
+  cancelLabel,
   isDangerous = true,
   isBusy = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation();
   useLockBodyScroll(open);
 
   useEffect(() => {
@@ -54,14 +56,14 @@ export function ConfirmDialog({
         <p>{description}</p>
         <div className="confirm-dialog__actions">
           <button className="confirm-dialog__cancel" onClick={onCancel} disabled={isBusy}>
-            {cancelLabel}
+            {cancelLabel ?? t('common.cancel')}
           </button>
           <button
             className={`confirm-dialog__confirm ${isDangerous ? 'is-danger' : ''}`}
             onClick={onConfirm}
             disabled={isBusy}
           >
-            {isBusy ? <span className="confirm-dialog__spinner" /> : confirmLabel}
+            {isBusy ? <span className="confirm-dialog__spinner" /> : (confirmLabel ?? t('common.delete'))}
           </button>
         </div>
       </div>
