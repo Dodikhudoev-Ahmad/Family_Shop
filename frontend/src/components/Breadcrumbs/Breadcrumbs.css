@@ -46,7 +46,8 @@
 
 @media (max-width: 480px) {
   .breadcrumbs__item:not(:first-child):not(:last-child) .breadcrumbs__link {
-    max-width: 60px;
+    /* Wide enough for the longer Kazakh/English category names (e.g. "Әйелдерге"). */
+    max-width: 96px;
     overflow: hidden;
     text-overflow: ellipsis;
   }
