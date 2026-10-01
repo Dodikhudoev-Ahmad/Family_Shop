@@ -8,7 +8,7 @@
          The sha256 below is the inline theme script - update it if that script changes. -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'sha256-DN6SdaJm3/lK4mj+XZqrzoJEWUlAnaI21G74poz4/9E='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' %API_ORIGIN%; object-src 'none'; base-uri 'self'; form-action 'self'"
+      content="default-src 'self'; script-src 'self' 'sha256-8cF9N8ncL/1WMoP/tKq10r9tay71LNN1yFSuKqnjtA4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' %API_ORIGIN%; object-src 'none'; base-uri 'self'; form-action 'self'"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -20,12 +20,13 @@
     <script>
       (function () {
         try {
-          var stored = localStorage.getItem('theme');
-          var theme = stored === 'dark' || stored === 'light'
-            ? stored
-            : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          // First visit (nothing saved) is always light: the device's own dark-mode setting is
+          // deliberately not consulted. Only an explicit saved 'dark' switches it.
+          var theme = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
           document.documentElement.setAttribute('data-theme', theme);
-        } catch (e) {}
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
       })();
     </script>
     <title>Family Shop — интернет-магазин одежды в Казахстане</title>

@@ -9,6 +9,7 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 const STORAGE_KEY = 'theme';
+export const DEFAULT_THEME: Theme = 'light';
 let transitionTimer = 0;
 
 function getInitialTheme(): Theme {
@@ -20,7 +21,8 @@ function getInitialTheme(): Theme {
   } catch {
     // ignore storage errors (private mode)
   }
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  // No saved choice: light, always - never derived from the device's dark-mode setting.
+  return DEFAULT_THEME;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
