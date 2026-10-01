@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Api.Common;
 using Api.Filters;
+using Api.RateLimiting;
 using Application.Common;
 using Application.DTOs;
 using Application.Interfaces;
@@ -13,7 +14,6 @@ namespace Api.Controllers;
 /// <summary>Регистрация, вход и обновление токенов для браузера (refresh-токен — в httpOnly cookie).</summary>
 [ApiController]
 [Route("api/v1/auth")]
-[EnableRateLimiting("auth")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public class AuthController : ControllerBase
 {
@@ -30,7 +30,7 @@ public class AuthController : ControllerBase
     /// <summary>Регистрация нового пользователя.</summary>
     [AllowAnonymous]
     [HttpPost("register")]
-    [EnableRateLimiting("auth-register")]
+    [EnableRateLimiting(RateLimitPolicies.AuthRegister)]
     public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Register(RegisterRequestDto request, CancellationToken cancellationToken)
     {
         var result = await _authService.RegisterAsync(request, SessionContext.Web, cancellationToken);
@@ -46,6 +46,7 @@ public class AuthController : ControllerBase
     /// <summary>Вход по email и паролю.</summary>
     [AllowAnonymous]
     [HttpPost("login")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Login(LoginRequestDto request, CancellationToken cancellationToken)
     {
         var result = await _authService.LoginAsync(request, SessionContext.Web, cancellationToken);
@@ -61,7 +62,7 @@ public class AuthController : ControllerBase
     /// <summary>Обновление access-токена по refresh-токену из httpOnly cookie (с ротацией). Требует заголовок X-Requested-With: fetch и допустимый Origin (защита от CSRF).</summary>
     [AllowAnonymous]
     [HttpPost("refresh")]
-    [EnableRateLimiting("auth-refresh")]
+    [EnableRateLimiting(RateLimitPolicies.AuthRefresh)]
     [ServiceFilter(typeof(CookieCsrfFilter))]
     public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Refresh(CancellationToken cancellationToken)
     {
@@ -84,6 +85,7 @@ public class AuthController : ControllerBase
     /// <summary>Выход из аккаунта на этом устройстве — сессия (вся цепочка refresh-токенов) отзывается. Требует X-Requested-With: fetch и допустимый Origin.</summary>
     [AllowAnonymous]
     [HttpPost("logout")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [ServiceFilter(typeof(CookieCsrfFilter))]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
@@ -95,6 +97,11 @@ public class AuthController : ControllerBase
         Response.Cookies.Delete(RefreshTokenCookie, BuildCookieOptions(null));
         return NoContent();
     }
+
+    // The three session-management calls below (logout-all, sessions, revoke) deliberately carry NO named
+    // rate-limit policy: they need a valid access token already, so credential brute-forcing is not a
+    // concern, and the strict login budget (10/min per IP) would only get in the way of a signed-in user.
+    // They are still covered by the global 100/min per IP.
 
     /// <summary>«Выйти со всех устройств»: отзывает все сессии пользователя — веб и мобильные.</summary>
     [Authorize]

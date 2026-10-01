@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Api.Common;
+using Api.RateLimiting;
 using Application.DTOs;
 using Application.Interfaces;
 
@@ -22,7 +23,7 @@ public class PromoCodesController : ControllerBase
     /// <summary>Предпросмотр скидки по промокоду для указанной суммы заказа.</summary>
     [AllowAnonymous]
     [HttpPost("validate")]
-    [EnableRateLimiting("promo-validate")]
+    [EnableRateLimiting(RateLimitPolicies.PromoValidate)]
     public async Task<ActionResult<ApiResponse<PromoCodeApplicationDto>>> Validate(ValidatePromoCodeRequestDto request, CancellationToken cancellationToken)
     {
         var result = await _promoCodeService.ValidateAndApplyAsync(request.Code, request.OrderSubtotal, cancellationToken);
