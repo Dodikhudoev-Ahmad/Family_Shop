@@ -63,6 +63,7 @@ public class EndpointAuthorizationTests
         {
             "AuthController.Login", "AuthController.Logout", "AuthController.Refresh", "AuthController.Register",
             "CategoriesController.GetCategories",
+            "MobileAuthController.Login", "MobileAuthController.Logout", "MobileAuthController.Refresh", "MobileAuthController.Register",
             "ProductsController.GetProduct", "ProductsController.GetProducts",
             "PromoBannersController.GetActive",
             "PromoCodesController.Validate",
@@ -70,5 +71,33 @@ public class EndpointAuthorizationTests
         }.OrderBy(x => x).ToList();
 
         Assert.Equal(expected, anonymous);
+    }
+
+    [Theory]
+    [InlineData(typeof(Api.Controllers.AuthController), "LogoutAll")]
+    [InlineData(typeof(Api.Controllers.AuthController), "GetSessions")]
+    [InlineData(typeof(Api.Controllers.AuthController), "RevokeSession")]
+    [InlineData(typeof(Api.Controllers.OrdersController), "CreateOrder")]
+    [InlineData(typeof(Api.Controllers.OrdersController), "GetOrders")]
+    [InlineData(typeof(Api.Controllers.ReviewsController), "GetMine")]
+    [InlineData(typeof(Api.Controllers.ReviewsController), "CreateReview")]
+    [InlineData(typeof(Api.Controllers.ReviewsController), "DeleteMyReview")]
+    public void SessionOrderAndReviewWriteActions_RequireASignedInUser(Type controller, string action)
+    {
+        var method = controller.GetMethod(action)!;
+        var authorized = controller.GetCustomAttributes<AuthorizeAttribute>().Any() || method.GetCustomAttributes<AuthorizeAttribute>().Any();
+        Assert.True(authorized, $"{controller.Name}.{action} must require authentication");
+        Assert.False(method.GetCustomAttributes<AllowAnonymousAttribute>().Any());
+    }
+
+    [Fact]
+    public void CookieBasedActions_AreGuardedAgainstCsrf()
+    {
+        foreach (var action in new[] { "Refresh", "Logout" })
+        {
+            var filters = typeof(Api.Controllers.AuthController).GetMethod(action)!
+                .GetCustomAttributes<ServiceFilterAttribute>().Select(a => a.ServiceType);
+            Assert.Contains(typeof(Api.Filters.CookieCsrfFilter), filters);
+        }
     }
 }
