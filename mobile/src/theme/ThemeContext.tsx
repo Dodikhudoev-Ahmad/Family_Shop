@@ -3,7 +3,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { StyleSheet } from 'react-native';
 import { DEFAULT_THEME, palettes, type ColorTokens, type ThemeName } from './tokens';
 
-export const THEME_STORAGE_KEY = 'fs.theme';
+export const THEME_STORAGE_KEY = 'fs.theme.v2';
+/** Pre-v2 key: a stale "dark" saved by an earlier build must not override the light default. */
+export const LEGACY_THEME_STORAGE_KEY = 'fs.theme';
 
 interface ThemeContextValue {
   theme: ThemeName;
@@ -23,7 +25,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    AsyncStorage.getItem(THEME_STORAGE_KEY)
+    AsyncStorage.removeItem(LEGACY_THEME_STORAGE_KEY)
+      .catch(() => undefined)
+      .then(() => AsyncStorage.getItem(THEME_STORAGE_KEY))
       .then((stored) => {
         if (active && isThemeName(stored)) setThemeState(stored);
       })

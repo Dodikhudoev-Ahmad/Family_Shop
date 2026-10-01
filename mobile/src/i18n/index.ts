@@ -11,7 +11,9 @@ export type Language = (typeof LANGUAGES)[number];
 /** Default is Russian - deliberately not taken from the device locale, same as the website. */
 export const DEFAULT_LANGUAGE: Language = 'ru';
 /** The language is a preference, not a secret, so AsyncStorage is the right place for it. */
-export const LANGUAGE_STORAGE_KEY = 'fs.lang';
+export const LANGUAGE_STORAGE_KEY = 'fs.lang.v2';
+/** Pre-v2 key: values saved by earlier builds (e.g. "en" picked while testing) are dropped, not restored. */
+export const LEGACY_LANGUAGE_STORAGE_KEY = 'fs.lang';
 
 export const LANGUAGE_META: Record<Language, { code: string; name: string }> = {
   ru: { code: 'RU', name: 'Русский' },
@@ -35,6 +37,7 @@ void i18n.use(initReactI18next).init({
 /** Applies the saved language (if any). Call once at startup. */
 export async function restoreLanguage(): Promise<void> {
   try {
+    await AsyncStorage.removeItem(LEGACY_LANGUAGE_STORAGE_KEY);
     const stored = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
     if (isLanguage(stored) && stored !== i18n.language) {
       await i18n.changeLanguage(stored);
