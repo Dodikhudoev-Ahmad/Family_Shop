@@ -3,6 +3,7 @@ import { useProducts } from '../../context/ProductsContext';
 import { ProductCard } from '../ProductCard/ProductCard';
 import { Slider } from '../Slider/Slider';
 import { Reveal } from '../Reveal';
+import { useTranslation } from 'react-i18next';
 
 interface RecentlyViewedProps {
   // Excludes the product currently being viewed (on ProductPage) - showing it
@@ -14,6 +15,7 @@ interface RecentlyViewedProps {
 }
 
 export function RecentlyViewed({ excludeId, className = 'home-section container' }: RecentlyViewedProps) {
+  const { t } = useTranslation();
   const { recentIds } = useRecentlyViewed();
   const { products } = useProducts();
 
@@ -27,7 +29,7 @@ export function RecentlyViewed({ excludeId, className = 'home-section container'
   return (
     <section className={className}>
       <Reveal>
-        <h3 className="home-section__title">Вы недавно смотрели</h3>
+        <h3 className="home-section__title">{t('home.recentlyViewed')}</h3>
       </Reveal>
       <Reveal>
         <Slider>

@@ -10,6 +10,7 @@ import { Button } from '../Button/Button';
 import { FadeImage } from '../FadeImage/FadeImage';
 import type { Product } from '../../types/product';
 import './QuickViewModal.css';
+import { useTranslation } from 'react-i18next';
 
 // Matches --transition-base in tokens.css - kept in sync manually since CSS custom
 // properties aren't readable from a plain constant without a DOM round-trip.
@@ -17,6 +18,7 @@ const EXIT_ANIMATION_MS = 250;
 const SWIPE_THRESHOLD_PX = 40;
 
 export function QuickViewModal() {
+  const { t } = useTranslation();
   const { product, close } = useQuickView();
   const { addItem } = useCart();
   const { showToast } = useToast();
@@ -80,8 +82,9 @@ export function QuickViewModal() {
   };
 
   const handleAdd = () => {
-    if (!selectedSize) {
-      showToast('Пожалуйста, выберите размер', 'error');
+    // Sizeless products (bags, appliances) have nothing to choose - only ask when there are sizes.
+    if (displayProduct.sizes.length > 0 && !selectedSize) {
+      showToast(t('common.chooseSize'), 'error');
       return;
     }
     addItem(displayProduct, selectedSize);
@@ -97,17 +100,17 @@ export function QuickViewModal() {
         aria-modal="true"
         aria-label={displayProduct.name}
       >
-        <button className="quick-view__close" onClick={close} aria-label="Закрыть">
+        <button className="quick-view__close" onClick={close} aria-label={t('common.close')}>
           &times;
         </button>
         <div className="quick-view__image" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           <FadeImage src={images[activeImage]} alt={displayProduct.name} />
           {hasGallery && (
             <>
-              <button className="quick-view__image-arrow quick-view__image-arrow--left" onClick={prevImage} aria-label="Предыдущее фото">
+              <button className="quick-view__image-arrow quick-view__image-arrow--left" onClick={prevImage} aria-label={t('quickView.prevPhoto')}>
                 <ArrowIcon flipped />
               </button>
-              <button className="quick-view__image-arrow quick-view__image-arrow--right" onClick={nextImage} aria-label="Следующее фото">
+              <button className="quick-view__image-arrow quick-view__image-arrow--right" onClick={nextImage} aria-label={t('quickView.nextPhoto')}>
                 <ArrowIcon />
               </button>
               <div className="quick-view__image-dots">
@@ -116,7 +119,7 @@ export function QuickViewModal() {
                     key={img}
                     className={`quick-view__image-dot ${i === activeImage ? 'is-active' : ''}`}
                     onClick={() => goToImage(i)}
-                    aria-label={`Фото ${i + 1}`}
+                    aria-label={t('common.photo', { n: i + 1 })}
                   />
                 ))}
               </div>
@@ -133,7 +136,7 @@ export function QuickViewModal() {
               {formatPrice(displayProduct.discountPrice ?? displayProduct.price)}
             </span>
           </div>
-          {lowStock && <span className="quick-view__stock-warning">Осталось {displayProduct.stock} шт</span>}
+          {lowStock && <span className="quick-view__stock-warning">{t('common.left', { count: displayProduct.stock })}</span>}
           <p className="quick-view__desc">{displayProduct.description}</p>
 
           <div className="quick-view__sizes">
@@ -150,10 +153,10 @@ export function QuickViewModal() {
 
           <div className="quick-view__actions">
             <Button variant="primary" size="lg" onClick={handleAdd} disabled={outOfStock}>
-              {outOfStock ? 'Нет в наличии' : 'В корзину'}
+              {outOfStock ? t('common.outOfStock') : t('common.addToCart')}
             </Button>
             <Link to={`/product/${displayProduct.id}`} onClick={close}>
-              <Button variant="ghost">Подробнее о товаре</Button>
+              <Button variant="ghost">{t('quickView.details')}</Button>
             </Link>
           </div>
         </div>

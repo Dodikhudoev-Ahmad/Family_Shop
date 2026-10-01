@@ -19,6 +19,8 @@ import { priceBoundsFor, resetDependentFilters } from '../utils/catalogFilters';
 import type { Product } from '../types/product';
 import type { ProductSortBy } from '../types/api';
 import './CatalogPage.css';
+import { useTranslation } from 'react-i18next';
+import { useLabels } from '../i18n/labels';
 
 type SortOption = 'price-asc' | 'price-desc' | 'new' | 'popular';
 
@@ -32,6 +34,8 @@ const SORT_TO_API: Record<SortOption, ProductSortBy> = {
 };
 
 export function CatalogPage() {
+  const { t } = useTranslation();
+  const { categoryName } = useLabels();
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
   const { categories } = useCategories();
@@ -39,10 +43,12 @@ export function CatalogPage() {
   const activeCategory = categories.find((c) => c.slug === slug) ?? null;
 
   useSeo({
-    title: activeCategory ? `${activeCategory.name} — ${SITE_NAME}` : `Каталог — ${SITE_NAME}`,
+    title: activeCategory
+      ? t('seo.categoryTitle', { name: categoryName(activeCategory), site: SITE_NAME })
+      : t('seo.catalogTitle', { site: SITE_NAME }),
     description: activeCategory
-      ? `Каталог «${activeCategory.name}» в интернет-магазине ${SITE_NAME}: широкий выбор, актуальные цены и быстрая доставка по Казахстану.`
-      : `Весь каталог одежды ${SITE_NAME} — женское, мужское, детское, обувь и сумки. Быстрая доставка по Казахстану.`,
+      ? t('seo.categoryDescription', { name: categoryName(activeCategory), site: SITE_NAME })
+      : t('seo.catalogDescription', { site: SITE_NAME }),
   });
 
   // The category lives in the URL and nowhere else: chips, mega menu, burger, the strip, links
@@ -256,20 +262,20 @@ export function CatalogPage() {
   return (
     <div className="catalog container">
       {activeCategory && (
-        <Breadcrumbs items={[{ label: 'Главная', href: '/' }, { label: activeCategory.name }]} />
+        <Breadcrumbs items={[{ label: t('common.home'), href: '/' }, { label: categoryName(activeCategory) }]} />
       )}
       <div className="catalog__header">
-        <h1 className="catalog__title">{activeCategory?.name ?? 'Каталог'}</h1>
+        <h1 className="catalog__title">{activeCategory ? categoryName(activeCategory) : t('catalog.title')}</h1>
         <TypeChips types={availableTypes} value={productType} onChange={setProductType} />
         <div className="catalog__toolbar">
           <button className="catalog__filter-toggle" onClick={() => setIsFilterSheetOpen(true)}>
-            Фильтры
+            {t('catalog.filters')}
           </button>
           <select className="catalog__sort" value={sort} onChange={(e) => setSort(e.target.value as SortOption)}>
-            <option value="new">По новизне</option>
-            <option value="popular">По популярности</option>
-            <option value="price-asc">Цена: по возрастанию</option>
-            <option value="price-desc">Цена: по убыванию</option>
+            <option value="new">{t('catalog.sortNew')}</option>
+            <option value="popular">{t('catalog.sortPopular')}</option>
+            <option value="price-asc">{t('catalog.sortPriceAsc')}</option>
+            <option value="price-desc">{t('catalog.sortPriceDesc')}</option>
           </select>
         </div>
       </div>
@@ -293,7 +299,7 @@ export function CatalogPage() {
 
         <div className="catalog__content">
           {(error || catalogError) && (
-            <p className="catalog__empty">Не удалось загрузить товары: {error ?? catalogError}</p>
+            <p className="catalog__empty">{t('catalog.loadError', { error: error ?? catalogError })}</p>
           )}
           {isLoading || isCatalogLoading ? (
             <div className="catalog__grid">
@@ -304,7 +310,7 @@ export function CatalogPage() {
           ) : visibleProducts.length === 0 && !hasMore ? (
             // Only once the server has nothing more to give: while pages remain, the client-side
             // filters (size, "only discounted") may just not have met a match yet.
-            <p className="catalog__empty">Товары не найдены. Попробуйте изменить фильтры.</p>
+            <p className="catalog__empty">{t('catalog.empty')}</p>
           ) : (
             <div className="catalog__grid">
               {visibleProducts.map((p) => (
@@ -320,8 +326,8 @@ export function CatalogPage() {
       <div className={`catalog__sheet-overlay ${isFilterSheetOpen ? 'is-open' : ''}`} onClick={() => setIsFilterSheetOpen(false)} />
       <div className={`catalog__sheet ${isFilterSheetOpen ? 'is-open' : ''}`}>
         <div className="catalog__sheet-header">
-          <span>Фильтры</span>
-          <button onClick={() => setIsFilterSheetOpen(false)} aria-label="Закрыть">
+          <span>{t('catalog.filters')}</span>
+          <button onClick={() => setIsFilterSheetOpen(false)} aria-label={t('common.close')}>
             &times;
           </button>
         </div>
@@ -339,7 +345,7 @@ export function CatalogPage() {
           />
         )}
         <button className="btn btn--primary btn--lg catalog__sheet-apply" onClick={() => setIsFilterSheetOpen(false)}>
-          Показать {visibleProducts.length}{hasMore ? '+' : ''} товаров
+          {t('catalog.show', { count: visibleProducts.length, more: hasMore ? '+' : '' })}
         </button>
       </div>
     </div>

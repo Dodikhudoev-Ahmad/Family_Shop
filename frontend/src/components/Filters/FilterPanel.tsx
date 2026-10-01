@@ -2,6 +2,8 @@ import { useCategories } from '../../context/CategoriesContext';
 import type { SizeGroup } from '../../utils/sizeGroups';
 import { PriceRangeSlider } from '../PriceRangeSlider/PriceRangeSlider';
 import './FilterPanel.css';
+import { useTranslation } from 'react-i18next';
+import { useLabels } from '../../i18n/labels';
 
 export interface Filters {
   categoryId: string | null;
@@ -24,18 +26,20 @@ interface FilterPanelProps {
 }
 
 export function FilterPanel({ filters, onChange, sizeGroups, priceBounds, productTypes = [], productType = null, onProductTypeChange }: FilterPanelProps) {
+  const { t } = useTranslation();
+  const { categoryName, productType: typeName } = useLabels();
   const { categories } = useCategories();
 
   return (
     <div className="filter-panel">
       <div className="filter-panel__group">
-        <h4 className="filter-panel__title">Категория</h4>
+        <h4 className="filter-panel__title">{t('filters.category')}</h4>
         <div className="filter-panel__chips">
           <button
             className={`filter-chip ${filters.categoryId === null ? 'is-active' : ''}`}
             onClick={() => onChange({ ...filters, categoryId: null })}
           >
-            Все
+            {t('common.all')}
           </button>
           {categories.map((c) => (
             <button
@@ -43,7 +47,7 @@ export function FilterPanel({ filters, onChange, sizeGroups, priceBounds, produc
               className={`filter-chip ${filters.categoryId === c.id ? 'is-active' : ''}`}
               onClick={() => onChange({ ...filters, categoryId: c.id })}
             >
-              {c.name}
+              {categoryName(c)}
             </button>
           ))}
         </div>
@@ -51,7 +55,7 @@ export function FilterPanel({ filters, onChange, sizeGroups, priceBounds, produc
 
       {productTypes.length > 1 && onProductTypeChange && (
         <div className="filter-panel__group">
-          <h4 className="filter-panel__title">Тип</h4>
+          <h4 className="filter-panel__title">{t('filters.type')}</h4>
           <div className="filter-panel__chips">
             {[null, ...productTypes].map((type) => (
               <button
@@ -60,7 +64,7 @@ export function FilterPanel({ filters, onChange, sizeGroups, priceBounds, produc
                 aria-pressed={productType === type}
                 onClick={() => onProductTypeChange(type)}
               >
-                {type ?? 'Все'}
+                {type ? typeName(type) : t('common.all')}
               </button>
             ))}
           </div>
@@ -69,10 +73,10 @@ export function FilterPanel({ filters, onChange, sizeGroups, priceBounds, produc
 
       {sizeGroups.length > 0 && (
         <div className="filter-panel__group">
-          <h4 className="filter-panel__title">Размер</h4>
+          <h4 className="filter-panel__title">{t('filters.size')}</h4>
           {sizeGroups.map((group) => (
-            <div key={group.label} className="filter-panel__size-group">
-              {sizeGroups.length > 1 && <span className="filter-panel__subtitle">{group.label}</span>}
+            <div key={group.id} className="filter-panel__size-group">
+              {sizeGroups.length > 1 && <span className="filter-panel__subtitle">{t(`filters.sizeGroups.${group.id}`)}</span>}
               <div className="filter-panel__chips">
                 {group.sizes.map((size) => (
                   <button
@@ -91,7 +95,7 @@ export function FilterPanel({ filters, onChange, sizeGroups, priceBounds, produc
       )}
 
       <div className="filter-panel__group">
-        <h4 className="filter-panel__title">Цена</h4>
+        <h4 className="filter-panel__title">{t('filters.price')}</h4>
         <PriceRangeSlider
           min={priceBounds[0]}
           max={priceBounds[1]}
@@ -106,7 +110,7 @@ export function FilterPanel({ filters, onChange, sizeGroups, priceBounds, produc
           checked={filters.discountOnly}
           onChange={(e) => onChange({ ...filters, discountOnly: e.target.checked })}
         />
-        Только со скидкой
+        {t('filters.discountOnly')}
       </label>
     </div>
   );

@@ -1,4 +1,6 @@
 import './TypeChips.css';
+import { useTranslation } from 'react-i18next';
+import { useLabels } from '../../i18n/labels';
 
 interface TypeChipsProps {
   types: string[];
@@ -8,10 +10,12 @@ interface TypeChipsProps {
 
 /** Mobile-only horizontal quick filter by product type within the current category. */
 export function TypeChips({ types, value, onChange }: TypeChipsProps) {
+  const { t } = useTranslation();
+  const { productType: typeName } = useLabels();
   if (types.length < 2) return null;
 
   return (
-    <div className="type-chips" role="group" aria-label="Тип товара">
+    <div className="type-chips" role="group" aria-label={t('filters.typeAria')}>
       <div className="type-chips__list">
         {[null, ...types].map((type) => (
           <button
@@ -21,7 +25,7 @@ export function TypeChips({ types, value, onChange }: TypeChipsProps) {
             aria-pressed={value === type}
             onClick={() => onChange(type)}
           >
-            {type ?? 'Все'}
+            {type ? typeName(type) : t('common.all')}
           </button>
         ))}
       </div>

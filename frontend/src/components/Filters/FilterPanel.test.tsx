@@ -36,21 +36,21 @@ describe('FilterPanel type block', () => {
 
 describe('FilterPanel size block', () => {
   it('labels the groups only when there is more than one', () => {
-    renderPanel({ sizeGroups: [{ label: 'Одежда', sizes: ['S', 'M'] }, { label: 'Обувь', sizes: ['36'] }] });
+    renderPanel({ sizeGroups: [{ id: 'clothing', sizes: ['S', 'M'] }, { id: 'shoes', sizes: ['36'] }] });
     expect(screen.getByText('Одежда')).toBeInTheDocument();
     expect(screen.getByText('Обувь')).toBeInTheDocument();
     cleanup();
-    renderPanel({ sizeGroups: [{ label: 'Обувь', sizes: ['36', '37'] }] });
+    renderPanel({ sizeGroups: [{ id: 'shoes', sizes: ['36', '37'] }] });
     expect(screen.getByText('Размер')).toBeInTheDocument();
     expect(screen.queryByText('Обувь')).not.toBeInTheDocument();
   });
 
   it('selects and deselects a size', () => {
     const onChange = vi.fn();
-    const { rerender } = renderPanel({ sizeGroups: [{ label: 'Обувь', sizes: ['36'] }], onChange });
+    const { rerender } = renderPanel({ sizeGroups: [{ id: 'shoes', sizes: ['36'] }], onChange });
     fireEvent.click(screen.getByRole('button', { name: '36' }));
     expect(onChange).toHaveBeenLastCalledWith({ ...filters, size: '36' });
-    rerender(<FilterPanel filters={{ ...filters, size: '36' }} onChange={onChange} sizeGroups={[{ label: 'Обувь', sizes: ['36'] }]} priceBounds={[0, 100]} />);
+    rerender(<FilterPanel filters={{ ...filters, size: '36' }} onChange={onChange} sizeGroups={[{ id: 'shoes', sizes: ['36'] }]} priceBounds={[0, 100]} />);
     fireEvent.click(screen.getByRole('button', { name: '36' }));
     expect(onChange).toHaveBeenLastCalledWith({ ...filters, size: null });
   });

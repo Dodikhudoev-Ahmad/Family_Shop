@@ -22,7 +22,7 @@ describe('availableSizeGroups', () => {
   it('offers only shoe sizes for shoes in Мужское', () => {
     const groups = availableSizeGroups(products, 'men', 'Кроссовки');
     expect(flat(groups)).toEqual(SHOE_SIZES);
-    expect(groups.map((g) => g.label)).toEqual(['Обувь']);
+    expect(groups.map((g) => g.id)).toEqual(['shoes']);
   });
 
   it('offers only clothing sizes for a clothing type', () => {
@@ -35,7 +35,7 @@ describe('availableSizeGroups', () => {
 
   it('groups clothing and shoes separately when no type is picked', () => {
     const groups = availableSizeGroups(products, 'men', null);
-    expect(groups.map((g) => g.label)).toEqual(['Одежда', 'Обувь']);
+    expect(groups.map((g) => g.id)).toEqual(['clothing', 'shoes']);
     expect(groups[0].sizes).toEqual(CLOTHING_SIZES);
     expect(groups[1].sizes).toEqual(SHOE_SIZES);
   });
@@ -51,6 +51,6 @@ describe('availableSizeGroups', () => {
   });
 
   it('covers the whole catalog when no category is chosen', () => {
-    expect(availableSizeGroups(products, null, null).map((g) => g.label)).toEqual(['Одежда', 'Обувь']);
+    expect(availableSizeGroups(products, null, null).map((g) => g.id)).toEqual(['clothing', 'shoes']);
   });
 });
