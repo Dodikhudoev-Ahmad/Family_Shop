@@ -16,20 +16,23 @@ import {
   type ReviewSummaryDto,
 } from '../../lib/api';
 import './ProductReviews.css';
+import { Trans, useTranslation } from 'react-i18next';
+import { dateLocale } from '../../i18n';
 
 const PAGE_SIZE = 5;
 
-const SORT_OPTIONS: { value: ReviewSortBy; label: string }[] = [
-  { value: 0, label: 'Сначала новые' },
-  { value: 1, label: 'Сначала высокий рейтинг' },
-  { value: 2, label: 'Сначала низкий рейтинг' },
-];
+const SORT_OPTIONS = [
+  { value: 0, labelKey: 'reviews.sortNewest' },
+  { value: 1, labelKey: 'reviews.sortHigh' },
+  { value: 2, labelKey: 'reviews.sortLow' },
+] as const satisfies readonly { value: ReviewSortBy; labelKey: string }[];
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
+  return new Date(iso).toLocaleDateString(dateLocale(), { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 export function ProductReviews({ productId }: { productId: number }) {
+  const { t } = useTranslation();
   const { user, isLoading: authLoading } = useAuth();
   const { showToast } = useToast();
 
@@ -91,7 +94,7 @@ export function ProductReviews({ productId }: { productId: number }) {
       })
       .catch((err: unknown) => {
         if (requestIdRef.current !== requestId) return;
-        setError(err instanceof ApiError ? err.message : 'Не удалось загрузить отзывы.');
+        setError(err instanceof ApiError ? err.message : t('reviews.loadError'));
       })
       .finally(() => {
         if (requestIdRef.current === requestId) setIsLoading(false);
@@ -107,7 +110,7 @@ export function ProductReviews({ productId }: { productId: number }) {
         setPage(nextPage);
         setHasMore(result.hasMore);
       })
-      .catch((err: unknown) => showToast(err instanceof ApiError ? err.message : 'Не удалось загрузить отзывы.', 'error'))
+      .catch((err: unknown) => showToast(err instanceof ApiError ? err.message : t('reviews.loadError'), 'error'))
       .finally(() => setIsLoadingMore(false));
   };
 
@@ -115,7 +118,7 @@ export function ProductReviews({ productId }: { productId: number }) {
     setMyReview(review);
     setReviews((prev) => (sortBy === 0 ? [review, ...(prev ?? [])] : prev));
     loadSummary();
-    showToast('Спасибо за отзыв!');
+    showToast(t('reviews.thanks'));
   };
 
   const handleDelete = () => {
@@ -125,22 +128,22 @@ export function ProductReviews({ productId }: { productId: number }) {
         setReviews((prev) => (prev ?? []).filter((r) => r.id !== myReview?.id));
         setMyReview(null);
         loadSummary();
-        showToast('Отзыв удалён', 'info');
+        showToast(t('reviews.deleted'), 'info');
         setConfirmingDelete(false);
       })
-      .catch((err: unknown) => showToast(err instanceof ApiError ? err.message : 'Не удалось удалить отзыв.', 'error'))
+      .catch((err: unknown) => showToast(err instanceof ApiError ? err.message : t('reviews.deleteFailed'), 'error'))
       .finally(() => setIsDeleting(false));
   };
 
   return (
     <section className="reviews">
-      <h3 className="home-section__title">Отзывы</h3>
+      <h3 className="home-section__title">{t('reviews.title')}</h3>
 
       <ReviewsSummary summary={summary} />
 
       {authLoading ? null : !user ? (
         <p className="reviews__login-prompt">
-          <Link to="/login">Войдите</Link>, чтобы оставить отзыв о товаре.
+          <Trans i18nKey="reviews.loginPrompt" components={{ link: <Link to="/login" /> }} />
         </p>
       ) : myReview === undefined ? null : myReview ? (
         <MyReviewCard review={myReview} onDelete={() => setConfirmingDelete(true)} />
@@ -150,11 +153,11 @@ export function ProductReviews({ productId }: { productId: number }) {
 
       {reviews !== null && reviews.length > 0 && (
         <div className="reviews__toolbar">
-          <span className="reviews__count">{summary?.reviewCount ?? reviews.length} отзыв(ов)</span>
+          <span className="reviews__count">{t('reviews.count', { count: summary?.reviewCount ?? reviews.length })}</span>
           <select className="reviews__sort" value={sortBy} onChange={(e) => setSortBy(Number(e.target.value) as ReviewSortBy)}>
             {SORT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
-                {opt.label}
+                {t(opt.labelKey)}
               </option>
             ))}
           </select>
@@ -166,7 +169,7 @@ export function ProductReviews({ productId }: { productId: number }) {
       {!error && isLoading && <ReviewsSkeleton />}
 
       {!error && !isLoading && reviews !== null && reviews.length === 0 && (
-        <p className="reviews__empty">Пока нет отзывов об этом товаре. Будьте первым!</p>
+        <p className="reviews__empty">{t('reviews.empty')}</p>
       )}
 
       {!error && !isLoading && reviews !== null && reviews.length > 0 && (
@@ -186,15 +189,15 @@ export function ProductReviews({ productId }: { productId: number }) {
 
       {hasMore && (
         <button className="reviews__more" onClick={loadMore} disabled={isLoadingMore}>
-          {isLoadingMore ? 'Загрузка...' : 'Показать ещё'}
+          {isLoadingMore ? t('common.loading') : t('reviews.loadMore')}
         </button>
       )}
 
       <ConfirmDialog
         open={confirmingDelete}
-        title="Удалить ваш отзыв?"
-        description="Отзыв будет удалён без возможности восстановления."
-        confirmLabel="Удалить"
+        title={t('reviews.deleteTitle')}
+        description={t('reviews.deleteDesc')}
+        confirmLabel={t('common.delete')}
         isBusy={isDeleting}
         onConfirm={handleDelete}
         onCancel={() => setConfirmingDelete(false)}
@@ -204,6 +207,7 @@ export function ProductReviews({ productId }: { productId: number }) {
 }
 
 function ReviewsSummary({ summary }: { summary: ReviewSummaryDto | null }) {
+  const { t } = useTranslation();
   if (!summary || summary.reviewCount === 0) return null;
 
   const maxCount = Math.max(1, ...[5, 4, 3, 2, 1].map((star) => summary.ratingCounts[star] ?? 0));
@@ -213,7 +217,7 @@ function ReviewsSummary({ summary }: { summary: ReviewSummaryDto | null }) {
       <div className="reviews__summary-score">
         <span className="reviews__summary-number">{summary.averageRating.toFixed(1)}</span>
         <StarRating value={summary.averageRating} size="md" />
-        <span className="reviews__summary-count">{summary.reviewCount} отзыв(ов)</span>
+        <span className="reviews__summary-count">{t('reviews.count', { count: summary.reviewCount })}</span>
       </div>
       <div className="reviews__summary-bars">
         {[5, 4, 3, 2, 1].map((star) => {
@@ -235,22 +239,24 @@ function ReviewsSummary({ summary }: { summary: ReviewSummaryDto | null }) {
 }
 
 function MyReviewCard({ review, onDelete }: { review: ReviewDto; onDelete: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="review-card review-card--mine">
       <div className="review-card__top">
-        <span className="review-card__author">Ваш отзыв</span>
+        <span className="review-card__author">{t('reviews.yourReview')}</span>
         <span className="review-card__date">{formatDate(review.createdAt)}</span>
       </div>
       <StarRating value={review.rating} size="sm" />
       <p className="review-card__comment">{review.comment}</p>
       <button className="reviews__delete" onClick={onDelete}>
-        Удалить отзыв
+        {t('reviews.deleteReview')}
       </button>
     </div>
   );
 }
 
 function ReviewForm({ productId, onCreated }: { productId: number; onCreated: (review: ReviewDto) => void }) {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -259,11 +265,11 @@ function ReviewForm({ productId, onCreated }: { productId: number; onCreated: (r
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0) {
-      showToast('Выберите оценку от 1 до 5', 'error');
+      showToast(t('reviews.chooseRating'), 'error');
       return;
     }
     if (!comment.trim()) {
-      showToast('Напишите текст отзыва', 'error');
+      showToast(t('reviews.writeText'), 'error');
       return;
     }
 
@@ -274,24 +280,24 @@ function ReviewForm({ productId, onCreated }: { productId: number; onCreated: (r
         setRating(0);
         setComment('');
       })
-      .catch((err: unknown) => showToast(err instanceof ApiError ? err.message : 'Не удалось отправить отзыв.', 'error'))
+      .catch((err: unknown) => showToast(err instanceof ApiError ? err.message : t('reviews.submitFailed'), 'error'))
       .finally(() => setIsSubmitting(false));
   };
 
   return (
     <form className="review-form" onSubmit={handleSubmit}>
-      <span className="review-form__label">Оставить отзыв</span>
+      <span className="review-form__label">{t('reviews.leave')}</span>
       <StarRating value={rating} interactive onChange={setRating} size="lg" />
       <textarea
         className="review-form__textarea"
-        placeholder="Расскажите о своих впечатлениях о товаре"
+        placeholder={t('reviews.placeholder')}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         rows={3}
         maxLength={2000}
       />
       <button type="submit" className="btn btn--primary review-form__submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Отправка...' : 'Отправить отзыв'}
+        {isSubmitting ? t('reviews.sending') : t('reviews.send')}
       </button>
     </form>
   );

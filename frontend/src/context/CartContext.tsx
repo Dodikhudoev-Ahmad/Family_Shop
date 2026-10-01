@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 import type { Product } from '../types/product';
 import { ApiError, validatePromoCode, type PromoCodeApplicationDto } from '../lib/api';
 import { useToast } from './ToastContext';
+import i18n from '../i18n';
 
 export interface CartLine {
   key: string;
@@ -101,7 +102,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const cappedQuantity = Math.max(0, Math.min(quantity, remainingStock(product)));
 
     if (cappedQuantity <= 0) {
-      showToast(`Доступно только ${product.stock} шт «${product.name}»`, 'error');
+      showToast(i18n.t('cart.onlyAvailable', { stock: product.stock, name: product.name }), 'error');
       return;
     }
 
@@ -115,8 +116,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setBump((b) => b + 1);
     showToast(
       cappedQuantity < quantity
-        ? `Доступно только ${remainingStock(product)} шт — добавлено ${cappedQuantity}`
-        : `«${product.name}» добавлен в корзину${size ? ` (размер ${size})` : ''}`
+        ? i18n.t('cart.onlyPartial', { left: remainingStock(product), added: cappedQuantity })
+        : i18n.t('cart.added', { name: product.name, size: size ? i18n.t('cart.sizeSuffix', { size }) : '' })
     );
   };
 
@@ -180,7 +181,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (promoRequestId.current !== requestId) return;
       setPromo(null);
       appliedForSubtotal.current = null;
-      setPromoError(err instanceof ApiError ? err.message : 'Не удалось применить промокод.');
+      setPromoError(err instanceof ApiError ? err.message : i18n.t('promo.error'));
     } finally {
       if (promoRequestId.current === requestId) setIsApplyingPromo(false);
     }

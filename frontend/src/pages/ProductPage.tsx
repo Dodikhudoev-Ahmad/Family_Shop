@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import type { Gender } from '../types/product';
 import { useProducts } from '../context/ProductsContext';
 import { useCategories } from '../context/CategoriesContext';
 import { useRecentlyViewed } from '../context/RecentlyViewedContext';
@@ -21,8 +20,12 @@ import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useToast } from '../context/ToastContext';
 import './ProductPage.css';
+import { useTranslation } from 'react-i18next';
+import { useLabels } from '../i18n/labels';
 
 export function ProductPage() {
+  const { categoryName } = useLabels();
+  const { t } = useTranslation();
   const { id } = useParams();
   const { products, isLoading } = useProducts();
   const { categories } = useCategories();
@@ -38,7 +41,7 @@ export function ProductPage() {
 
   useSeo({
     title: product ? `${product.name} — ${SITE_NAME}` : SITE_NAME,
-    description: product ? truncateDescription(product.description) : 'Товар не найден.',
+    description: product ? truncateDescription(product.description) : t('product.notFound'),
     image: product?.images[0],
     type: 'product',
   });
@@ -51,14 +54,14 @@ export function ProductPage() {
   }, [product?.id]);
 
   if (isLoading) {
-    return <div className="container product-page__not-found">Загрузка...</div>;
+    return <div className="container product-page__not-found">{t('common.loading')}</div>;
   }
 
   if (!product) {
     return (
       <div className="container product-page__not-found">
-        <p>Товар не найден.</p>
-        <Link to="/">На главную</Link>
+        <p>{t('product.notFound')}</p>
+        <Link to="/">{t('common.toHome')}</Link>
       </div>
     );
   }
@@ -81,7 +84,7 @@ export function ProductPage() {
 
   const handleAddToCart = () => {
     if (product.sizes.length > 0 && !selectedSize) {
-      showToast('Пожалуйста, выберите размер', 'error');
+      showToast(t('common.chooseSize'), 'error');
       return;
     }
     addItem(product, selectedSize, quantity);
@@ -91,8 +94,8 @@ export function ProductPage() {
     <div className="container product-page">
       <Breadcrumbs
         items={[
-          { label: 'Главная', href: '/' },
-          ...(productCategory ? [{ label: productCategory.name, href: `/catalog/${productCategory.slug}` }] : []),
+          { label: t('common.home'), href: '/' },
+          ...(productCategory ? [{ label: categoryName(productCategory), href: `/catalog/${productCategory.slug}` }] : []),
           { label: product.name },
         ]}
       />
@@ -107,7 +110,7 @@ export function ProductPage() {
                 key={img}
                 className={`product-page__thumb ${activeImage === i ? 'is-active' : ''}`}
                 onClick={() => setActiveImage(i)}
-                aria-label={`Фото ${i + 1}`}
+                aria-label={t('common.photo', { n: i + 1 })}
               >
                 <FadeImage src={img} alt="" />
               </button>
@@ -117,14 +120,14 @@ export function ProductPage() {
 
         <div className="product-page__details">
           {productCategory?.hasSizes !== false && (
-            <span className="product-page__category">{categoryLabel(product.gender)}</span>
+            <span className="product-page__category">{t(`gender.${product.gender}`)}</span>
           )}
           <h1 className="product-page__name">{product.name}</h1>
           {product.reviewCount > 0 && (
             <div className="product-page__rating">
               <StarRating value={product.averageRating} size="sm" />
               <span>
-                {product.averageRating.toFixed(1)} · {product.reviewCount} отзыв(ов)
+                {product.averageRating.toFixed(1)} · {t('reviews.count', { count: product.reviewCount })}
               </span>
             </div>
           )}
@@ -134,12 +137,12 @@ export function ProductPage() {
               {formatPrice(product.discountPrice ?? product.price)}
             </span>
           </div>
-          {lowStock && <span className="product-page__stock-warning">Осталось {product.stock} шт</span>}
-          {outOfStock && <span className="product-page__stock-warning product-page__stock-warning--out">Нет в наличии</span>}
+          {lowStock && <span className="product-page__stock-warning">{t('common.left', { count: product.stock })}</span>}
+          {outOfStock && <span className="product-page__stock-warning product-page__stock-warning--out">{t('common.outOfStock')}</span>}
 
           {product.sizes.length > 0 && (
             <div className="product-page__block">
-              <span className="product-page__block-title">Размер</span>
+              <span className="product-page__block-title">{t('product.size')}</span>
               <div className="product-page__sizes">
                 {product.sizes.map((size) => {
                   const inCartQuantity = cartQuantityFor(size);
@@ -151,7 +154,7 @@ export function ProductPage() {
                     >
                       {size}
                       {inCartQuantity > 0 && (
-                        <span className="size-btn__badge" aria-label={`В корзине: ${inCartQuantity}`}>
+                        <span className="size-btn__badge" aria-label={t('product.inCartAria', { count: inCartQuantity })}>
                           {inCartQuantity}
                         </span>
                       )}
@@ -164,16 +167,16 @@ export function ProductPage() {
 
           {!outOfStock && (
             <div className="product-page__block">
-              <span className="product-page__block-title">Количество</span>
+              <span className="product-page__block-title">{t('product.quantity')}</span>
               <div className="quantity-stepper">
-                <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label="Уменьшить количество">
+                <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label={t('product.decrease')}>
                   −
                 </button>
                 <span>{quantity}</span>
                 <button
                   onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
                   disabled={quantity >= product.stock}
-                  aria-label="Увеличить количество"
+                  aria-label={t('product.increase')}
                 >
                   +
                 </button>
@@ -189,11 +192,11 @@ export function ProductPage() {
               onClick={handleAddToCart}
               disabled={outOfStock}
             >
-              {outOfStock ? 'Нет в наличии' : selectedSizeCartQuantity > 0 ? 'Добавить ещё' : 'В корзину'}
+              {outOfStock ? t('common.outOfStock') : selectedSizeCartQuantity > 0 ? t('product.addMore') : t('common.addToCart')}
             </Button>
             <button
               className={`product-page__fav-btn ${favorite ? 'is-active' : ''}`}
-              aria-label={favorite ? 'Убрать из избранного' : 'В избранное'}
+              aria-label={favorite ? t('common.removeFromFavorites') : t('common.addToFavorites')}
               onClick={() => toggleFavorite(product.id, product.name)}
             >
               <HeartIcon filled={favorite} />
@@ -201,19 +204,19 @@ export function ProductPage() {
           </div>
           {selectedSizeCartQuantity > 0 && (
             <Link to="/cart" className="product-page__in-cart-note">
-              В корзине: {selectedSizeCartQuantity} шт{selectedSize ? ` (${selectedSize})` : ''} · Перейти в корзину
+              {t('product.inCartLine', { count: selectedSizeCartQuantity, size: selectedSize ? ` (${selectedSize})` : '' })}
             </Link>
           )}
 
           <div className="product-page__accordions">
-            <Accordion title="Описание" defaultOpen>
+            <Accordion title={t('product.description')} defaultOpen>
               <p>{product.description}</p>
             </Accordion>
-            <Accordion title="Доставка и возврат">
-              <p>Доставка курьером 2-4 дня или самовывоз из пункта выдачи. Возврат в течение 14 дней с сохранением бирок.</p>
+            <Accordion title={t('product.delivery')}>
+              <p>{t('product.deliveryText')}</p>
             </Accordion>
-            <Accordion title="Состав и уход">
-              <p>Состав уточняется на бирке изделия. Рекомендуется деликатная стирка при 30°C.</p>
+            <Accordion title={t('product.composition')}>
+              <p>{t('product.compositionText')}</p>
             </Accordion>
           </div>
         </div>
@@ -223,7 +226,7 @@ export function ProductPage() {
 
       {related.length > 0 && (
         <section className="product-page__related">
-          <h3 className="home-section__title">Похожие товары</h3>
+          <h3 className="home-section__title">{t('product.similar')}</h3>
           <Slider>
             {related.map((p) => (
               <ProductCard key={p.id} product={p} />
@@ -237,16 +240,6 @@ export function ProductPage() {
   );
 }
 
-function categoryLabel(gender: Gender) {
-  switch (gender) {
-    case 'female':
-      return 'Женское';
-    case 'male':
-      return 'Мужское';
-    case 'kids':
-      return 'Детское';
-  }
-}
 
 function HeartIcon({ filled }: { filled: boolean }) {
   return (

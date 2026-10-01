@@ -9,6 +9,8 @@ import { PromoCodeInput } from '../components/PromoCodeInput/PromoCodeInput';
 import { ApiError, createOrder, type ApiDeliveryMethod } from '../lib/api';
 import type { DeliveryDetails, DeliveryMethod } from '../types/order';
 import './CheckoutPage.css';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 type Step = 1 | 2;
 
@@ -77,16 +79,17 @@ function formatPhoneInput(raw: string): string {
 
 function phoneError(value: string): string | null {
   const national = getNationalDigits(value);
-  if (!national) return 'Укажите номер телефона';
-  if (national.length < NATIONAL_PHONE_LENGTH) return 'Введите номер полностью';
+  if (!national) return i18n.t('checkout.phoneRequired');
+  if (national.length < NATIONAL_PHONE_LENGTH) return i18n.t('checkout.phoneIncomplete');
   return null;
 }
 
 function addressError(value: string): string | null {
-  return value.trim() ? null : 'Укажите адрес';
+  return value.trim() ? null : i18n.t('checkout.addressRequired');
 }
 
 export function CheckoutPage() {
+  const { t } = useTranslation();
   const { lines, totalPrice, finalTotal, promo, clearCart } = useCart();
   const { user, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
@@ -137,8 +140,8 @@ export function CheckoutPage() {
   if (lines.length === 0 && !orderNumber) {
     return (
       <div className="container checkout__empty">
-        <p>В корзине нет товаров для оформления.</p>
-        <Link to="/">Перейти в каталог</Link>
+        <p>{t('checkout.empty')}</p>
+        <Link to="/">{t('checkout.toCatalog')}</Link>
       </div>
     );
   }
@@ -171,7 +174,7 @@ export function CheckoutPage() {
       clearCart();
       setOrderNumber(`FS-${order.id}`);
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : 'Не удалось оформить заказ. Попробуйте ещё раз.');
+      setSubmitError(err instanceof ApiError ? err.message : t('checkout.failed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -184,16 +187,16 @@ export function CheckoutPage() {
           <circle className="checkout-success__check-circle" cx="26" cy="26" r="24" fill="none" />
           <path className="checkout-success__check-mark" fill="none" d="M14 27l8 8 16-17" />
         </svg>
-        <h1>Заказ оформлен!</h1>
-        <p>Номер вашего заказа</p>
+        <h1>{t('checkout.successTitle')}</h1>
+        <p>{t('checkout.orderNumber')}</p>
         <span className="checkout-success__number">{orderNumber}</span>
         <p className="checkout-success__note">
-          Мы свяжемся с вами для подтверждения. Оплата — при получении заказа.
+          {t('checkout.successText')}
         </p>
-        <p className="checkout-success__redirect">Переходим в личный кабинет…</p>
+        <p className="checkout-success__redirect">{t('checkout.redirecting')}</p>
         <Link to="/account">
           <Button variant="primary" size="lg">
-            В личный кабинет
+            {t('checkout.toAccount')}
           </Button>
         </Link>
       </div>
@@ -204,20 +207,20 @@ export function CheckoutPage() {
     <div className="container checkout">
       <div className="checkout__progress">
         <div className={`checkout__step ${step >= 1 ? 'is-active' : ''}`}>
-          <span className="checkout__step-num">1</span> Доставка
+          <span className="checkout__step-num">1</span> {t('checkout.step1')}
         </div>
         <div className="checkout__progress-line">
           <div className="checkout__progress-fill" style={{ width: step === 2 ? '100%' : '0%' }} />
         </div>
         <div className={`checkout__step ${step >= 2 ? 'is-active' : ''}`}>
-          <span className="checkout__step-num">2</span> Подтверждение
+          <span className="checkout__step-num">2</span> {t('checkout.step2')}
         </div>
       </div>
 
       {step === 1 ? (
         <form className="checkout__form" onSubmit={handleContinue}>
           <div className="checkout__field">
-            <label htmlFor="phone">Телефон</label>
+            <label htmlFor="phone">{t('checkout.phone')}</label>
             <input
               id="phone"
               type="tel"
@@ -233,7 +236,7 @@ export function CheckoutPage() {
           </div>
 
           <div className="checkout__field">
-            <label>Способ получения</label>
+            <label>{t('checkout.method')}</label>
             <div className="delivery-options">
               {(['courier', 'pickup'] as DeliveryMethod[]).map((method) => (
                 <button
@@ -242,9 +245,9 @@ export function CheckoutPage() {
                   className={`delivery-card ${details.method === method ? 'is-selected' : ''}`}
                   onClick={() => setDetails({ ...details, method })}
                 >
-                  <span className="delivery-card__title">{method === 'courier' ? 'Курьером' : 'Самовывоз'}</span>
+                  <span className="delivery-card__title">{method === 'courier' ? t('checkout.courier') : t('checkout.pickup')}</span>
                   <span className="delivery-card__desc">
-                    {method === 'courier' ? 'Доставка по указанному адресу' : 'Из пункта выдачи, бесплатно'}
+                    {method === 'courier' ? t('checkout.courierDesc') : t('checkout.pickupDesc')}
                   </span>
                 </button>
               ))}
@@ -254,14 +257,14 @@ export function CheckoutPage() {
           {details.method === 'courier' && (
             <>
               <div className="checkout__field">
-                <label htmlFor="address">Адрес</label>
+                <label htmlFor="address">{t('checkout.address')}</label>
                 <input
                   id="address"
                   value={details.address}
                   className={errors.address ? 'has-error' : ''}
                   onChange={(e) => setDetails({ ...details, address: e.target.value })}
                   onBlur={() => markTouched('address')}
-                  placeholder="г. Алматы, ул. Абая, д. 10, кв. 5"
+                  placeholder={t('checkout.addressPlaceholder')}
                   autoComplete="street-address"
                 />
                 {errors.address && <span className="checkout__error">{errors.address}</span>}
@@ -270,7 +273,7 @@ export function CheckoutPage() {
           )}
 
           <Button type="submit" variant="primary" size="lg" className="checkout__submit" disabled={!isStep1Valid}>
-            Продолжить
+            {t('checkout.continue')}
           </Button>
         </form>
       ) : (
@@ -278,27 +281,27 @@ export function CheckoutPage() {
           <section className="checkout-card">
             <h4 className="checkout-card__title">
               <span className="checkout-card__icon"><TruckIcon /></span>
-              Доставка
+              {t('checkout.delivery')}
             </h4>
             <p className="checkout-card__strong">{user.name}</p>
             <p>{details.phone}</p>
             <p className="checkout-card__muted">
-              {details.method === 'courier' ? details.address : 'Самовывоз из пункта выдачи'}
+              {details.method === 'courier' ? details.address : t('checkout.pickupAt')}
             </p>
           </section>
 
           <section className="checkout-card">
             <h4 className="checkout-card__title">
               <span className="checkout-card__icon"><WalletIcon /></span>
-              Способ оплаты
+              {t('checkout.payment')}
             </h4>
-            <p>Оплата при получении</p>
+            <p>{t('checkout.paymentValue')}</p>
           </section>
 
           <section className="checkout-card">
             <h4 className="checkout-card__title">
               <span className="checkout-card__icon"><BagIcon /></span>
-              Состав заказа
+              {t('checkout.items')}
             </h4>
             <ul className="checkout-items">
               {lines.map((line) => (
@@ -307,7 +310,7 @@ export function CheckoutPage() {
                   <div className="checkout-item__info">
                     <span className="checkout-item__name">{line.product.name}</span>
                     <span className="checkout-item__meta">
-                      {line.size ? `${line.size} · ` : ''}{line.quantity} шт.
+                      {line.size ? `${line.size} · ` : ''}{t('checkout.qty', { count: line.quantity })}
                     </span>
                   </div>
                   <span className="checkout-item__price">
@@ -331,7 +334,7 @@ export function CheckoutPage() {
           </section>
 
           <div className="checkout__summary-total">
-            <span className="checkout__summary-total-label">Итого</span>
+            <span className="checkout__summary-total-label">{t('common.total')}</span>
             {promo ? (
               <span className="checkout__summary-total-value">
                 <span className="checkout__summary-total-old">{formatPrice(totalPrice)}</span>
@@ -353,11 +356,11 @@ export function CheckoutPage() {
               }}
               disabled={isSubmitting}
             >
-              Назад
+              {t('checkout.back')}
             </Button>
             <Button variant="primary" size="lg" onClick={handleConfirm} disabled={isSubmitting} aria-busy={isSubmitting}>
               {isSubmitting && <span className="btn-spinner" aria-hidden="true" />}
-              {isSubmitting ? 'Оформляем...' : 'Подтвердить заказ'}
+              {isSubmitting ? t('checkout.submitting') : t('checkout.confirm')}
             </Button>
           </div>
         </div>
