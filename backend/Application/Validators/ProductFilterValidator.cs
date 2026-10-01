@@ -14,5 +14,8 @@ public class ProductFilterValidator : AbstractValidator<ProductFilterDto>
             .WithMessage("MinPrice must be less than or equal to MaxPrice.");
         RuleFor(x => x.Page).GreaterThanOrEqualTo(1);
         RuleFor(x => x.PageSize).InclusiveBetween(1, 200);
+        // Search text becomes an ILIKE pattern: unbounded input is an unbounded query.
+        RuleFor(x => x.Search).MaximumLength(100);
+        RuleFor(x => x.ProductType).MaximumLength(50);
     }
 }

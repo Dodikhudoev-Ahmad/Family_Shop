@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Api.Common;
@@ -15,10 +16,12 @@ namespace Api.Controllers;
 public class AdminOrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
+    private readonly IValidator<OrderFilterDto> _filterValidator;
 
-    public AdminOrdersController(IOrderService orderService)
+    public AdminOrdersController(IOrderService orderService, IValidator<OrderFilterDto> filterValidator)
     {
         _orderService = orderService;
+        _filterValidator = filterValidator;
     }
 
     /// <summary>Список заказов с фильтрацией по статусу, диапазону дат, поиском по имени/телефону/номеру, сортировкой и пагинацией.</summary>
@@ -34,6 +37,12 @@ public class AdminOrdersController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var filter = new OrderFilterDto(status, dateFrom, dateTo, search, sortBy, page, pageSize);
+        var errors = await _filterValidator.ValidateOrNullAsync(filter, cancellationToken);
+        if (errors is not null)
+        {
+            return BadRequest(ApiResponse<PagedResult<AdminOrderDto>>.Fail(errors));
+        }
+
         var result = await _orderService.GetOrdersAsync(filter, cancellationToken);
         return Ok(ApiResponse<PagedResult<AdminOrderDto>>.Ok(result));
     }

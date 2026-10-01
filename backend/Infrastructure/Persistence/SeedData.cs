@@ -190,6 +190,8 @@ public static class SeedData
             await context.SaveChangesAsync(cancellationToken);
         }
 
+        await NeutralizeKnownSeedPasswordsAsync(context, passwordHasher, logger, cancellationToken);
+
         // Guarded independently of category/product seeding (same reasoning as the admin-user
         // guard above) - otherwise reviews silently never seed on a DB that already has a catalog.
         if (!await context.Reviews.AnyAsync(cancellationToken))
@@ -238,7 +240,7 @@ public static class SeedData
         CancellationToken cancellationToken)
     {
         var reviewers = ReviewerSeeds
-            .Select(r => new User { Email = new Email(r.Email), Name = r.Name, PasswordHash = passwordHasher.Hash("Seed123!"), Role = UserRole.Customer })
+            .Select(r => new User { Email = new Email(r.Email), Name = r.Name, PasswordHash = passwordHasher.Hash(GenerateRandomPassword()), Role = UserRole.Customer })
             .ToList();
 
         context.Users.AddRange(reviewers);
@@ -700,6 +702,48 @@ public static class SeedData
         yield return Make("Чехол тёмно-синий противоударный", "Чехол для телефона, тёмно-синий цвет, тонкий профиль.", 5400, 4300, 16, categoryId, Gender.Male, "https://images.pexels.com/photos/20321375/pexels-photo-20321375.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Чехлы");
         yield return Make("Чехол синий матовый", "Чехол для телефона, синий цвет, тонкий профиль.", 4900, 4000, 4, categoryId, Gender.Male, "https://images.pexels.com/photos/20321385/pexels-photo-20321385.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Чехлы");
         yield return Make("Чехол коричневый прозрачный", "Чехол для телефона, коричневый цвет, тонкий профиль.", 5700, 4800, 14, categoryId, Gender.Male, "https://images.pexels.com/photos/11120516/pexels-photo-11120516.jpeg?auto=compress&cs=tinysrgb&h=650&w=940", "Чехлы");
+    }
+
+    private const string SeedReviewerDomain = "@seed.familyshop.kz";
+    private const string LegacySeedReviewerPassword = "Seed123!";
+
+    /// <summary>
+    /// The demo reviewer accounts used to be created with the password "Seed123!" - which sits in the
+    /// public repository, so anyone could log in as them on a deployed database. New ones get a random
+    /// password nobody knows; this gives existing ones the same treatment (and ends their sessions).
+    /// Idempotent: once the password is random the legacy one no longer verifies and nothing changes.
+    /// </summary>
+    private static async Task NeutralizeKnownSeedPasswordsAsync(
+        AppDbContext context,
+        IPasswordHasher passwordHasher,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        // Parameterised raw SQL: the Email value-object column can't be pattern-matched through LINQ, and
+        // loading every user at each start just to find eight demo accounts would be wasteful.
+        var pattern = "%" + SeedReviewerDomain;
+        var seedUsers = await context.Users
+            .FromSqlInterpolated($"""SELECT * FROM "Users" WHERE "Email" LIKE {pattern} AND "Role" = {(int)UserRole.Customer}""")
+            .ToListAsync(cancellationToken);
+
+        var fixedCount = 0;
+        foreach (var user in seedUsers)
+        {
+            if (!passwordHasher.Verify(LegacySeedReviewerPassword, user.PasswordHash))
+            {
+                continue;
+            }
+
+            user.PasswordHash = passwordHasher.Hash(GenerateRandomPassword());
+            await context.Set<RefreshToken>().Where(t => t.UserId == user.Id).ExecuteDeleteAsync(cancellationToken);
+            fixedCount++;
+        }
+
+        if (fixedCount > 0)
+        {
+            await context.SaveChangesAsync(cancellationToken);
+            logger.LogWarning("Replaced the publicly known password of {Count} seeded demo account(s) with a random one.", fixedCount);
+        }
     }
 
     private static string GenerateRandomPassword()
