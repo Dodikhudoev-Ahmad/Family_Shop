@@ -13,10 +13,6 @@ export const SITE_NAME = 'Family Shop';
 // all, so this placeholder may just show as a blank preview until replaced.
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/logo-icon-badge.svg`;
 
-export const DEFAULT_TITLE = `${SITE_NAME} — интернет-магазин одежды в Казахстане`;
-export const DEFAULT_DESCRIPTION =
-  'Женская, мужская и детская одежда, обувь и сумки с быстрой доставкой по Казахстану. Минимализм и качество в каждой вещи.';
-
 export function truncateDescription(text: string, max = 160): string {
   const clean = text.trim().replace(/\s+/g, ' ');
   if (clean.length <= max) return clean;

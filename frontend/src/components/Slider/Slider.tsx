@@ -1,11 +1,13 @@
 import { useRef, type ReactNode } from 'react';
 import './Slider.css';
+import { useTranslation } from 'react-i18next';
 
 interface SliderProps {
   children: ReactNode[];
 }
 
 export function Slider({ children }: SliderProps) {
+  const { t } = useTranslation();
   const trackRef = useRef<HTMLDivElement>(null);
 
   const scrollByAmount = (direction: 1 | -1) => {
@@ -24,10 +26,10 @@ export function Slider({ children }: SliderProps) {
           </div>
         ))}
       </div>
-      <button className="slider__arrow slider__arrow--left" aria-label="Назад" onClick={() => scrollByAmount(-1)}>
+      <button className="slider__arrow slider__arrow--left" aria-label={t('common.back')} onClick={() => scrollByAmount(-1)}>
         <ArrowIcon flipped />
       </button>
-      <button className="slider__arrow slider__arrow--right" aria-label="Вперёд" onClick={() => scrollByAmount(1)}>
+      <button className="slider__arrow slider__arrow--right" aria-label={t('common.forward')} onClick={() => scrollByAmount(1)}>
         <ArrowIcon />
       </button>
     </div>

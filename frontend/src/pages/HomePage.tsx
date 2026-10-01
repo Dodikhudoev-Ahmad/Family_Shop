@@ -9,17 +9,19 @@ import { FadeImage } from '../components/FadeImage/FadeImage';
 import { PromoBanner } from '../components/PromoBanner/PromoBanner';
 import { RecentlyViewed } from '../components/RecentlyViewed/RecentlyViewed';
 import { useSeo } from '../hooks/useSeo';
-import { DEFAULT_DESCRIPTION, DEFAULT_TITLE } from '../data/seo';
+import { SITE_NAME } from '../data/seo';
 import './HomePage.css';
+import { useTranslation } from 'react-i18next';
 
 const heroTiles = [
-  { key: 'women', title: 'Женское', slug: 'women' },
-  { key: 'men', title: 'Мужское', slug: 'men' },
-  { key: 'kids', title: 'Детское', slug: 'kids' },
+  { key: 'women', slug: 'women' },
+  { key: 'men', slug: 'men' },
+  { key: 'kids', slug: 'kids' },
 ] as const;
 
 export function HomePage() {
-  useSeo({ title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION });
+  const { t } = useTranslation();
+  useSeo({ title: t('seo.defaultTitle', { site: SITE_NAME }), description: t('seo.defaultDescription') });
   const { products, isLoading, error } = useProducts();
 
   const newest = [...products].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 8);
@@ -31,12 +33,12 @@ export function HomePage() {
       <section className="hero container">
         {heroTiles.map((tile) => (
           <Link key={tile.key} to={`/catalog/${tile.slug}`} className="hero__tile">
-            <FadeImage src={heroImages[tile.key]} alt={tile.title} />
+            <FadeImage src={heroImages[tile.key]} alt={t(`categories.${tile.slug}`)} />
             <div className="hero__overlay" />
             <div className="hero__content">
-              <h2 className="hero__title">{tile.title}</h2>
+              <h2 className="hero__title">{t(`categories.${tile.slug}`)}</h2>
               <span className="hero__cta">
-                Смотреть
+                {t('home.view')}
                 <ArrowRight />
               </span>
             </div>
@@ -48,13 +50,13 @@ export function HomePage() {
 
       {error && (
         <p className="container home__error">
-          Не удалось загрузить товары: {error}. Убедитесь, что backend запущен на {import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5280/api/v1'}.
+          {t('home.loadError', { error, url: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5280/api/v1' })}
         </p>
       )}
 
       <section className="home-section container">
         <Reveal>
-          <h3 className="home-section__title">Новинки недели</h3>
+          <h3 className="home-section__title">{t('home.newArrivals')}</h3>
         </Reveal>
         <Reveal>
           {isLoading ? (
@@ -76,7 +78,7 @@ export function HomePage() {
       {!isLoading && bestWomen.length > 0 && (
         <section className="home-section container">
           <Reveal>
-            <h3 className="home-section__title">Хиты продаж · Женское</h3>
+            <h3 className="home-section__title">{t('home.hits', { category: t('categories.women') })}</h3>
           </Reveal>
           <Reveal>
             <Slider>
@@ -91,7 +93,7 @@ export function HomePage() {
       {!isLoading && bestMen.length > 0 && (
         <section className="home-section container">
           <Reveal>
-            <h3 className="home-section__title">Хиты продаж · Мужское</h3>
+            <h3 className="home-section__title">{t('home.hits', { category: t('categories.men') })}</h3>
           </Reveal>
           <Reveal>
             <Slider>

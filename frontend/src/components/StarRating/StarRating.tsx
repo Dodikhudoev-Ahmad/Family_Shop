@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './StarRating.css';
+import { useTranslation } from 'react-i18next';
 
 interface StarRatingProps {
   /** Rating value, 0-5. Can be fractional in read-only mode (e.g. an average of 4.33). */
@@ -11,6 +12,7 @@ interface StarRatingProps {
 }
 
 export function StarRating({ value, size = 'md', interactive = false, onChange }: StarRatingProps) {
+  const { t } = useTranslation();
   const [hoverValue, setHoverValue] = useState<number | null>(null);
   const displayValue = interactive && hoverValue !== null ? hoverValue : value;
 
@@ -19,7 +21,7 @@ export function StarRating({ value, size = 'md', interactive = false, onChange }
       <div
         className={`star-rating star-rating--${size} star-rating--interactive`}
         role="radiogroup"
-        aria-label="Оценка"
+        aria-label={t('rating.label')}
         onMouseLeave={() => setHoverValue(null)}
       >
         {[1, 2, 3, 4, 5].map((star) => (
@@ -28,7 +30,7 @@ export function StarRating({ value, size = 'md', interactive = false, onChange }
             type="button"
             role="radio"
             aria-checked={value === star}
-            aria-label={`${star} из 5`}
+            aria-label={t('rating.star', { star })}
             className={`star-rating__btn ${star <= displayValue ? 'is-filled' : ''}`}
             onMouseEnter={() => setHoverValue(star)}
             onClick={() => onChange?.(star)}
@@ -43,7 +45,7 @@ export function StarRating({ value, size = 'md', interactive = false, onChange }
   const percent = Math.max(0, Math.min(1, value / 5)) * 100;
 
   return (
-    <span className={`star-rating star-rating--${size}`} aria-label={`Рейтинг ${value.toFixed(1)} из 5`}>
+    <span className={`star-rating star-rating--${size}`} aria-label={t('rating.value', { value: value.toFixed(1) })}>
       <span className="star-rating__track">
         <StarIcons />
         <span className="star-rating__fill" style={{ width: `${percent}%` }}>

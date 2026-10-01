@@ -1,8 +1,10 @@
 import { CLOTHING_SIZES, KIDS_SHOE_SIZES, SHOE_SIZES, sortSizes } from '../lib/mappers';
 import type { Product } from '../types/product';
 
+export type SizeGroupId = 'clothing' | 'shoes' | 'other';
+
 export interface SizeGroup {
-  label: string;
+  id: SizeGroupId;
   sizes: string[];
 }
 
@@ -33,8 +35,8 @@ export function availableSizeGroups(
   const other = sorted.filter((s) => !CLOTHING.has(s) && !SHOES.has(s));
 
   return [
-    { label: 'Одежда', sizes: clothing },
-    { label: 'Обувь', sizes: shoes },
-    { label: 'Другое', sizes: other },
+    { id: 'clothing' as const, sizes: clothing },
+    { id: 'shoes' as const, sizes: shoes },
+    { id: 'other' as const, sizes: other },
   ].filter((g) => g.sizes.length > 0);
 }

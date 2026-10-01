@@ -9,6 +9,7 @@ import { StarRating } from '../StarRating/StarRating';
 import { formatPrice } from '../../utils/formatPrice';
 import { isLowStock, isOutOfStock } from '../../utils/stock';
 import './ProductCard.css';
+import { useTranslation } from 'react-i18next';
 
 interface ProductCardProps {
   product: Product;
@@ -19,6 +20,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCardProps) {
+  const { t } = useTranslation();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { open: openQuickView } = useQuickView();
   const { categories } = useCategories();
@@ -54,12 +56,12 @@ export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCa
           // action buttons own the top-right corner.
           <div className="product-card__badges">
             {outOfStock ? (
-              <span className="product-card__badge product-card__badge--out">Нет в наличии</span>
+              <span className="product-card__badge product-card__badge--out">{t('common.outOfStock')}</span>
             ) : (
               <>
                 {discountPercent && <span className="product-card__badge">−{discountPercent}%</span>}
                 {product.isBestseller && (
-                  <span className="product-card__badge product-card__badge--hit">Хит продаж</span>
+                  <span className="product-card__badge product-card__badge--hit">{t('card.hit')}</span>
                 )}
               </>
             )}
@@ -69,14 +71,14 @@ export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCa
         <div className="product-card__mobile-actions">
           <button
             className={`product-card__icon-btn ${favorite ? 'is-active' : ''}`}
-            aria-label={favorite ? 'Убрать из избранного' : 'В избранное'}
+            aria-label={favorite ? t('common.removeFromFavorites') : t('common.addToFavorites')}
             onClick={handleFavoriteClick}
           >
             <HeartIcon filled={favorite} />
           </button>
           <button
             className="product-card__icon-btn"
-            aria-label="Быстрый просмотр"
+            aria-label={t('card.quickView')}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -90,14 +92,14 @@ export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCa
         <div className="product-card__hover-actions">
           <button
             className={`product-card__icon-btn ${favorite ? 'is-active' : ''}`}
-            aria-label={favorite ? 'Убрать из избранного' : 'В избранное'}
+            aria-label={favorite ? t('common.removeFromFavorites') : t('common.addToFavorites')}
             onClick={handleFavoriteClick}
           >
             <HeartIcon filled={favorite} />
           </button>
           <button
             className="product-card__icon-btn"
-            aria-label="Быстрый просмотр"
+            aria-label={t('card.quickView')}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -110,7 +112,7 @@ export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCa
       </Link>
 
       <Link to={`/product/${product.id}`} className="product-card__info">
-        {showGenderLabel && <span className="product-card__category">{categoryLabel(product.gender)}</span>}
+        {showGenderLabel && <span className="product-card__category">{t(`gender.${product.gender}`)}</span>}
         <span className="product-card__name" title={product.name}>
           {product.name}
         </span>
@@ -126,21 +128,10 @@ export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCa
             {formatPrice(product.discountPrice ?? product.price)}
           </span>
         </span>
-        {lowStock && <span className="product-card__stock-warning">Осталось {product.stock} шт</span>}
+        {lowStock && <span className="product-card__stock-warning">{t('common.left', { count: product.stock })}</span>}
       </Link>
     </div>
   );
-}
-
-function categoryLabel(gender: Product['gender']) {
-  switch (gender) {
-    case 'female':
-      return 'Женское';
-    case 'male':
-      return 'Мужское';
-    case 'kids':
-      return 'Детское';
-  }
 }
 
 function HeartIcon({ filled }: { filled: boolean }) {

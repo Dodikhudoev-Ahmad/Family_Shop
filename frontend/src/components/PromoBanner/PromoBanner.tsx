@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchActivePromoBanners, type ApiPromoBannerPlacement, type PromoBannerDto } from '../../lib/api';
 import './PromoBanner.css';
+import { useTranslation } from 'react-i18next';
 
 const ROTATION_INTERVAL_MS = 6000;
 const PLACEMENT: Record<'Home' | 'Cart', ApiPromoBannerPlacement> = { Home: 0, Cart: 1 };
@@ -11,6 +12,7 @@ interface PromoBannerProps {
 }
 
 export function PromoBanner({ placement }: PromoBannerProps) {
+  const { t } = useTranslation();
   const [banners, setBanners] = useState<PromoBannerDto[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -71,14 +73,14 @@ export function PromoBanner({ placement }: PromoBannerProps) {
         </div>
 
         {banners.length > 1 && (
-          <div className="promo-banner__dots" role="tablist" aria-label="Другие баннеры">
+          <div className="promo-banner__dots" role="tablist" aria-label={t('banners.others')}>
             {banners.map((b, i) => (
               <button
                 key={b.id}
                 type="button"
                 role="tab"
                 aria-selected={i === activeIndex}
-                aria-label={`Баннер ${i + 1}`}
+                aria-label={t('banners.banner', { n: i + 1 })}
                 className={`promo-banner__dot ${i === activeIndex ? 'is-active' : ''}`}
                 onClick={() => setActiveIndex(i)}
               />
