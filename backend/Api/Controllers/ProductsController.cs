@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Api.Common;
 using Application.Common;
@@ -20,6 +21,7 @@ public class ProductsController : ControllerBase
     }
 
     /// <summary>Список товаров с фильтрацией по полу, категории, цене и поисковой строке (name/description), сортировкой и пагинацией.</summary>
+    [AllowAnonymous]
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResult<ProductDto>>>> GetProducts(
         [FromQuery] Gender? gender,
@@ -39,6 +41,7 @@ public class ProductsController : ControllerBase
     }
 
     /// <summary>Карточка товара по идентификатору.</summary>
+    [AllowAnonymous]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ApiResponse<ProductDto>>> GetProduct(int id, CancellationToken cancellationToken)
     {

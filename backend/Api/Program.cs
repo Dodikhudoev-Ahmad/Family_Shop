@@ -77,6 +77,7 @@ builder.Services.Configure<FormOptions>(options =>
 
 // Authentication / Authorization (JWT, roles via claims)
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings();
+JwtSettingsValidator.Validate(jwtSettings, builder.Environment.IsDevelopment());
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -89,6 +90,8 @@ builder.Services
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
+            RequireSignedTokens = true,
+            ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha256 },
             ValidIssuer = jwtSettings.Issuer,
             ValidAudience = jwtSettings.Audience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
@@ -96,7 +99,15 @@ builder.Services
         };
     });
 
-builder.Services.AddAuthorization();
+// Closed by default: an endpoint that carries neither [Authorize] nor [AllowAnonymous] requires a
+// signed-in user, so a new controller or action that forgets its attribute fails closed instead
+// of being silently public. Public endpoints say so explicitly with [AllowAnonymous].
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 // CORS: строгий whitelist origin фронтенда, не AllowAnyOrigin
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
@@ -286,6 +297,6 @@ app.MapGet("/health", async (AppDbContext db, CancellationToken cancellationToke
     return canConnect
         ? Results.Ok(new { status = "healthy" })
         : Results.Json(new { status = "unhealthy" }, statusCode: StatusCodes.Status503ServiceUnavailable);
-});
+}).AllowAnonymous();
 
 app.Run();

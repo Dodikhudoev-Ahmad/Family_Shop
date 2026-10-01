@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Api.Common;
@@ -23,6 +24,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>Регистрация нового пользователя.</summary>
+    [AllowAnonymous]
     [HttpPost("register")]
     [EnableRateLimiting("auth-register")]
     public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Register(RegisterRequestDto request, CancellationToken cancellationToken)
@@ -38,6 +40,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>Вход по email и паролю.</summary>
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Login(LoginRequestDto request, CancellationToken cancellationToken)
     {
@@ -52,6 +55,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>Обновление access-токена по refresh-токену из httpOnly cookie (с ротацией).</summary>
+    [AllowAnonymous]
     [HttpPost("refresh")]
     [EnableRateLimiting("auth-refresh")]
     public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Refresh(CancellationToken cancellationToken)
@@ -73,6 +77,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>Выход из аккаунта — инвалидация refresh-токена.</summary>
+    [AllowAnonymous]
     [HttpPost("logout")]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
