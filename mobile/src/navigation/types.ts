@@ -19,6 +19,8 @@ export type CatalogStackParamList = {
 export type CartStackParamList = {
   Cart: undefined;
   Checkout: undefined;
+  /** `next` is where to go once signed in. */
+  Auth: { next?: 'Checkout' } | undefined;
   Product: { productId: number };
 };
 
@@ -29,6 +31,8 @@ export type FavoritesStackParamList = {
 
 export type ProfileStackParamList = {
   Profile: undefined;
+  Orders: undefined;
+  OrderDetail: { orderId: number };
 };
 
 export type RootTabParamList = {

@@ -8,7 +8,10 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CartScreen } from '../screens/CartScreen';
 import { CatalogScreen } from '../screens/CatalogScreen';
+import { AuthScreen } from '../screens/AuthScreen';
 import { CheckoutScreen } from '../screens/CheckoutScreen';
+import { OrderDetailScreen } from '../screens/OrderDetailScreen';
+import { OrdersScreen } from '../screens/OrdersScreen';
 import { FavoritesScreen } from '../screens/FavoritesScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ProductScreen } from '../screens/ProductScreen';
@@ -89,7 +92,8 @@ function CartNavigator() {
   return (
     <CartStack.Navigator screenOptions={options}>
       <CartStack.Screen name="Cart" component={CartScreen} options={{ title: t('cart.title') }} />
-      <CartStack.Screen name="Checkout" component={CheckoutScreen} options={{ title: t('checkout.step2') }} />
+      <CartStack.Screen name="Checkout" component={CheckoutScreen} options={{ title: t('cart.checkout') }} />
+      <CartStack.Screen name="Auth" component={AuthScreen} options={{ title: t('auth.tabLogin') }} />
       <CartStack.Screen name="Product" component={ProductScreen} options={{ title: '' }} />
     </CartStack.Navigator>
   );
@@ -112,6 +116,12 @@ function ProfileNavigator() {
   return (
     <ProfileStack.Navigator screenOptions={options}>
       <ProfileStack.Screen name="Profile" component={ProfileScreen} options={{ title: t('nav.profile') }} />
+      <ProfileStack.Screen name="Orders" component={OrdersScreen} options={{ title: t('account.myOrders') }} />
+      <ProfileStack.Screen
+        name="OrderDetail"
+        component={OrderDetailScreen}
+        options={({ route }) => ({ title: t('orders.title', { id: route.params.orderId }) })}
+      />
     </ProfileStack.Navigator>
   );
 }
@@ -123,7 +133,7 @@ export function RootNavigator() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   // Five tabs on a 320pt screen: the longest label ("Избранное") needs the smaller size. Kazakh uses the short "Таңдаулы".
-  const labelSize = width < 360 ? 10 : fontSizes.xs;
+  const labelSize = width < 340 ? 9 : width < 360 ? 10 : fontSizes.xs;
 
   const navigationTheme = useMemo<Theme>(() => {
     const base = theme === 'dark' ? DarkTheme : DefaultTheme;
