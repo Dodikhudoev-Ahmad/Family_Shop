@@ -10,6 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Api.Filters;
 using Api.Middleware;
+using Api.RateLimiting;
 using Application;
 using Infrastructure;
 using Infrastructure.Persistence;
@@ -123,93 +124,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Rate limiting: строгий лимит на auth-эндпоинтах, общий лимит на весь API
-builder.Services.AddRateLimiter(options =>
-{
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-
-    // Login/logout: a real user mistyping a password a few times shouldn't get locked out.
-    options.AddPolicy("auth", context =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 10,
-                Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 0
-            }));
-
-    // Registration: its own budget, separate from login, to keep bulk fake-account
-    // creation in check without also throttling people just trying to log in.
-    options.AddPolicy("auth-register", context =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 5,
-                Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 0
-            }));
-
-    // Silent refresh fires on every full page load (not just explicit user action) and is
-    // already protected by the httpOnly refresh-token cookie plus rotation, so it needs a
-    // much looser budget than login — otherwise a handful of reloads/tabs locks users out.
-    options.AddPolicy("auth-refresh", context =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 20,
-                Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 0
-            }));
-
-    // Order creation: generous enough for a real shopper (retrying after a stock/promo
-    // error, ordering more than once), tight enough to blunt scripted order-flooding.
-    options.AddPolicy("order-create", context =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 10,
-                Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 0
-            }));
-
-    // Review creation: one person leaves very few reviews per minute in practice.
-    options.AddPolicy("review-create", context =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 5,
-                Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 0
-            }));
-
-    // Promo code validation: unauthenticated and cheap to call, so it's the easiest
-    // endpoint to abuse for brute-forcing promo codes - keep it tighter than the
-    // global default.
-    options.AddPolicy("promo-validate", context =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 15,
-                Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 0
-            }));
-
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 100,
-                Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 0
-            }));
-});
+// Rate limiting: строгие лимиты на вход/регистрацию/refresh, общий лимит на весь API (см. Api/RateLimiting)
+builder.Services.AddFamilyShopRateLimiting();
 
 builder.Services.AddHsts(options =>
 {
