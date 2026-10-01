@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Api.Common;
+using Api.RateLimiting;
 using Application.Common;
 using Application.DTOs;
 using Application.Interfaces;
@@ -18,7 +19,7 @@ namespace Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/auth/mobile")]
-[EnableRateLimiting("auth")]
+[EnableRateLimiting(RateLimitPolicies.Auth)]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public class MobileAuthController : ControllerBase
 {
@@ -32,7 +33,7 @@ public class MobileAuthController : ControllerBase
     /// <summary>Регистрация с устройства: возвращает access-токен (15 мин) и refresh-токен (7 дней, с ротацией).</summary>
     [AllowAnonymous]
     [HttpPost("register")]
-    [EnableRateLimiting("auth-register")]
+    [EnableRateLimiting(RateLimitPolicies.AuthRegister)]
     public async Task<ActionResult<ApiResponse<MobileAuthResponseDto>>> Register(MobileRegisterRequestDto request, CancellationToken cancellationToken)
     {
         var session = new SessionContext(ClientType.Mobile, request.DeviceId, request.DeviceName);
@@ -60,7 +61,7 @@ public class MobileAuthController : ControllerBase
     /// </summary>
     [AllowAnonymous]
     [HttpPost("refresh")]
-    [EnableRateLimiting("auth-refresh")]
+    [EnableRateLimiting(RateLimitPolicies.AuthRefresh)]
     public async Task<ActionResult<ApiResponse<MobileAuthResponseDto>>> Refresh(MobileRefreshRequestDto request, CancellationToken cancellationToken)
     {
         var session = new SessionContext(ClientType.Mobile, request.DeviceId);
