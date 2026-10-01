@@ -1,0 +1,142 @@
+import { Ionicons } from '@expo/vector-icons';
+import { DarkTheme, DefaultTheme, NavigationContainer, type Theme } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator, type NativeStackNavigationOptions } from '@react-navigation/native-stack';
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { CartScreen } from '../screens/CartScreen';
+import { CategoryScreen } from '../screens/CategoryScreen';
+import { CheckoutScreen } from '../screens/CheckoutScreen';
+import { FavoritesScreen } from '../screens/FavoritesScreen';
+import { HomeScreen } from '../screens/HomeScreen';
+import { ProductScreen } from '../screens/ProductScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
+import { useCart } from '../state/CartContext';
+import { useTheme } from '../theme/ThemeContext';
+import { fontSizes, fonts } from '../theme/tokens';
+import type {
+  CartStackParamList,
+  CatalogStackParamList,
+  FavoritesStackParamList,
+  ProfileStackParamList,
+  RootTabParamList,
+} from './types';
+
+const Tabs = createBottomTabNavigator<RootTabParamList>();
+const CatalogStack = createNativeStackNavigator<CatalogStackParamList>();
+const CartStack = createNativeStackNavigator<CartStackParamList>();
+const FavoritesStack = createNativeStackNavigator<FavoritesStackParamList>();
+const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
+
+function useStackOptions(): NativeStackNavigationOptions {
+  const { colors } = useTheme();
+  return {
+    headerStyle: { backgroundColor: colors.bg },
+    headerTintColor: colors.text,
+    headerTitleStyle: { fontFamily: fonts.heading, fontSize: fontSizes.lg },
+    headerShadowVisible: false,
+    headerBackButtonDisplayMode: 'minimal',
+    contentStyle: { backgroundColor: colors.bg },
+  };
+}
+
+function CatalogNavigator() {
+  const { t } = useTranslation();
+  const options = useStackOptions();
+  return (
+    <CatalogStack.Navigator screenOptions={options}>
+      <CatalogStack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+      <CatalogStack.Screen name="Category" component={CategoryScreen} />
+      <CatalogStack.Screen name="Product" component={ProductScreen} options={{ title: '' }} />
+      <CatalogStack.Screen name="Cart" component={CartScreen} options={{ title: t('cart.title') }} />
+      <CatalogStack.Screen name="Checkout" component={CheckoutScreen} options={{ title: t('checkout.step2') }} />
+    </CatalogStack.Navigator>
+  );
+}
+
+function CartNavigator() {
+  const { t } = useTranslation();
+  const options = useStackOptions();
+  return (
+    <CartStack.Navigator screenOptions={options}>
+      <CartStack.Screen name="Cart" component={CartScreen} options={{ title: t('cart.title') }} />
+      <CartStack.Screen name="Checkout" component={CheckoutScreen} options={{ title: t('checkout.step2') }} />
+      <CartStack.Screen name="Product" component={ProductScreen} options={{ title: '' }} />
+    </CartStack.Navigator>
+  );
+}
+
+function FavoritesNavigator() {
+  const { t } = useTranslation();
+  const options = useStackOptions();
+  return (
+    <FavoritesStack.Navigator screenOptions={options}>
+      <FavoritesStack.Screen name="Favorites" component={FavoritesScreen} options={{ title: t('favorites.title') }} />
+      <FavoritesStack.Screen name="Product" component={ProductScreen} options={{ title: '' }} />
+    </FavoritesStack.Navigator>
+  );
+}
+
+function ProfileNavigator() {
+  const { t } = useTranslation();
+  const options = useStackOptions();
+  return (
+    <ProfileStack.Navigator screenOptions={options}>
+      <ProfileStack.Screen name="Profile" component={ProfileScreen} options={{ title: t('nav.profile') }} />
+    </ProfileStack.Navigator>
+  );
+}
+
+export function RootNavigator() {
+  const { t } = useTranslation();
+  const { colors, theme } = useTheme();
+  const { totalItems } = useCart();
+
+  const navigationTheme = useMemo<Theme>(() => {
+    const base = theme === 'dark' ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: { ...base.colors, primary: colors.accent, background: colors.bg, card: colors.bg, text: colors.text, border: colors.border },
+    };
+  }, [colors, theme]);
+
+  return (
+    <NavigationContainer theme={navigationTheme}>
+      <Tabs.Navigator
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: colors.accent,
+          tabBarInactiveTintColor: colors.textSecondary,
+          tabBarStyle: { backgroundColor: colors.bg, borderTopColor: colors.border },
+          tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: fontSizes.xs },
+          tabBarBadgeStyle: { backgroundColor: colors.accent, color: colors.white, fontFamily: fonts.bodySemibold },
+        }}
+      >
+        <Tabs.Screen
+          name="CatalogTab"
+          component={CatalogNavigator}
+          options={{ title: t('nav.catalog'), tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" color={color} size={size} /> }}
+        />
+        <Tabs.Screen
+          name="CartTab"
+          component={CartNavigator}
+          options={{
+            title: t('nav.cart'),
+            tabBarBadge: totalItems > 0 ? (totalItems > 99 ? '99+' : totalItems) : undefined,
+            tabBarIcon: ({ color, size }) => <Ionicons name="cart-outline" color={color} size={size} />,
+          }}
+        />
+        <Tabs.Screen
+          name="FavoritesTab"
+          component={FavoritesNavigator}
+          options={{ title: t('nav.favorites'), tabBarIcon: ({ color, size }) => <Ionicons name="heart-outline" color={color} size={size} /> }}
+        />
+        <Tabs.Screen
+          name="ProfileTab"
+          component={ProfileNavigator}
+          options={{ title: t('nav.profile'), tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color} size={size} /> }}
+        />
+      </Tabs.Navigator>
+    </NavigationContainer>
+  );
+}
