@@ -134,3 +134,15 @@ export interface ReviewDto {
   comment: string;
   createdAt: string;
 }
+
+/** 0=Percentage, 1=FixedAmount - matches backend PromoCodeDiscountType. */
+export type ApiPromoCodeDiscountType = 0 | 1;
+
+export interface PromoCodeApplicationDto {
+  promoCodeId: number;
+  code: string;
+  discountType: ApiPromoCodeDiscountType;
+  discountValue: number;
+  discountAmount: number;
+  finalTotal: number;
+}
