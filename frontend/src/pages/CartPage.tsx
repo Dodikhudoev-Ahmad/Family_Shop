@@ -9,8 +9,10 @@ import { PromoCodeInput } from '../components/PromoCodeInput/PromoCodeInput';
 import { FadeImage } from '../components/FadeImage/FadeImage';
 import { PromoBanner } from '../components/PromoBanner/PromoBanner';
 import './CartPage.css';
+import { useTranslation } from 'react-i18next';
 
 export function CartPage() {
+  const { t } = useTranslation();
   const { lines, updateQuantity, removeItem, remainingStock, totalPrice, promo, finalTotal } = useCart();
   const [pendingRemove, setPendingRemove] = useState<CartLine | null>(null);
 
@@ -27,15 +29,15 @@ export function CartPage() {
       <PromoBanner placement="Cart" />
 
       <div className="container cart-page">
-      <Breadcrumbs items={[{ label: 'Главная', href: '/' }, { label: 'Корзина' }]} />
-      <h1 className="cart-page__title">Корзина</h1>
+      <Breadcrumbs items={[{ label: t('common.home'), href: '/' }, { label: t('cart.title') }]} />
+      <h1 className="cart-page__title">{t('cart.title')}</h1>
 
       {lines.length === 0 ? (
         <div className="cart-page__empty">
           <CartEmptyIcon />
-          <p>Пока здесь пусто — самое время что-нибудь присмотреть</p>
+          <p>{t('cart.empty')}</p>
           <Link to="/catalog">
-            <Button variant="primary">В каталог</Button>
+            <Button variant="primary">{t('common.toCatalog')}</Button>
           </Link>
         </div>
       ) : (
@@ -46,25 +48,25 @@ export function CartPage() {
                 <FadeImage src={line.product.images[0]} alt={line.product.name} className="cart-line__image" />
                 <div className="cart-line__info">
                   <span className="cart-line__name">{line.product.name}</span>
-                  {line.size && <span className="cart-line__size">Размер: {line.size}</span>}
+                  {line.size && <span className="cart-line__size">{t('cart.size', { size: line.size })}</span>}
                   <span className="cart-line__price">
                     {formatPrice((line.product.discountPrice ?? line.product.price) * line.quantity)}
                   </span>
                   <div className="cart-line__controls">
                     <div className="quantity-stepper quantity-stepper--sm">
-                      <button onClick={() => updateQuantity(line.key, line.quantity - 1)} aria-label="Уменьшить">
+                      <button onClick={() => updateQuantity(line.key, line.quantity - 1)} aria-label={t('cart.decrease')}>
                         −
                       </button>
                       <span>{line.quantity}</span>
                       <button
                         onClick={() => updateQuantity(line.key, line.quantity + 1)}
                         disabled={remainingStock(line.product) <= 0}
-                        aria-label="Увеличить"
+                        aria-label={t('cart.increase')}
                       >
                         +
                       </button>
                     </div>
-                    <button className="cart-line__remove" onClick={() => setPendingRemove(line)} aria-label="Удалить товар">
+                    <button className="cart-line__remove" onClick={() => setPendingRemove(line)} aria-label={t('cart.removeItem')}>
                       <TrashIcon />
                     </button>
                   </div>
@@ -74,45 +76,45 @@ export function CartPage() {
           </ul>
 
           <aside className="cart-page__summary">
-            <h2 className="cart-page__summary-title">Ваш заказ</h2>
+            <h2 className="cart-page__summary-title">{t('cart.yourOrder')}</h2>
             <PromoCodeInput />
 
             <div className="cart-page__summary-rows">
               <div className="cart-page__summary-row">
-                <span>Сумма</span>
+                <span>{t('cart.sum')}</span>
                 <span>{formatPrice(totalPrice)}</span>
               </div>
               {promo && (
                 <div className="cart-page__summary-row cart-page__summary-row--discount">
-                  <span>Скидка по промокоду</span>
+                  <span>{t('cart.promoDiscount')}</span>
                   <span>−{formatPrice(totalPrice - finalTotal)}</span>
                 </div>
               )}
               <div className="cart-page__summary-row">
-                <span>Доставка</span>
-                <span>Уточняется при оформлении</span>
+                <span>{t('cart.delivery')}</span>
+                <span>{t('cart.deliveryTbd')}</span>
               </div>
               <div className="cart-page__summary-row cart-page__summary-total">
-                <span>Итого</span>
+                <span>{t('common.total')}</span>
                 <span>{formatPrice(finalTotal)}</span>
               </div>
             </div>
 
             <Link to="/checkout">
               <Button variant="primary" size="lg" className="cart-page__checkout-btn">
-                Оформить заказ
+                {t('cart.checkout')}
               </Button>
             </Link>
-            <p className="cart-page__note">Оплата при получении. Курьером или самовывозом — выбор на следующем шаге.</p>
+            <p className="cart-page__note">{t('cart.note')}</p>
           </aside>
         </div>
       )}
 
       <ConfirmDialog
         open={pendingRemove !== null}
-        title={`Удалить «${pendingRemove?.product.name}» из корзины?`}
-        description={pendingRemove?.size ? `Размер: ${pendingRemove.size}. Товар будет удалён из корзины.` : 'Товар будет удалён из корзины.'}
-        confirmLabel="Удалить"
+        title={t('cart.removeTitle', { name: pendingRemove?.product.name })}
+        description={pendingRemove?.size ? t('cart.removeDescSize', { size: pendingRemove.size }) : t('cart.removeDesc')}
+        confirmLabel={t('common.delete')}
         onConfirm={handleRemove}
         onCancel={() => setPendingRemove(null)}
       />

@@ -2,8 +2,10 @@ import { useState, type FormEvent } from 'react';
 import { useCart } from '../../context/CartContext';
 import { formatPrice } from '../../utils/formatPrice';
 import './PromoCodeInput.css';
+import { Trans, useTranslation } from 'react-i18next';
 
 export function PromoCodeInput() {
+  const { t } = useTranslation();
   const { promo, promoError, isApplyingPromo, applyPromoCode, clearPromoCode, totalPrice } = useCart();
   const [code, setCode] = useState('');
 
@@ -18,11 +20,11 @@ export function PromoCodeInput() {
       <div className="promo-code promo-code--applied">
         <div className="promo-code__applied-row">
           <span className="promo-code__applied-text">
-            Промокод <strong>{promo.code}</strong> применён
+            <Trans i18nKey="promo.applied" values={{ code: promo.code }} components={{ strong: <strong /> }} />
             {promo.discountType === 0 ? ` · −${promo.discountValue}%` : ` · −${formatPrice(promo.discountValue)}`}
           </span>
           <button type="button" className="promo-code__remove" onClick={clearPromoCode}>
-            Убрать
+            {t('common.remove')}
           </button>
         </div>
         <div className="promo-code__totals">
@@ -40,13 +42,13 @@ export function PromoCodeInput() {
           type="text"
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          placeholder="Промокод"
+          placeholder={t('promo.label')}
           className={promoError ? 'has-error' : ''}
           disabled={isApplyingPromo}
-          aria-label="Промокод"
+          aria-label={t('promo.label')}
         />
         <button type="submit" className="promo-code__apply" disabled={isApplyingPromo || !code.trim()}>
-          {isApplyingPromo ? 'Проверяем...' : 'Применить'}
+          {isApplyingPromo ? t('promo.checking') : t('promo.apply')}
         </button>
       </div>
       {promoError && <span className="promo-code__error">{promoError}</span>}
