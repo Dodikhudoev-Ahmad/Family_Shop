@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Api.Common;
@@ -19,6 +20,7 @@ public class PromoCodesController : ControllerBase
     }
 
     /// <summary>Предпросмотр скидки по промокоду для указанной суммы заказа.</summary>
+    [AllowAnonymous]
     [HttpPost("validate")]
     [EnableRateLimiting("promo-validate")]
     public async Task<ActionResult<ApiResponse<PromoCodeApplicationDto>>> Validate(ValidatePromoCodeRequestDto request, CancellationToken cancellationToken)

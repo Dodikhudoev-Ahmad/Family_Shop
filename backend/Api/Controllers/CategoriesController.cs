@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Api.Common;
 using Application.DTOs;
@@ -18,6 +19,7 @@ public class CategoriesController : ControllerBase
     }
 
     /// <summary>Список категорий.</summary>
+    [AllowAnonymous]
     [HttpGet]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<CategoryDto>>>> GetCategories(CancellationToken cancellationToken)
     {

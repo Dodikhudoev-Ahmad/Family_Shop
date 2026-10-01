@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Api.Common;
 using Application.DTOs;
@@ -19,6 +20,7 @@ public class PromoBannersController : ControllerBase
     }
 
     /// <summary>Активные баннеры для указанного места показа, отсортированные по порядку показа.</summary>
+    [AllowAnonymous]
     [HttpGet("active")]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<PromoBannerDto>>>> GetActive(
         [FromQuery] PromoBannerPlacement placement,

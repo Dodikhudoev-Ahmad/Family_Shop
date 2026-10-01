@@ -22,6 +22,7 @@ public class ReviewsController : ControllerBase
     }
 
     /// <summary>Список отзывов товара с сортировкой (новые/высокий рейтинг/низкий рейтинг) и пагинацией.</summary>
+    [AllowAnonymous]
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResult<ReviewDto>>>> GetReviews(
         int productId,
@@ -36,6 +37,7 @@ public class ReviewsController : ControllerBase
     }
 
     /// <summary>Средний рейтинг, число отзывов и распределение по звёздам.</summary>
+    [AllowAnonymous]
     [HttpGet("summary")]
     public async Task<ActionResult<ApiResponse<ReviewSummaryDto>>> GetSummary(int productId, CancellationToken cancellationToken)
     {
