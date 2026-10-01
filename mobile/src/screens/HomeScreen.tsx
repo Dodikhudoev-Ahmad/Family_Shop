@@ -4,6 +4,7 @@ import { FlatList, Pressable, Text, View } from 'react-native';
 import { Logo, Screen, StateMessage } from '../components/ui';
 import { useLabels } from '../i18n/labels';
 import type { CatalogStackParamList } from '../navigation/types';
+import { API_BASE_URL } from '../config';
 import { useCategories } from '../state/CategoriesContext';
 import { fontSizes, fonts, MIN_TOUCH_TARGET, spacing } from '../theme/tokens';
 import { useThemedStyles } from '../theme/ThemeContext';
@@ -53,7 +54,11 @@ export function HomeScreen({ navigation }: NativeStackScreenProps<CatalogStackPa
           isLoading ? (
             <StateMessage loading message={t('common.loading')} />
           ) : error ? (
-            <StateMessage message={t('mobile.categoriesError')} actionLabel={t('mobile.retry')} onAction={() => void reload()} />
+            <StateMessage
+              message={__DEV__ ? `${t('mobile.categoriesError')}\n${API_BASE_URL}` : t('mobile.categoriesError')}
+              actionLabel={t('mobile.retry')}
+              onAction={() => void reload()}
+            />
           ) : (
             <StateMessage message={t('mobile.categoriesEmpty')} />
           )
