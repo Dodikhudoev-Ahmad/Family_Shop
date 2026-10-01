@@ -2,20 +2,45 @@
 
 React Native (Expo SDK 57, managed workflow, TypeScript strict). Использует тот же backend, что и сайт: `/api/v1/*`.
 
-## Запуск
+## Запуск (Mac)
+
+Без настройки приложение ходит на **боевой** API, а он не пускает чужие origin (CORS), поэтому веб-превью
+на `localhost:8081` покажет «Не удалось загрузить категории». Для разработки поднимите локальный бэкенд.
+
+**1. Postgres** (Homebrew, порт 5433):
+
+```bash
+brew services start postgresql@16
+# если не стартует из-за мёртвого postmaster.pid:
+# rm /opt/homebrew/var/postgresql@16/postmaster.pid && brew services restart postgresql@16
+```
+
+**2. Бэкенд** (один раз задайте строку подключения, пароль роли `postgres` — ваш):
+
+```bash
+cd backend/Api
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5433;Database=familyshop;Username=postgres;Password=<пароль>"
+dotnet run --launch-profile http     # http://localhost:5280, Development: миграции и сидер применятся сами
+```
+
+CORS для `http://localhost:8081` включён только в `appsettings.Development.json`, то есть при `ASPNETCORE_ENVIRONMENT=Development`
+(профиль `http` его выставляет). На проде этого origin нет.
+
+**3. Мобильное приложение / web-превью:**
 
 ```bash
 cd mobile
 npm install
-npx expo start          # откройте в Expo Go (QR-код)
+cp .env.example .env.local           # EXPO_PUBLIC_API_URL=http://localhost:5280/api/v1
+npx expo start --web -c              # http://localhost:8081; -c — сбросить кэш после смены переменной
 ```
 
-По умолчанию приложение ходит на боевой API. Для локального бэкенда скопируйте `.env.example` в `.env.local`
-и укажите адрес компьютера в сети (телефон не видит `localhost`):
+В dev-сборке под сообщением об ошибке видно, к какому адресу идёт приложение.
 
-```
-EXPO_PUBLIC_API_URL=http://192.168.1.5:5280/api/v1
-```
+**На телефоне (Expo Go)** `localhost` недоступен: в `.env.local` укажите LAN-адрес Mac, например
+`EXPO_PUBLIC_API_URL=http://192.168.1.5:5280/api/v1`, запустите бэкенд на всех интерфейсах
+(`dotnet run --launch-profile http --urls http://0.0.0.0:5280`) и `npx expo start -c`.
+Нативные запросы CORS не проверяют, добавлять origin не нужно.
 
 Release-сборка отказывается работать с не-`https://` адресом.
 
