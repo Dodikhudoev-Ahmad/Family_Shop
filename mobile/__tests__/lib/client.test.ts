@@ -366,6 +366,48 @@ describe('logout', () => {
   });
 });
 
+describe('account deletion', () => {
+  it('sends DELETE /auth/me with the password in the body and the Bearer token, then forgets the session', async () => {
+    const h = await loggedIn();
+    const signedOut = jest.fn();
+    h.tokens.onSignedOut(signedOut);
+    h.onFetch(() => jsonResponse(204));
+
+    await h.client.deleteAccount('Zebra2026x');
+
+    expect(h.calls[0]).toMatchObject({ url: '/auth/me', method: 'DELETE', body: { password: 'Zebra2026x' } });
+    expect(h.calls[0].headers.Authorization).toBe('Bearer access-1');
+    expect(h.store.data.has(SECRET_KEYS.refreshToken)).toBe(false);
+    expect(h.tokens.getAccessToken()).toBeNull();
+    expect(signedOut).toHaveBeenCalled();
+  });
+
+  it('a wrong password (400) keeps the session and hands the server text to the screen', async () => {
+    const h = await loggedIn();
+    h.onFetch(() => jsonResponse(400, failure('Incorrect password.')));
+
+    await expect(h.client.deleteAccount('nope')).rejects.toMatchObject({ status: 400, message: 'Incorrect password.' });
+
+    expect(h.store.data.has(SECRET_KEYS.refreshToken)).toBe(true);
+    expect(h.tokens.getAccessToken()).toBe('access-1');
+  });
+
+  it('an administrator (403) is refused and stays signed in', async () => {
+    const h = await loggedIn();
+    h.onFetch(() => jsonResponse(403, failure('This account cannot be deleted from the app.')));
+
+    await expect(h.client.deleteAccount('pw')).rejects.toMatchObject({ status: 403 });
+    expect(h.store.data.has(SECRET_KEYS.refreshToken)).toBe(true);
+  });
+
+  it('the password never appears in an error message', async () => {
+    const h = await loggedIn();
+    h.onFetch(() => jsonResponse(400, failure('Incorrect password.')));
+    const error = await h.client.deleteAccount('Very-Secret-pw-1').catch((e: Error) => e);
+    expect(String((error as Error).message)).not.toContain('Very-Secret-pw-1');
+  });
+});
+
 describe('response handling', () => {
   it('maps 429 to a friendly message and a non-JSON failure to a server error', async () => {
     const h = setup();

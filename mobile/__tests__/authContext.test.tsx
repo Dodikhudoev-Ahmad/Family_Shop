@@ -12,6 +12,7 @@ jest.mock('../src/lib/api/client', () => ({
     register: jest.fn(),
     logout: jest.fn(),
     logoutAll: jest.fn(),
+    deleteAccount: jest.fn(),
     onSignedOut: jest.fn(),
   },
 }));
@@ -24,6 +25,7 @@ const mockApi = jest.requireMock<{
     register: jest.Mock<Promise<AuthUser>, [string, string, string]>;
     logout: jest.Mock<Promise<void>, []>;
     logoutAll: jest.Mock<Promise<void>, []>;
+    deleteAccount: jest.Mock<Promise<void>, [string]>;
     onSignedOut: jest.Mock<() => void, [() => void]>;
   };
 }>('../src/lib/api/client').api;
@@ -57,6 +59,7 @@ beforeEach(() => {
   mockApi.restoreSession.mockResolvedValue(null);
   mockApi.logout.mockResolvedValue(undefined);
   mockApi.logoutAll.mockResolvedValue(undefined);
+  mockApi.deleteAccount.mockResolvedValue(undefined);
 });
 
 describe('session at startup', () => {
@@ -162,5 +165,35 @@ describe('logout', () => {
       await auth.current?.logoutAll().catch(() => undefined);
     });
     expect(auth.current?.user).toBeNull();
+  });
+});
+
+describe('deleting the account', () => {
+  it('signs the user out on success, without the "session ended" notice', async () => {
+    mockApi.restoreSession.mockResolvedValue(alice);
+    mockApi.deleteAccount.mockImplementation(async () => {
+      signedOut?.(); // the token store announces its own wipe
+    });
+    const auth = await mount();
+    await act(async () => auth.current?.deleteAccount('Zebra2026x'));
+    expect(mockApi.deleteAccount).toHaveBeenCalledWith('Zebra2026x');
+    expect(auth.current?.user).toBeNull();
+    expect(auth.current?.sessionEnded).toBe(false);
+  });
+
+  it('a refusal (wrong password) leaves the user signed in and rethrows the error', async () => {
+    mockApi.restoreSession.mockResolvedValue(alice);
+    mockApi.deleteAccount.mockRejectedValue(new ApiError(400, 'Incorrect password.'));
+    const auth = await mount();
+    let caught: unknown;
+    await act(async () => {
+      try {
+        await auth.current?.deleteAccount('nope');
+      } catch (e) {
+        caught = e;
+      }
+    });
+    expect((caught as ApiError).status).toBe(400);
+    expect(auth.current?.user).toEqual(alice);
   });
 });

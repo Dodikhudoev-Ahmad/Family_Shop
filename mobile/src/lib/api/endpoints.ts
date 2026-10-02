@@ -9,6 +9,8 @@ import type {
   PromoCodeApplicationDto,
   PromoBannerDto,
   ReviewDto,
+  ReviewSortBy,
+  ReviewSummaryDto,
   ProductSortBy,
 } from './types';
 
@@ -58,9 +60,25 @@ export function fetchActivePromoBanners(placement: ApiPromoBannerPlacement): Pro
   return api.request<PromoBannerDto[]>(`/promo-banners/active?placement=${placement}`);
 }
 
-/** 0=Newest, 1=HighestRating, 2=LowestRating */
-export function fetchProductReviews(productId: number, page: number, pageSize: number): Promise<PagedResult<ReviewDto>> {
-  return api.request<PagedResult<ReviewDto>>(`/products/${productId}/reviews?sortBy=0&page=${page}&pageSize=${pageSize}`);
+export function fetchProductReviews(productId: number, page: number, pageSize: number, sortBy: ReviewSortBy = 0): Promise<PagedResult<ReviewDto>> {
+  return api.request<PagedResult<ReviewDto>>(`/products/${productId}/reviews?sortBy=${sortBy}&page=${page}&pageSize=${pageSize}`);
+}
+
+export function fetchReviewSummary(productId: number): Promise<ReviewSummaryDto> {
+  return api.request<ReviewSummaryDto>(`/products/${productId}/reviews/summary`);
+}
+
+/** The signed-in user's own review of the product, or null when they have not written one. */
+export function fetchMyReview(productId: number): Promise<ReviewDto | null> {
+  return api.request<ReviewDto | null>(`/products/${productId}/reviews/mine`, { auth: 'required' });
+}
+
+export function createReview(productId: number, rating: number, comment: string): Promise<ReviewDto> {
+  return api.request<ReviewDto>(`/products/${productId}/reviews`, { method: 'POST', body: { rating, comment }, auth: 'required' });
+}
+
+export function deleteMyReview(productId: number): Promise<void> {
+  return api.request<void>(`/products/${productId}/reviews`, { method: 'DELETE', auth: 'required' });
 }
 
 export function fetchProduct(id: number): Promise<ProductDto> {
