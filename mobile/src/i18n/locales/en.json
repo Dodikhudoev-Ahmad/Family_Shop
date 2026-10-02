@@ -461,6 +461,7 @@
     "accountDeleted": "Account deleted",
     "boundaryText": "An unexpected error occurred. Restart the app — your cart and favourites are saved.",
     "restart": "Restart",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "activeOrdersCannotDelete": "You can't delete your account while you have active orders. Wait until they are delivered or cancelled, then try again."
   }
 }
