@@ -60,8 +60,14 @@ public class AdminOrdersController : ControllerBase
     public async Task<ActionResult<ApiResponse<AdminOrderDto>>> UpdateStatus(int id, UpdateOrderStatusRequestDto request, CancellationToken cancellationToken)
     {
         var result = await _orderService.UpdateOrderStatusAsync(id, request.Status, cancellationToken);
-        return result.IsSuccess
-            ? Ok(ApiResponse<AdminOrderDto>.Ok(result.Value!))
-            : BadRequest(ApiResponse<AdminOrderDto>.Fail(result.Errors));
+        if (result.IsSuccess)
+        {
+            return Ok(ApiResponse<AdminOrderDto>.Ok(result.Value!));
+        }
+
+        var failure = ApiResponse<AdminOrderDto>.Fail(result.Errors);
+        return result.ErrorCode is ResultErrorCodes.OutOfStock or ResultErrorCodes.Conflict
+            ? Conflict(failure)
+            : BadRequest(failure);
     }
 }

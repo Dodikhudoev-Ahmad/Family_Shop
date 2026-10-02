@@ -37,5 +37,9 @@ public interface IOrderRepository : IRepository<Order>
     /// The orders themselves - lines, totals, status, dates - stay for the shop's records.</summary>
     Task<int> AnonymizeContactDataForUserAsync(int userId, CancellationToken cancellationToken = default);
 
+    /// <summary>Atomic compare-and-set of the status (<c>WHERE Id = id AND Status = expected</c>). False when the order
+    /// changed state meanwhile - the caller that gets true is the only one who performed that transition.</summary>
+    Task<bool> TryChangeStatusAsync(int orderId, OrderStatus expected, OrderStatus newStatus, CancellationToken cancellationToken = default);
+
     Task<bool> AnyByPromoCodeIdAsync(int promoCodeId, CancellationToken cancellationToken = default);
 }
