@@ -141,6 +141,8 @@ export function CheckoutPage() {
   if (lines.length === 0 && !orderNumber) {
     return (
       <div className="container checkout__empty">
+        {/* The cart can empty itself after a refused order (its only line sold out / lost its size): say why. */}
+        {submitError && <p className="checkout__error checkout__submit-error" role="alert">{submitError}</p>}
         <p>{t('checkout.empty')}</p>
         <Link to="/">{t('checkout.toCatalog')}</Link>
       </div>

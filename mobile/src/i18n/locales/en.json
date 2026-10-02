@@ -309,7 +309,7 @@
     "confirm": "Confirm order",
     "outOfStock": "Not enough of “{{name}}” in stock, only {{count}} left. The order was not placed and your cart is kept — reduce the quantity.",
     "outOfStockNone": "“{{name}}” is out of stock. The order was not placed; the rest of your cart is kept.",
-    "sizeUnavailable": "Size “{{size}}” of “{{name}}” is no longer available. The order was not placed and your cart is kept — choose another size.",
+    "sizeUnavailable": "Size “{{size}}” of “{{name}}” is no longer available. The order was not placed: that item was removed from your cart, the rest is kept — choose another size.",
     "sizeRequired": "“{{name}}” needs a size. The order was not placed and your cart is kept."
   },
   "auth": {
