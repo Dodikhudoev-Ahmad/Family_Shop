@@ -38,22 +38,28 @@ public class OrderService : IOrderService
 
         var total = Domain.ValueObjects.Money.Zero;
 
+        var products = new Dictionary<int, Product>();
+
         foreach (var item in request.Items)
         {
+            // A non-positive quantity would turn the conditional write-off below into a stock *increase*.
+            if (item.Quantity <= 0)
+            {
+                return Result<OrderDto>.Failure("Quantity must be positive.");
+            }
+
+            // GetByIdAsync is a FindAsync: the same tracked Product instance comes back for repeated ids.
+            // It is read only for name/price - the stock itself is written off atomically in the database below.
             var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId, cancellationToken);
             if (product is null)
             {
                 return Result<OrderDto>.Failure($"Product {item.ProductId} not found.");
             }
 
-            if (product.Stock < item.Quantity)
-            {
-                return Result<OrderDto>.Failure($"Insufficient stock for product '{product.Name}'.");
-            }
+            products[product.Id] = product;
 
             var price = product.EffectivePrice;
             total += price * item.Quantity;
-            product.Stock -= item.Quantity;
 
             order.Items.Add(new OrderItem
             {
@@ -90,34 +96,47 @@ public class OrderService : IOrderService
             order.TotalPrice = new Domain.ValueObjects.Money(evaluation.Value.FinalTotal);
         }
 
-        await _unitOfWork.Orders.AddAsync(order, cancellationToken);
+        // Stock is shared by all sizes of a product, so demand is summed per product (a product may appear on
+        // several lines). Rows are written off in ascending Id order: two concurrent orders then always take their
+        // row locks in the same order and cannot deadlock each other.
+        var demand = request.Items
+            .GroupBy(i => i.ProductId)
+            .Select(g => (ProductId: g.Key, Quantity: g.Sum(i => (long)i.Quantity)))
+            .OrderBy(d => d.ProductId)
+            .ToList();
 
-        if (promoCode is not null)
+        Result<OrderDto>? failure = null;
+
+        // One transaction for everything that must stand or fall together: the conditional stock write-offs
+        // (UPDATE ... WHERE Stock >= q, no read-check-write gap), the promo usage increment and the order insert.
+        // Any refusal rolls the whole thing back, so a half-failed order never keeps stock or a promo use.
+        var committed = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
-            // Usage-limit check + increment happens as one atomic conditional UPDATE inside the
-            // same transaction as the order insert, so a promo code can't be over-redeemed by
-            // concurrent orders racing past the in-memory limit check above, and a failed order
-            // never leaves a promo code's usage count incremented (or vice versa).
-            var applied = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
+            foreach (var (productId, quantity) in demand)
             {
-                var incremented = await _unitOfWork.PromoCodes.TryIncrementUsageAsync(promoCode.Id, ct);
-                if (!incremented)
+                if (quantity > int.MaxValue || !await _unitOfWork.Products.TryDecrementStockAsync(productId, (int)quantity, ct))
                 {
+                    failure = Result<OrderDto>.Failure(
+                        $"Insufficient stock for product '{products[productId].Name}'.",
+                        ResultErrorCodes.OutOfStock);
                     return false;
                 }
-
-                await _unitOfWork.SaveChangesAsync(ct);
-                return true;
-            }, cancellationToken);
-
-            if (!applied)
-            {
-                return Result<OrderDto>.Failure("Промокод больше не действует (лимит использований исчерпан).");
             }
-        }
-        else
+
+            if (promoCode is not null && !await _unitOfWork.PromoCodes.TryIncrementUsageAsync(promoCode.Id, ct))
+            {
+                failure = Result<OrderDto>.Failure("Промокод больше не действует (лимит использований исчерпан).");
+                return false;
+            }
+
+            await _unitOfWork.Orders.AddAsync(order, ct);
+            await _unitOfWork.SaveChangesAsync(ct);
+            return true;
+        }, cancellationToken);
+
+        if (!committed)
         {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return failure ?? Result<OrderDto>.Failure("Order could not be created.");
         }
 
         return Result<OrderDto>.Success(ToDto(order));
@@ -169,22 +188,45 @@ public class OrderService : IOrderService
             return Result<AdminOrderDto>.Failure($"Cannot transition order from '{order.Status}' to '{newStatus}'.");
         }
 
-        // A cancelled order never ships, so put its reserved stock back on sale - otherwise every
-        // cancellation permanently shrinks the catalogue's available quantity.
-        if (newStatus == OrderStatus.Cancelled && order.Status != OrderStatus.Cancelled)
+        if (order.Status == newStatus)
         {
-            foreach (var item in order.Items)
+            return Result<AdminOrderDto>.Success(ToAdminDto(order));
+        }
+
+        var previousStatus = order.Status;
+
+        // The status flips with a compare-and-set (WHERE Status = previous), so of two racing requests exactly
+        // one performs the transition. A cancelled order never ships, so that one - and only that one - puts the
+        // reserved stock back on sale, in the same transaction; a repeated or racing cancel can't return it twice.
+        var changed = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
+        {
+            if (!await _unitOfWork.Orders.TryChangeStatusAsync(order.Id, previousStatus, newStatus, ct))
             {
-                if (item.Product is not null)
+                return false;
+            }
+
+            if (newStatus == OrderStatus.Cancelled)
+            {
+                var returns = order.Items
+                    .GroupBy(i => i.ProductId)
+                    .Select(g => (ProductId: g.Key, Quantity: g.Sum(i => i.Quantity)))
+                    .OrderBy(r => r.ProductId);
+
+                foreach (var (productId, quantity) in returns)
                 {
-                    item.Product.Stock += item.Quantity;
+                    await _unitOfWork.Products.IncrementStockAsync(productId, quantity, ct);
                 }
             }
+
+            return true;
+        }, cancellationToken);
+
+        if (!changed)
+        {
+            return Result<AdminOrderDto>.Failure("The order was changed by another request. Reload and try again.", ResultErrorCodes.Conflict);
         }
 
         order.Status = newStatus;
-        _unitOfWork.Orders.Update(order);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result<AdminOrderDto>.Success(ToAdminDto(order));
     }

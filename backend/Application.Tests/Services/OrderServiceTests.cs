@@ -27,7 +27,33 @@ public class OrderServiceTests
         _unitOfWork.ExecuteInTransactionAsync(Arg.Any<Func<CancellationToken, Task<bool>>>(), Arg.Any<CancellationToken>())
             .Returns(callInfo => callInfo.Arg<Func<CancellationToken, Task<bool>>>()(callInfo.ArgAt<CancellationToken>(1)));
 
+        // The conditional write-off / return / status flip are database operations (see OrderStockConcurrencyTests
+        // for the real thing); here they are mimicked on the in-memory objects so the service logic is checkable.
+        _orders.TryChangeStatusAsync(Arg.Any<int>(), Arg.Any<OrderStatus>(), Arg.Any<OrderStatus>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+
         _sut = new OrderService(_unitOfWork);
+    }
+
+    private void Register(Product product)
+    {
+        _products.GetByIdAsync(product.Id, Arg.Any<CancellationToken>()).Returns(product);
+        _products.TryDecrementStockAsync(product.Id, Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(call =>
+        {
+            var quantity = call.ArgAt<int>(1);
+            if (product.Stock < quantity)
+            {
+                return false;
+            }
+
+            product.Stock -= quantity;
+            return true;
+        });
+        _products.IncrementStockAsync(product.Id, Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(call =>
+        {
+            product.Stock += call.ArgAt<int>(1);
+            return Task.CompletedTask;
+        });
     }
 
     [Fact]
@@ -35,7 +61,7 @@ public class OrderServiceTests
     {
         const int authenticatedUserId = 42;
         var product = new Product { Id = 1, Name = "Shirt", Price = new Money(1000), Stock = 5 };
-        _products.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(product);
+        Register(product);
 
         var request = new CreateOrderRequestDto(
             [new CreateOrderItemDto(1, 2, "M")],
@@ -57,7 +83,7 @@ public class OrderServiceTests
     public async Task CreateOrderAsync_ReducesProductStockByOrderedQuantity()
     {
         var product = new Product { Id = 1, Name = "Shoes", Price = new Money(2000), Stock = 10 };
-        _products.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(product);
+        Register(product);
 
         var request = new CreateOrderRequestDto(
             [new CreateOrderItemDto(1, 3, "42")],
@@ -78,7 +104,7 @@ public class OrderServiceTests
         // Two cart lines of the same product in different sizes (M and L) must land as two
         // separate OrderItems, and Product.Stock - shared across sizes - must reflect both.
         var product = new Product { Id = 1, Name = "Худи", Price = new Money(1000), Stock = 10 };
-        _products.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(product);
+        Register(product);
 
         var request = new CreateOrderRequestDto(
             [new CreateOrderItemDto(1, 3, "M"), new CreateOrderItemDto(1, 4, "L")],
@@ -105,7 +131,7 @@ public class OrderServiceTests
         // 6 (M) + 6 (L) = 12 requested against a Stock of 10 shared across both sizes - the
         // second line must fail even though it doesn't exceed Stock on its own.
         var product = new Product { Id = 1, Name = "Худи", Price = new Money(1000), Stock = 10 };
-        _products.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(product);
+        Register(product);
 
         var request = new CreateOrderRequestDto(
             [new CreateOrderItemDto(1, 6, "M"), new CreateOrderItemDto(1, 6, "L")],
@@ -125,7 +151,7 @@ public class OrderServiceTests
     public async Task CreateOrderAsync_WithInsufficientStock_ReturnsFailure()
     {
         var product = new Product { Id = 1, Name = "Bag", Price = new Money(500), Stock = 1 };
-        _products.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(product);
+        Register(product);
 
         var request = new CreateOrderRequestDto(
             [new CreateOrderItemDto(1, 5, null)],
@@ -145,7 +171,7 @@ public class OrderServiceTests
     public async Task CreateOrderAsync_WithValidPromoCode_AppliesDiscountAndIncrementsUsage()
     {
         var product = new Product { Id = 1, Name = "Coat", Price = new Money(1000), Stock = 5 };
-        _products.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(product);
+        Register(product);
 
         var promoCode = new PromoCode
         {
@@ -181,7 +207,7 @@ public class OrderServiceTests
     public async Task CreateOrderAsync_WithUnknownPromoCode_ReturnsFailureAndDoesNotCreateOrder()
     {
         var product = new Product { Id = 1, Name = "Coat", Price = new Money(1000), Stock = 5 };
-        _products.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(product);
+        Register(product);
         _promoCodes.GetByCodeAsync("MISSING", Arg.Any<CancellationToken>()).Returns((PromoCode?)null);
 
         var request = new CreateOrderRequestDto(
@@ -206,7 +232,7 @@ public class OrderServiceTests
         // atomic conditional UPDATE (TryIncrementUsageAsync) can tell them apart, so this order
         // must fail cleanly rather than silently creating an over-the-limit order.
         var product = new Product { Id = 1, Name = "Hat", Price = new Money(500), Stock = 5 };
-        _products.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(product);
+        Register(product);
 
         var promoCode = new PromoCode
         {
@@ -272,6 +298,7 @@ public class OrderServiceTests
         var product = new Product { Id = 1, Name = "Shoes", Price = new Money(2000), Stock = 3 };
         var order = new Order { Id = 7, Status = OrderStatus.Created };
         order.Items.Add(new OrderItem { ProductId = 1, Product = product, Quantity = 2, Price = new Money(2000) });
+        Register(product);
         _orders.GetByIdWithItemsAsync(7, Arg.Any<CancellationToken>()).Returns(order);
 
         var result = await _sut.UpdateOrderStatusAsync(7, OrderStatus.Cancelled);
@@ -287,6 +314,7 @@ public class OrderServiceTests
         var order = new Order { Id = 7, Status = OrderStatus.Created };
         order.Items.Add(new OrderItem { ProductId = 1, Product = product, Quantity = 2, Price = new Money(2000), Size = "M" });
         order.Items.Add(new OrderItem { ProductId = 1, Product = product, Quantity = 3, Price = new Money(2000), Size = "L" });
+        Register(product);
         _orders.GetByIdWithItemsAsync(7, Arg.Any<CancellationToken>()).Returns(order);
 
         var result = await _sut.UpdateOrderStatusAsync(7, OrderStatus.Cancelled);
@@ -301,10 +329,82 @@ public class OrderServiceTests
         var product = new Product { Id = 1, Name = "Shoes", Price = new Money(2000), Stock = 3 };
         var order = new Order { Id = 8, Status = OrderStatus.Created };
         order.Items.Add(new OrderItem { ProductId = 1, Product = product, Quantity = 2, Price = new Money(2000) });
+        Register(product);
         _orders.GetByIdWithItemsAsync(8, Arg.Any<CancellationToken>()).Returns(order);
 
         await _sut.UpdateOrderStatusAsync(8, OrderStatus.Processing);
 
+        Assert.Equal(3, product.Stock);
+    }
+
+    [Fact]
+    public async Task CreateOrderAsync_WhenStockIsTakenByAConcurrentOrder_ReturnsOutOfStockAndAddsNoOrder()
+    {
+        // The in-memory view still says Stock = 5, but the atomic UPDATE finds nothing left.
+        var product = new Product { Id = 1, Name = "Last one", Price = new Money(500), Stock = 5 };
+        Register(product);
+        _products.TryDecrementStockAsync(1, Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(false);
+
+        var request = new CreateOrderRequestDto([new CreateOrderItemDto(1, 1, null)], "Ann", "+7 700 000 00 09", DeliveryMethod.Pickup, null, null);
+
+        var result = await _sut.CreateOrderAsync(1, request);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(Application.Common.ResultErrorCodes.OutOfStock, result.ErrorCode);
+        Assert.Contains("Last one", result.Errors[0]);
+        await _orders.DidNotReceive().AddAsync(Arg.Any<Order>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateOrderAsync_WritesOffProductsInAscendingIdOrder_SummingLinesOfTheSameProduct()
+    {
+        var a = new Product { Id = 2, Name = "A", Price = new Money(100), Stock = 10 };
+        var b = new Product { Id = 9, Name = "B", Price = new Money(100), Stock = 10 };
+        Register(a);
+        Register(b);
+
+        var request = new CreateOrderRequestDto(
+            [new CreateOrderItemDto(9, 1, null), new CreateOrderItemDto(2, 1, "M"), new CreateOrderItemDto(2, 2, "L")],
+            "Ann", "+7 700 000 00 09", DeliveryMethod.Pickup, null, null);
+
+        var result = await _sut.CreateOrderAsync(1, request);
+
+        Assert.True(result.IsSuccess);
+        Received.InOrder(() =>
+        {
+            _products.TryDecrementStockAsync(2, 3, Arg.Any<CancellationToken>());
+            _products.TryDecrementStockAsync(9, 1, Arg.Any<CancellationToken>());
+        });
+    }
+
+    [Fact]
+    public async Task CreateOrderAsync_WithNonPositiveQuantity_IsRejectedBeforeAnyWriteOff()
+    {
+        var product = new Product { Id = 1, Name = "Shirt", Price = new Money(100), Stock = 5 };
+        Register(product);
+
+        var request = new CreateOrderRequestDto([new CreateOrderItemDto(1, -3, null)], "Ann", "+7 700 000 00 09", DeliveryMethod.Pickup, null, null);
+
+        var result = await _sut.CreateOrderAsync(1, request);
+
+        Assert.False(result.IsSuccess);
+        await _products.DidNotReceive().TryDecrementStockAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateOrderStatusAsync_WhenTheStatusFlipIsLostToAConcurrentRequest_ReturnsConflictAndReturnsNoStock()
+    {
+        var product = new Product { Id = 1, Name = "Shoes", Price = new Money(2000), Stock = 3 };
+        var order = new Order { Id = 7, Status = OrderStatus.Created };
+        order.Items.Add(new OrderItem { ProductId = 1, Product = product, Quantity = 2, Price = new Money(2000) });
+        Register(product);
+        _orders.GetByIdWithItemsAsync(7, Arg.Any<CancellationToken>()).Returns(order);
+        _orders.TryChangeStatusAsync(7, OrderStatus.Created, OrderStatus.Cancelled, Arg.Any<CancellationToken>()).Returns(false);
+
+        var result = await _sut.UpdateOrderStatusAsync(7, OrderStatus.Cancelled);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(Application.Common.ResultErrorCodes.Conflict, result.ErrorCode);
         Assert.Equal(3, product.Stock);
     }
 }

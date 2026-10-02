@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Api.Common;
 using Api.RateLimiting;
+using Application.Common;
 using Application.DTOs;
 using Application.Interfaces;
 
@@ -28,9 +29,15 @@ public class OrdersController : ControllerBase
     public async Task<ActionResult<ApiResponse<OrderDto>>> CreateOrder(CreateOrderRequestDto request, CancellationToken cancellationToken)
     {
         var result = await _orderService.CreateOrderAsync(GetUserId(), request, cancellationToken);
-        return result.IsSuccess
-            ? Ok(ApiResponse<OrderDto>.Ok(result.Value!))
-            : BadRequest(ApiResponse<OrderDto>.Fail(result.Errors));
+        if (result.IsSuccess)
+        {
+            return Ok(ApiResponse<OrderDto>.Ok(result.Value!));
+        }
+
+        var failure = ApiResponse<OrderDto>.Fail(result.Errors);
+        return result.ErrorCode is ResultErrorCodes.OutOfStock or ResultErrorCodes.Conflict
+            ? Conflict(failure)
+            : BadRequest(failure);
     }
 
     /// <summary>История заказов текущего пользователя (id берётся из access-токена, не из query).</summary>
