@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import i18n from '../../i18n';
+import { isOrderConflict } from '../../lib/orderErrors';
 import { AdminLayout } from '../../components/AdminLayout/AdminLayout';
 import { StatusBadge, ORDER_STATUS_INFO, ALLOWED_NEXT_STATUSES, orderStatusLabel } from '../../components/StatusBadge/StatusBadge';
 import { useToast } from '../../context/ToastContext';
@@ -65,6 +67,7 @@ export function AdminOrdersPage() {
   const [pendingId, setPendingId] = useState<number | null>(null);
 
   const requestIdRef = useRef(0);
+  const [reloadTick, setReloadTick] = useState(0);
 
   useLockBodyScroll(expandedId !== null);
 
@@ -115,7 +118,7 @@ export function AdminOrdersPage() {
       .finally(() => {
         if (requestIdRef.current === requestId) setIsLoading(false);
       });
-  }, [statusFilter, dateFrom, dateTo, debouncedSearch, page]);
+  }, [statusFilter, dateFrom, dateTo, debouncedSearch, page, reloadTick]);
 
   const handleStatusChange = (order: AdminOrderDto, newStatus: ApiOrderStatus) => {
     const previousStatus = order.status;
@@ -130,6 +133,13 @@ export function AdminOrdersPage() {
       })
       .catch((err: unknown) => {
         setOrders((prev) => prev && prev.map((o) => (o.id === order.id ? { ...o, status: previousStatus } : o)));
+        if (isOrderConflict(err)) {
+          // Another request (a second admin, a double click) already moved this order: show the real state.
+          showToast(i18n.t('errors.orderChanged'), 'error');
+          setReloadTick((n) => n + 1);
+          loadStats();
+          return;
+        }
         showToast(err instanceof ApiError ? err.message : 'Не удалось изменить статус заказа.', 'error');
       })
       .finally(() => setPendingId(null));

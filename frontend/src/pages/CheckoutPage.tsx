@@ -7,6 +7,7 @@ import { Button } from '../components/Button/Button';
 import { FadeImage } from '../components/FadeImage/FadeImage';
 import { PromoCodeInput } from '../components/PromoCodeInput/PromoCodeInput';
 import { ApiError, createOrder, type ApiDeliveryMethod } from '../lib/api';
+import { outOfStockInfo, outOfStockMessage } from '../lib/orderErrors';
 import type { DeliveryDetails, DeliveryMethod } from '../types/order';
 import './CheckoutPage.css';
 import { useTranslation } from 'react-i18next';
@@ -90,7 +91,7 @@ function addressError(value: string): string | null {
 
 export function CheckoutPage() {
   const { t } = useTranslation();
-  const { lines, totalPrice, finalTotal, promo, clearCart } = useCart();
+  const { lines, totalPrice, finalTotal, promo, clearCart, refreshStock } = useCart();
   const { user, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>(1);
@@ -174,7 +175,15 @@ export function CheckoutPage() {
       clearCart();
       setOrderNumber(`FS-${order.id}`);
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : t('checkout.failed'));
+      const shortage = outOfStockInfo(err);
+      if (shortage) {
+        // Not enough stock (often: someone else just took the last unit). No order was created and the cart stays
+        // as it is; only the stock numbers are refreshed so the cart page shows what can still be bought.
+        setSubmitError(outOfStockMessage(shortage, t));
+        void refreshStock();
+      } else {
+        setSubmitError(err instanceof ApiError ? err.message : t('checkout.failed'));
+      }
     } finally {
       setIsSubmitting(false);
     }
