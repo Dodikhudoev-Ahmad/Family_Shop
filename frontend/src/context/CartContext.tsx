@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Product } from '../types/product';
-import { ApiError, validatePromoCode, type PromoCodeApplicationDto } from '../lib/api';
+import { ApiError, fetchProduct, validatePromoCode, type PromoCodeApplicationDto } from '../lib/api';
 import { useToast } from './ToastContext';
 import i18n from '../i18n';
 
@@ -21,6 +21,9 @@ interface CartContextValue {
   /** Product.Stock is shared across all sizes, so "room left" for a product is stock minus the
    * quantity already in the cart across every size line of that product, not just one line. */
   remainingStock: (product: Product) => number;
+  /** Re-requests the products in the cart and brings their stock up to date (e.g. after a 409 out_of_stock).
+   * Lines are never removed: quantities above the new stock are trimmed, sold-out lines stay for the user to decide. */
+  refreshStock: () => Promise<void>;
   totalItems: number;
   totalPrice: number;
   promo: PromoCodeApplicationDto | null;
@@ -137,6 +140,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const refreshStock = async () => {
+    const ids = [...new Set(lines.map((l) => l.product.id))];
+    const fresh = new Map<string, number>();
+    await Promise.all(
+      ids.map(async (id) => {
+        try {
+          fresh.set(id, (await fetchProduct(Number(id))).stock);
+        } catch {
+          // keep the old number for a product that can't be re-read right now
+        }
+      })
+    );
+    if (fresh.size === 0) return;
+
+    setLines((prev) => {
+      const budget = new Map<string, number>();
+      return prev.map((l) => {
+        const stock = fresh.get(l.product.id);
+        if (stock === undefined) return l;
+        const left = budget.get(l.product.id) ?? stock;
+        // A sold-out line keeps its quantity (nothing is dropped behind the user's back); others are trimmed to fit.
+        const quantity = stock <= 0 ? l.quantity : Math.max(1, Math.min(l.quantity, left));
+        budget.set(l.product.id, Math.max(0, left - quantity));
+        return { ...l, quantity, product: { ...l.product, stock } };
+      });
+    });
+  };
+
   const removeItem = (key: string) => setLines((prev) => prev.filter((l) => l.key !== key));
 
   const clearPromoCode = () => {
@@ -199,6 +230,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         removeItem,
         clearCart,
         remainingStock,
+        refreshStock,
         totalItems,
         totalPrice,
         promo,

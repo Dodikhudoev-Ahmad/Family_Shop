@@ -140,7 +140,8 @@
     "server": "Server error ({{status}})",
     "failed": "Request failed",
     "notFoundTitle": "Page not found",
-    "notFoundText": "Looks like this page doesn't exist or has been moved."
+    "notFoundText": "Looks like this page doesn't exist or has been moved.",
+    "orderChanged": "The order status has already changed, please refresh the page."
   },
   "filters": {
     "category": "Category",
@@ -305,7 +306,9 @@
     "qty": "{{count}} pcs",
     "back": "Back",
     "submitting": "Placing order...",
-    "confirm": "Confirm order"
+    "confirm": "Confirm order",
+    "outOfStock": "Not enough of “{{name}}” in stock, only {{count}} left. The order was not placed and your cart is kept — reduce the quantity.",
+    "outOfStockNone": "“{{name}}” is out of stock. The order was not placed and your cart is kept — remove it from the cart."
   },
   "auth": {
     "passwordMin": "At least {{n}} characters",
