@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Api.Common;
 using Api.Filters;
 using Api.Middleware;
 using Api.RateLimiting;
@@ -202,6 +203,10 @@ app.Use(async (context, next) =>
 
 app.UseCors("Frontend");
 
+// Uploaded photos are served from the configured uploads directory (Uploads:Path; a mounted volume in production),
+// under the same /uploads/* URLs as always. Requests that miss fall through to wwwroot as before.
+var uploadsDirectory = app.Services.GetRequiredService<Infrastructure.Storage.UploadsDirectory>();
+app.UseUploads(uploadsDirectory.Path);
 app.UseStaticFiles();
 
 app.UseRateLimiter();

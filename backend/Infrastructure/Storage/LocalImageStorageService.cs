@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Hosting;
 using Application.Common;
 using Application.Interfaces;
 
@@ -15,13 +14,13 @@ public class LocalImageStorageService : IImageStorageService
     };
 
     private const long MaxFileSizeBytes = 5 * 1024 * 1024;
-    private const string UploadsFolder = "uploads/products";
 
-    private readonly IHostEnvironment _environment;
+    private readonly string _uploadsRoot;
 
-    public LocalImageStorageService(IHostEnvironment environment)
+    /// <param name="uploadsRoot">Directory served as <c>/uploads</c> (see <see cref="UploadsLocation"/>).</param>
+    public LocalImageStorageService(string uploadsRoot)
     {
-        _environment = environment;
+        _uploadsRoot = uploadsRoot;
     }
 
     public async Task<Result<string>> SaveImageAsync(Stream content, string fileName, string contentType, CancellationToken cancellationToken = default)
@@ -45,8 +44,7 @@ public class LocalImageStorageService : IImageStorageService
             return Result<string>.Failure("Файл повреждён или не является изображением.");
         }
 
-        var webRootPath = Path.Combine(_environment.ContentRootPath, "wwwroot");
-        var targetDirectory = Path.Combine(webRootPath, UploadsFolder);
+        var targetDirectory = Path.Combine(_uploadsRoot, UploadsLocation.ProductsFolder);
         Directory.CreateDirectory(targetDirectory);
 
         // Random name - never trust the client-supplied filename for a path, and it also
@@ -57,7 +55,8 @@ public class LocalImageStorageService : IImageStorageService
         await using var fileStream = new FileStream(fullPath, FileMode.CreateNew, FileAccess.Write);
         await content.CopyToAsync(fileStream, cancellationToken);
 
-        return Result<string>.Success($"/{UploadsFolder}/{storedFileName}");
+        // The public URL format is fixed (and stored in the database), whatever directory the files really live in.
+        return Result<string>.Success($"{UploadsLocation.RequestPath}/{UploadsLocation.ProductsFolder}/{storedFileName}");
     }
 
     private static async Task<bool> MatchesImageSignatureAsync(Stream content, string contentType, CancellationToken cancellationToken)
