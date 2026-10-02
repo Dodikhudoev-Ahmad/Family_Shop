@@ -108,6 +108,13 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         return Context.Set<OrderItem>().AnyAsync(i => i.ProductId == productId, cancellationToken);
     }
 
+    public Task<bool> HasActiveOrdersForUserAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return DbSet.AnyAsync(
+            o => o.UserId == userId && o.Status != OrderStatus.Delivered && o.Status != OrderStatus.Cancelled,
+            cancellationToken);
+    }
+
     public Task<int> AnonymizeContactDataForUserAsync(int userId, CancellationToken cancellationToken = default)
     {
         return DbSet

@@ -29,6 +29,10 @@ public interface IOrderRepository : IRepository<Order>
 
     Task<bool> HasItemsForProductAsync(int productId, CancellationToken cancellationToken = default);
 
+    /// <summary>True when the user has an order that is still in progress (Created, Processing or Shipped) - i.e. not
+    /// yet Delivered or Cancelled. Such an order still needs the contact details to be fulfilled.</summary>
+    Task<bool> HasActiveOrdersForUserAsync(int userId, CancellationToken cancellationToken = default);
+
     /// <summary>Blanks the contact name, phone, city and address of all of the user's orders (account deletion).
     /// The orders themselves - lines, totals, status, dates - stay for the shop's records.</summary>
     Task<int> AnonymizeContactDataForUserAsync(int userId, CancellationToken cancellationToken = default);
