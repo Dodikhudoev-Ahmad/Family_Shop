@@ -10,8 +10,13 @@ public class Result<T>
     /// status other than 400; null for ordinary validation-style failures.</summary>
     public string? ErrorCode { get; }
 
-    private Result(bool isSuccess, T? value, IReadOnlyList<string> errors, string? errorCode = null)
+    /// <summary>Structured details for <see cref="ErrorCode"/> (e.g. which product and how many units are left), so
+    /// clients can build their own localized message instead of parsing <see cref="Errors"/>.</summary>
+    public IReadOnlyDictionary<string, object?>? ErrorMeta { get; }
+
+    private Result(bool isSuccess, T? value, IReadOnlyList<string> errors, string? errorCode = null, IReadOnlyDictionary<string, object?>? errorMeta = null)
     {
+        ErrorMeta = errorMeta;
         IsSuccess = isSuccess;
         Value = value;
         Errors = errors;
@@ -21,7 +26,8 @@ public class Result<T>
     public static Result<T> Success(T value) => new(true, value, Array.Empty<string>());
     public static Result<T> Failure(string error) => new(false, default, new[] { error });
     public static Result<T> Failure(IReadOnlyList<string> errors) => new(false, default, errors);
-    public static Result<T> Failure(string error, string errorCode) => new(false, default, new[] { error }, errorCode);
+    public static Result<T> Failure(string error, string errorCode, IReadOnlyDictionary<string, object?>? meta = null) =>
+        new(false, default, new[] { error }, errorCode, meta);
 }
 
 public static class ResultErrorCodes

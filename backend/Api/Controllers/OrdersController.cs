@@ -34,7 +34,7 @@ public class OrdersController : ControllerBase
             return Ok(ApiResponse<OrderDto>.Ok(result.Value!));
         }
 
-        var failure = ApiResponse<OrderDto>.Fail(result.Errors);
+        var failure = ApiResponse<OrderDto>.Fail(result.Errors, result.ErrorCode, result.ErrorMeta);
         return result.ErrorCode is ResultErrorCodes.OutOfStock or ResultErrorCodes.Conflict
             ? Conflict(failure)
             : BadRequest(failure);

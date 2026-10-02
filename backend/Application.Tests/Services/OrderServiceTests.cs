@@ -344,6 +344,7 @@ public class OrderServiceTests
         var product = new Product { Id = 1, Name = "Last one", Price = new Money(500), Stock = 5 };
         Register(product);
         _products.TryDecrementStockAsync(1, Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(false);
+        _products.GetStockAsync(1, Arg.Any<CancellationToken>()).Returns(2);
 
         var request = new CreateOrderRequestDto([new CreateOrderItemDto(1, 1, null)], "Ann", "+7 700 000 00 09", DeliveryMethod.Pickup, null, null);
 
@@ -352,6 +353,9 @@ public class OrderServiceTests
         Assert.False(result.IsSuccess);
         Assert.Equal(Application.Common.ResultErrorCodes.OutOfStock, result.ErrorCode);
         Assert.Contains("Last one", result.Errors[0]);
+        Assert.Equal(1, result.ErrorMeta!["productId"]);
+        Assert.Equal("Last one", result.ErrorMeta["productName"]);
+        Assert.Equal(2, result.ErrorMeta["available"]);
         await _orders.DidNotReceive().AddAsync(Arg.Any<Order>(), Arg.Any<CancellationToken>());
     }
 

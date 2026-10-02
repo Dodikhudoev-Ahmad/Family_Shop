@@ -177,6 +177,8 @@ public class OrderStockConcurrencyTests : IClassFixture<PostgresFixture>
         Assert.Equal(ResultErrorCodes.OutOfStock, result.ErrorCode);
         Assert.Equal(10, await StockAsync(productId));
         Assert.Equal(0, await OrderCountAsync(userId));
+        Assert.Equal(productId, result.ErrorMeta!["productId"]);
+        Assert.Equal(10, result.ErrorMeta["available"]); // what the client shows: "only 10 left"
     }
 
     [PostgresFact]
