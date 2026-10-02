@@ -168,6 +168,60 @@ public class AccountDeletionTests
     }
 
     [Fact]
+    public async Task WithAnActiveOrder_DeletionIsRefused_AndNothingChanges_NotEvenTheSessions()
+    {
+        await _sut.LoginAsync(new LoginRequestDto("alice@example.com", "alice-pw"), Phone("a-phone-device-0001"));
+        _orders.HasActiveOrdersForUserAsync(1, Arg.Any<CancellationToken>()).Returns(true);
+
+        var outcome = await _sut.DeleteAccountAsync(1, "alice-pw");
+
+        Assert.Equal(DeleteAccountOutcome.ActiveOrders, outcome);
+        Assert.False(_alice.IsDeleted);
+        Assert.Equal("alice@example.com", _alice.Email.Value);
+        Assert.Equal("Alice", _alice.Name);
+        Assert.Equal("hash-alice", _alice.PasswordHash);
+        Assert.Null(_alice.DeletedAt);
+        // sessions are neither revoked nor removed
+        Assert.Single(_refreshTokens.Tokens, t => t.UserId == 1 && t.RevokedAt is null);
+        await _orders.DidNotReceive().AnonymizeContactDataForUserAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().ExecuteInTransactionAsync(Arg.Any<Func<CancellationToken, Task<bool>>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task TheWrongPassword_IsAnsweredFirst_SoOrdersCannotBeProbedWithoutThePassword()
+    {
+        _orders.HasActiveOrdersForUserAsync(1, Arg.Any<CancellationToken>()).Returns(true);
+
+        var outcome = await _sut.DeleteAccountAsync(1, "guess");
+
+        Assert.Equal(DeleteAccountOutcome.InvalidPassword, outcome); // 400, same as for a user without orders
+        await _orders.DidNotReceive().HasActiveOrdersForUserAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task TheAdministrator_IsStillRefusedAsNotAllowed_EvenWithActiveOrders()
+    {
+        _orders.HasActiveOrdersForUserAsync(3, Arg.Any<CancellationToken>()).Returns(true);
+
+        Assert.Equal(DeleteAccountOutcome.NotAllowed, await _sut.DeleteAccountAsync(3, "admin-pw"));
+        Assert.False(_admin.IsDeleted);
+    }
+
+    [Fact]
+    public async Task OnceTheOrderIsDeliveredOrCancelled_TheSameRequestSucceeds()
+    {
+        _orders.HasActiveOrdersForUserAsync(1, Arg.Any<CancellationToken>()).Returns(true);
+        Assert.Equal(DeleteAccountOutcome.ActiveOrders, await _sut.DeleteAccountAsync(1, "alice-pw"));
+        Assert.False(_alice.IsDeleted);
+
+        _orders.HasActiveOrdersForUserAsync(1, Arg.Any<CancellationToken>()).Returns(false); // the order reached a final status
+
+        Assert.Equal(DeleteAccountOutcome.Deleted, await _sut.DeleteAccountAsync(1, "alice-pw"));
+        Assert.True(_alice.IsDeleted);
+        await _orders.Received(1).AnonymizeContactDataForUserAsync(1, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task AnUnknownOrAlreadyDeletedAccount_IsNotFound()
     {
         Assert.Equal(DeleteAccountOutcome.NotFound, await _sut.DeleteAccountAsync(99, "x"));

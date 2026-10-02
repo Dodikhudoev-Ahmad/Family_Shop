@@ -68,6 +68,7 @@ public class AccountDeletionEndpointTests
     [InlineData(DeleteAccountOutcome.Deleted, 204)]
     [InlineData(DeleteAccountOutcome.InvalidPassword, 400)]   // not 401: the app would think its session died
     [InlineData(DeleteAccountOutcome.NotAllowed, 403)]
+    [InlineData(DeleteAccountOutcome.ActiveOrders, 409)]
     [InlineData(DeleteAccountOutcome.NotFound, 404)]
     public async Task EachOutcome_MapsToItsHttpStatus_UsingOnlyTheIdFromTheToken(DeleteAccountOutcome outcome, int status)
     {
@@ -78,6 +79,18 @@ public class AccountDeletionEndpointTests
 
         Assert.Equal(status, ((IStatusCodeActionResult)result).StatusCode);
         await service.Received(1).DeleteAccountAsync(7, "pw", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ActiveOrders_AnswersConflict_WithTheCode_active_orders()
+    {
+        var service = Substitute.For<IAuthService>();
+        service.DeleteAccountAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(DeleteAccountOutcome.ActiveOrders);
+
+        var result = await ControllerFor(service, userId: 7).DeleteAccount(new DeleteAccountRequestDto("pw"), CancellationToken.None);
+
+        var body = Assert.IsType<Api.Common.ApiResponse<bool>>(((ObjectResult)result).Value);
+        Assert.Equal(new[] { "active_orders" }, body.Errors);
     }
 
     // ---- the access token of a deleted account stops working at once ----
