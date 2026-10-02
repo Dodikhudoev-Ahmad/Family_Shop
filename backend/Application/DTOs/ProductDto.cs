@@ -16,7 +16,8 @@ public record ProductDto(
     bool IsBestseller,
     decimal AverageRating,
     int ReviewCount,
-    string? ProductType = null);
+    string? ProductType = null,
+    List<string>? AvailableSizes = null);
 
 public record ProductUpsertDto(
     string Name,
@@ -27,4 +28,6 @@ public record ProductUpsertDto(
     int CategoryId,
     Gender Gender,
     List<string> Images,
-    bool IsBestseller);
+    bool IsBestseller,
+    string? ProductType = null,
+    List<string>? AvailableSizes = null);

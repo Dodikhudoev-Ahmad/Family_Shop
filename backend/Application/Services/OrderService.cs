@@ -39,6 +39,7 @@ public class OrderService : IOrderService
         var total = Domain.ValueObjects.Money.Zero;
 
         var products = new Dictionary<int, Product>();
+        var categories = new Dictionary<int, Category?>();
 
         foreach (var item in request.Items)
         {
@@ -57,6 +58,24 @@ public class OrderService : IOrderService
             }
 
             products[product.Id] = product;
+
+            // Only sizes the admin currently sells (or the whole grid of the type) can be ordered; a product without
+            // sizes takes none. Stale carts and hand-made requests both end here, before anything is written off.
+            if (!categories.TryGetValue(product.CategoryId, out var category))
+            {
+                category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId, cancellationToken);
+                categories[product.CategoryId] = category;
+            }
+
+            var sellable = SizeGrids.Effective(product, category);
+            var size = string.IsNullOrWhiteSpace(item.Size) ? null : item.Size;
+            if (sellable.Count == 0 ? size is not null : size is null || !sellable.Contains(size))
+            {
+                return Result<OrderDto>.Failure(
+                    $"Size '{size ?? string.Empty}' is not available for product '{product.Name}'.",
+                    ResultErrorCodes.SizeUnavailable,
+                    new Dictionary<string, object?> { ["productId"] = product.Id, ["productName"] = product.Name, ["size"] = size });
+            }
 
             var price = product.EffectivePrice;
             total += price * item.Quantity;
