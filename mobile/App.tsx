@@ -4,6 +4,7 @@ import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { restoreLanguage } from './src/i18n';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { AuthProvider } from './src/state/AuthContext';
@@ -32,18 +33,20 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AuthProvider>
-          <CategoriesProvider>
-            <ProductsProvider>
-              <CartProvider>
-                <FavoritesProvider>
-                  <ThemedStatusBar />
-                  <RootNavigator />
-                </FavoritesProvider>
-              </CartProvider>
-            </ProductsProvider>
-          </CategoriesProvider>
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <CategoriesProvider>
+              <ProductsProvider>
+                <CartProvider>
+                  <FavoritesProvider>
+                    <ThemedStatusBar />
+                    <RootNavigator />
+                  </FavoritesProvider>
+                </CartProvider>
+              </ProductsProvider>
+            </CategoriesProvider>
+          </AuthProvider>
+        </ErrorBoundary>
       </ThemeProvider>
     </SafeAreaProvider>
   );

@@ -43,7 +43,7 @@ export function ProductRow({ title, products, loading = false, onOpen, onSeeAll 
           {title}
         </Text>
         {onSeeAll && !loading ? (
-          <Pressable accessibilityRole="link" onPress={onSeeAll} style={s.all}>
+          <Pressable accessibilityRole="link" accessibilityLabel={`${title}: ${t('mobile.seeAll')}`} onPress={onSeeAll} style={s.all}>
             <Text style={s.allText}>{t('mobile.seeAll')}</Text>
           </Pressable>
         ) : null}

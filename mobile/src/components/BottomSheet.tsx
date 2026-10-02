@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { fontSizes, fonts, MIN_TOUCH_TARGET, radius, spacing } from '../theme/tokens';
@@ -35,7 +35,7 @@ export function BottomSheet({ visible, title, onClose, children, footer }: Botto
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <View style={s.backdrop}>
+      <KeyboardAvoidingView style={s.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('common.close')} />
         <View style={[s.sheet, { maxHeight: height * 0.85 }]}>
           <View style={s.header}>
@@ -51,7 +51,7 @@ export function BottomSheet({ visible, title, onClose, children, footer }: Botto
           </ScrollView>
           {footer ? <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>{footer}</View> : <View style={{ height: insets.bottom }} />}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

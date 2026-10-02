@@ -70,5 +70,13 @@ export function useCatalogPages(queryKey: string, buildQuery: (page: number) => 
     void run(stateRef.current.page + 1, seq.current);
   }, [run]);
 
-  return { ...state, loadMore, retry };
+  /** Pull-to-refresh: start again from page 1 for the same query. */
+  const reload = useCallback(() => {
+    seq.current += 1;
+    inFlight.current = false;
+    setState(INITIAL);
+    void run(1, seq.current);
+  }, [run]);
+
+  return { ...state, loadMore, retry, reload };
 }

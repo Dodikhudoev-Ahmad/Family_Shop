@@ -16,8 +16,10 @@ const buttonStyles = (c: ColorTokens) => ({
   },
   primary: { backgroundColor: c.accent },
   secondary: { backgroundColor: 'transparent', borderWidth: 1, borderColor: c.border },
+  danger: { backgroundColor: c.error },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.85 },
+  dangerText: { color: c.white, fontFamily: fonts.bodySemibold, fontSize: fontSizes.md },
   primaryText: { color: c.white, fontFamily: fonts.bodySemibold, fontSize: fontSizes.md },
   secondaryText: { color: c.text, fontFamily: fonts.bodyMedium, fontSize: fontSizes.md },
 });
@@ -25,7 +27,7 @@ const buttonStyles = (c: ColorTokens) => ({
 interface ButtonProps {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'danger';
   disabled?: boolean;
   loading?: boolean;
   /** Spoken label when the visible one is just a glyph (e.g. a heart). Defaults to `label`. */
@@ -44,10 +46,10 @@ export function Button({ label, onPress, variant = 'primary', disabled = false, 
       accessibilityState={{ disabled: inactive, busy: loading }}
       disabled={inactive}
       onPress={onPress}
-      style={({ pressed }) => [styles.base, variant === 'primary' ? styles.primary : styles.secondary, inactive && styles.disabled, pressed && styles.pressed, style]}
+      style={({ pressed }) => [styles.base, variant === 'primary' ? styles.primary : variant === 'danger' ? styles.danger : styles.secondary, inactive && styles.disabled, pressed && styles.pressed, style]}
     >
-      {loading ? <ActivityIndicator color={variant === 'primary' ? colors.white : colors.accent} /> : null}
-      <Text style={variant === 'primary' ? styles.primaryText : styles.secondaryText}>{label}</Text>
+      {loading ? <ActivityIndicator color={variant === 'secondary' ? colors.accent : colors.white} /> : null}
+      <Text style={variant === 'primary' ? styles.primaryText : variant === 'danger' ? styles.dangerText : styles.secondaryText}>{label}</Text>
     </Pressable>
   );
 }
