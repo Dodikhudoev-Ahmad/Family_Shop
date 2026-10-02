@@ -34,6 +34,14 @@ export function sizesFor(categoryId: number, categories: Category[], productType
   return CLOTHING_SIZES;
 }
 
+/** What the customer can pick: the admin's selection (within the grid of the product's type), or the whole grid
+ * when none was made (null - what every product had before sizes became editable). */
+export function productSizes(dto: ProductDto, categories: Category[]): string[] {
+  const grid = sizesFor(dto.categoryId, categories, dto.productType);
+  if (grid.length === 0 || !dto.availableSizes) return grid;
+  return sortSizes(dto.availableSizes.filter((s) => grid.includes(s)));
+}
+
 export function mapProduct(dto: ProductDto, categories: Category[]): Product {
   return {
     id: String(dto.id),
@@ -45,7 +53,7 @@ export function mapProduct(dto: ProductDto, categories: Category[]): Product {
     categoryId: String(dto.categoryId),
     gender: GENDER_MAP[dto.gender] ?? 'female',
     images: dto.images,
-    sizes: sizesFor(dto.categoryId, categories, dto.productType),
+    sizes: productSizes(dto, categories),
     isBestseller: dto.isBestseller,
     createdAt: dto.createdAt,
     averageRating: dto.averageRating,
