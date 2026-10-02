@@ -1,7 +1,8 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ImageBackground, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { ImageBackground, Pressable, RefreshControl, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PromoBanner } from '../components/PromoBanner';
 import { ProductRow } from '../components/ProductRow';
@@ -29,10 +30,11 @@ const styles = (c: ColorTokens) => ({
     borderColor: c.border,
     backgroundColor: c.bgSecondary,
     paddingHorizontal: spacing.md,
-    color: c.text,
-    fontFamily: fonts.body,
-    fontSize: fontSizes.md,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: spacing.sm,
   },
+  searchText: { color: c.textSecondary, fontFamily: fonts.body, fontSize: fontSizes.md },
   sectionTitle: { color: c.text, fontFamily: fonts.heading, fontSize: fontSizes.xl, paddingHorizontal: spacing.md },
   tiles: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.sm, paddingHorizontal: spacing.md },
   tile: { height: TILE_HEIGHT, borderRadius: radius.md, overflow: 'hidden' as const, backgroundColor: c.bgSecondary, justifyContent: 'flex-end' as const },
@@ -51,14 +53,18 @@ export function HomeScreen({ navigation }: NativeStackScreenProps<HomeStackParam
   const { width } = useWindowDimensions();
   const { categories, isLoading: categoriesLoading, error: categoriesError, reload: reloadCategories } = useCategories();
   const { products, isLoading: productsLoading, error: productsError, reload: reloadProducts } = useProducts();
-  const [query, setQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   const sections = useMemo(() => homeSections(products), [products]);
   const tileWidth = (width - spacing.md * 2 - spacing.sm) / 2;
 
-  const submitSearch = () => {
-    const search = query.trim();
-    if (search) navigation.navigate('Catalog', { search });
+  const refresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([reloadCategories(), reloadProducts()]);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const openProduct = (productId: string) => navigation.navigate('Product', { productId: Number(productId) });
@@ -101,20 +107,17 @@ export function HomeScreen({ navigation }: NativeStackScreenProps<HomeStackParam
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={[s.content, { paddingTop: Math.max(insets.top, spacing.sm) + spacing.sm }]} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[s.content, { paddingTop: Math.max(insets.top, spacing.sm) + spacing.sm }]}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={colors.accent} />}
+      >
         <View style={s.top}>
           <Logo />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            onSubmitEditing={submitSearch}
-            returnKeyType="search"
-            placeholder={t('header.searchPlaceholder')}
-            placeholderTextColor={colors.textSecondary}
-            accessibilityLabel={t('mobile.search')}
-            style={s.search}
-            autoCorrect={false}
-          />
+          <Pressable accessibilityRole="search" accessibilityLabel={t('mobile.search')} onPress={() => navigation.navigate('Search')} style={s.search}>
+            <Ionicons name="search" size={18} color={colors.textSecondary} />
+            <Text style={s.searchText}>{t('header.searchPlaceholder')}</Text>
+          </Pressable>
         </View>
 
         {failed ? (

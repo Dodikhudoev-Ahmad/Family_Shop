@@ -10,13 +10,17 @@ import { CartScreen } from '../screens/CartScreen';
 import { CatalogScreen } from '../screens/CatalogScreen';
 import { AuthScreen } from '../screens/AuthScreen';
 import { CheckoutScreen } from '../screens/CheckoutScreen';
+import { DevicesScreen } from '../screens/DevicesScreen';
 import { OrderDetailScreen } from '../screens/OrderDetailScreen';
 import { OrdersScreen } from '../screens/OrdersScreen';
 import { FavoritesScreen } from '../screens/FavoritesScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ProductScreen } from '../screens/ProductScreen';
+import { SearchScreen } from '../screens/SearchScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { badgeText } from '../lib/favorites';
 import { useCart } from '../state/CartContext';
+import { useFavorites } from '../state/FavoritesContext';
 import { useTheme } from '../theme/ThemeContext';
 import { fontSizes, fonts, MIN_TOUCH_TARGET } from '../theme/tokens';
 import type {
@@ -70,6 +74,7 @@ function HomeNavigator() {
   return (
     <HomeStack.Navigator screenOptions={options}>
       <HomeStack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+      <HomeStack.Screen name="Search" component={SearchScreen} options={{ headerShown: false }} />
       <HomeStack.Screen name="Catalog" component={CatalogScreen} options={{ headerShown: false }} />
       <HomeStack.Screen name="Product" component={ProductScreen} options={{ title: '' }} />
     </HomeStack.Navigator>
@@ -80,6 +85,7 @@ function CatalogNavigator() {
   const options = useStackOptions();
   return (
     <CatalogStack.Navigator screenOptions={options}>
+      <CatalogStack.Screen name="Search" component={SearchScreen} options={{ headerShown: false }} />
       <CatalogStack.Screen name="Catalog" component={CatalogScreen} options={{ headerShown: false }} />
       <CatalogStack.Screen name="Product" component={ProductScreen} options={{ title: '' }} />
     </CatalogStack.Navigator>
@@ -116,6 +122,7 @@ function ProfileNavigator() {
   return (
     <ProfileStack.Navigator screenOptions={options}>
       <ProfileStack.Screen name="Profile" component={ProfileScreen} options={{ title: t('nav.profile') }} />
+      <ProfileStack.Screen name="Devices" component={DevicesScreen} options={{ title: t('mobile.devices') }} />
       <ProfileStack.Screen name="Orders" component={OrdersScreen} options={{ title: t('account.myOrders') }} />
       <ProfileStack.Screen
         name="OrderDetail"
@@ -130,6 +137,7 @@ export function RootNavigator() {
   const { t } = useTranslation();
   const { colors, theme } = useTheme();
   const { totalItems } = useCart();
+  const { favoriteIds } = useFavorites();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   // Five tabs on a 320pt screen: the longest label ("Избранное") needs the smaller size. Kazakh uses the short "Таңдаулы".
@@ -172,14 +180,14 @@ export function RootNavigator() {
           component={CartNavigator}
           options={{
             title: t('nav.cart'),
-            tabBarBadge: totalItems > 0 ? (totalItems > 99 ? '99+' : totalItems) : undefined,
+            tabBarBadge: badgeText(totalItems) ?? undefined,
             tabBarIcon: ({ color, size }) => <Ionicons name="cart-outline" color={color} size={22} />,
           }}
         />
         <Tabs.Screen
           name="FavoritesTab"
           component={FavoritesNavigator}
-          options={{ title: t('mobile.tabFavorites'), tabBarIcon: ({ color, size }) => <Ionicons name="heart-outline" color={color} size={22} /> }}
+          options={{ title: t('mobile.tabFavorites'), tabBarBadge: badgeText(favoriteIds.length) ?? undefined, tabBarIcon: ({ color, size }) => <Ionicons name="heart-outline" color={color} size={22} /> }}
         />
         <Tabs.Screen
           name="ProfileTab"

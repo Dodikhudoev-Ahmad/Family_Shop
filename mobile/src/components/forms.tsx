@@ -24,8 +24,10 @@ const fieldStyles = (c: ColorTokens) => ({
     backgroundColor: c.bg,
     fontFamily: fonts.body,
     fontSize: fontSizes.md,
+    outlineWidth: 0,
   },
   inputError: { borderColor: c.error },
+  inputFocus: { borderColor: c.accent },
   error: { color: c.error, fontFamily: fonts.bodyMedium, fontSize: fontSizes.sm },
   hint: { color: c.textSecondary, fontFamily: fonts.body, fontSize: fontSizes.sm },
 });
@@ -37,9 +39,10 @@ interface TextFieldProps extends Omit<TextInputProps, 'style'> {
 }
 
 /** A labelled input with an inline error. The label doubles as the accessibility label. */
-export function TextField({ label, error, hint, ...input }: TextFieldProps) {
+export function TextField({ label, error, hint, onFocus, onBlur, ...input }: TextFieldProps) {
   const s = useThemedStyles(fieldStyles);
   const { colors } = useTheme();
+  const [focused, setFocused] = useState(false);
   return (
     <View style={s.wrap}>
       <Text style={s.label}>{label}</Text>
@@ -47,7 +50,15 @@ export function TextField({ label, error, hint, ...input }: TextFieldProps) {
         accessibilityLabel={label}
         placeholderTextColor={colors.textSecondary}
         {...input}
-        style={[s.input, error ? s.inputError : null]}
+        onFocus={(e) => {
+          setFocused(true);
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          onBlur?.(e);
+        }}
+        style={[s.input, focused ? s.inputFocus : null, error ? s.inputError : null]}
       />
       {error ? (
         <Text style={s.error} accessibilityRole="alert">
@@ -136,6 +147,7 @@ const promoStyles = (c: ColorTokens) => ({
     backgroundColor: c.bg,
     fontFamily: fonts.body,
     fontSize: fontSizes.md,
+    outlineWidth: 0,
   },
   inputError: { borderColor: c.error },
   apply: { minHeight: MIN_TOUCH_TARGET, minWidth: MIN_TOUCH_TARGET, flexShrink: 0, paddingHorizontal: spacing.md, borderRadius: radius.md, backgroundColor: c.accent, alignItems: 'center' as const, justifyContent: 'center' as const },

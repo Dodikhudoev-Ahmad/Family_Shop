@@ -190,6 +190,7 @@ export function FilterSheet({ filters, products, categories, searching, onApply,
 
       <Pressable
         accessibilityRole="checkbox"
+        accessibilityLabel={t('filters.discountOnly')}
         accessibilityState={{ checked: draft.discountOnly }}
         onPress={() => setDraft((d) => ({ ...d, discountOnly: !d.discountOnly }))}
         style={s.check}
