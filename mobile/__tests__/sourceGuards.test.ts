@@ -43,6 +43,16 @@ describe('project rules', () => {
     expect(users).toEqual(['src/lib/storage/secureStorage.ts']);
   });
 
+  it('products are never laid out in horizontal carousels: only these controls may scroll sideways', () => {
+    const sideways = files.filter((f) => /\bhorizontal\b/.test(read(f)) && /<(FlatList|ScrollView)\b[^>]*\bhorizontal\b/s.test(read(f))).map(rel).sort();
+    expect(sideways).toEqual([
+      'src/components/AppHeader.tsx', // the category strip
+      'src/components/Chips.tsx', // type / sort chips
+      'src/components/PromoBanner.tsx', // swipeable promo banners
+      'src/screens/ProductScreen.tsx', // the photo gallery
+    ]);
+  });
+
   it('localStorage / sessionStorage are never touched', () => {
     expect(files.filter((f) => /\b(localStorage|sessionStorage)\s*[.[]/.test(read(f))).map(rel)).toEqual([]);
   });

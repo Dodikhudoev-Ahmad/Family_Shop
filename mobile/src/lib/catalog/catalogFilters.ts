@@ -74,10 +74,10 @@ export function setPriceRange(filters: CatalogFilters, range: PriceRange, bounds
   return { ...filters, priceRange: clampPriceRange(range, bounds) };
 }
 
-/** Number of filters that differ from "nothing chosen" (for the badge on the Filters button). */
+/** Number of filters that differ from "nothing chosen" (for the badge on the Filters button). The category is not
+ * counted: it is already on screen as the title, the underlined strip item and the breadcrumb. */
 export function activeFilterCount(filters: CatalogFilters, bounds: PriceRange): number {
   return (
-    (filters.categoryId ? 1 : 0) +
     (filters.productType ? 1 : 0) +
     (filters.size ? 1 : 0) +
     (filters.priceRange[0] > bounds[0] || filters.priceRange[1] < bounds[1] ? 1 : 0) +

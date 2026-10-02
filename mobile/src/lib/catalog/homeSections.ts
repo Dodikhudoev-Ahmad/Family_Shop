@@ -1,3 +1,4 @@
+import { CATEGORY_COVERS, COVER_FALLBACK_EXCLUDED_TYPES, type CoverRule } from '../../categoryCovers';
 import { discountPercent } from '../mappers';
 import type { Category, Product } from '../types';
 
@@ -22,10 +23,26 @@ export function homeSections(products: Product[], size = HOME_SECTION_SIZE): Hom
   };
 }
 
-/** A category tile's picture: its bestseller's photo, else its first product's. Undefined for an empty category. */
-export function categoryCover(products: Product[], categoryId: string): string | undefined {
-  const own = products.filter((p) => p.categoryId === categoryId && p.images[0]);
-  return (own.find((p) => p.isBestseller) ?? own[0])?.images[0];
+/**
+ * A category tile's picture (see src/categoryCovers.ts): the rule's fixed image, else its listed product ids, else a
+ * product of one of its preferred types, else any product that is not footwear or a bag. Undefined for an empty category.
+ */
+export function categoryCover(products: Product[], category: Pick<Category, 'id' | 'slug'>, rules: Record<string, CoverRule> = CATEGORY_COVERS): string | undefined {
+  const rule = rules[category.slug];
+  if (rule?.image) return rule.image;
+
+  const own = products.filter((p) => p.categoryId === category.id && p.images[0]);
+  for (const id of rule?.productIds ?? []) {
+    const hit = products.find((p) => p.id === String(id) && p.images[0]);
+    if (hit) return hit.images[0];
+  }
+  for (const type of rule?.types ?? []) {
+    const ofType = own.filter((p) => p.productType === type);
+    const hit = ofType.find((p) => p.isBestseller) ?? ofType[0];
+    if (hit) return hit.images[0];
+  }
+  const usable = own.filter((p) => !COVER_FALLBACK_EXCLUDED_TYPES.includes(p.productType ?? ''));
+  return (usable.find((p) => p.isBestseller) ?? usable[0])?.images[0];
 }
 
 export type AppLink =

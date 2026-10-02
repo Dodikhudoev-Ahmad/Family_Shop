@@ -94,7 +94,9 @@ describe('size, price, counts', () => {
     const base = initialFilters(shop, null);
     const bounds = base.priceRange;
     expect(activeFilterCount(base, bounds)).toBe(0);
-    expect(activeFilterCount({ ...base, categoryId: '1', size: 'M', discountOnly: true, priceRange: [1000, bounds[1]] }, bounds)).toBe(4);
+    // the category itself is not counted (it is visible as the page title); size + price + discount are
+    expect(activeFilterCount({ ...base, categoryId: '1', size: 'M', discountOnly: true, priceRange: [1000, bounds[1]] }, bounds)).toBe(3);
+    expect(activeFilterCount({ ...base, categoryId: '1', productType: 'Худи' }, bounds)).toBe(1);
   });
 
   it('counts matching products from the whole catalogue, with effective prices', () => {
