@@ -26,6 +26,8 @@ export interface ProductDto {
   averageRating: number;
   reviewCount: number;
   productType: string | null;
+  /** Sizes the admin sells this product in; null = every size of the grid of its type. */
+  availableSizes?: string[] | null;
 }
 
 export interface CategoryDto {

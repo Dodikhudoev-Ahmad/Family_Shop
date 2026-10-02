@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Product } from '../types/product';
 import { ApiError, fetchProduct, validatePromoCode, type PromoCodeApplicationDto } from '../lib/api';
+import { mapProduct } from '../lib/mappers';
+import { useCategories } from './CategoriesContext';
 import { useToast } from './ToastContext';
 import i18n from '../i18n';
 
@@ -84,6 +86,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const appliedForSubtotal = useRef<number | null>(null);
   const promoRequestId = useRef(0);
   const { showToast } = useToast();
+  const { categories } = useCategories();
 
   useEffect(() => {
     try {
@@ -142,30 +145,44 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const refreshStock = async () => {
     const ids = [...new Set(lines.map((l) => l.product.id))];
-    const fresh = new Map<string, number>();
+    const fresh = new Map<string, Product>();
     await Promise.all(
       ids.map(async (id) => {
         try {
-          fresh.set(id, (await fetchProduct(Number(id))).stock);
+          fresh.set(id, mapProduct(await fetchProduct(Number(id)), categories));
         } catch {
-          // keep the old number for a product that can't be re-read right now
+          // keep the old data for a product that can't be re-read right now
         }
       })
     );
     if (fresh.size === 0) return;
 
-    setLines((prev) => {
-      const budget = new Map<string, number>();
-      return prev.map((l) => {
-        const stock = fresh.get(l.product.id);
-        if (stock === undefined) return l;
-        const left = budget.get(l.product.id) ?? stock;
-        // A sold-out line keeps its quantity (nothing is dropped behind the user's back); others are trimmed to fit.
-        const quantity = stock <= 0 ? l.quantity : Math.max(1, Math.min(l.quantity, left));
-        budget.set(l.product.id, Math.max(0, left - quantity));
-        return { ...l, quantity, product: { ...l.product, stock } };
-      });
+    // A line whose size is no longer sold (the admin changed the product's sizes) can't be ordered any more: it is
+    // dropped with a notice. Everything else stays - quantities are trimmed to the new stock, sold-out lines are kept.
+    const removed: CartLine[] = [];
+    const budget = new Map<string, number>();
+    const next = lines.flatMap((l): CartLine[] => {
+      const product = fresh.get(l.product.id);
+      if (!product) return [l];
+      const sizeOk = product.sizes.length === 0 ? l.size === null : l.size !== null && product.sizes.includes(l.size);
+      if (!sizeOk) {
+        removed.push(l);
+        return [];
+      }
+      const left = budget.get(l.product.id) ?? product.stock;
+      // A sold-out line keeps its quantity (nothing is dropped behind the user's back); others are trimmed to fit.
+      const quantity = product.stock <= 0 ? l.quantity : Math.max(1, Math.min(l.quantity, left));
+      budget.set(l.product.id, Math.max(0, left - quantity));
+      return [{ ...l, quantity, product: { ...l.product, stock: product.stock, sizes: product.sizes } }];
     });
+
+    setLines(next);
+    for (const l of removed) {
+      showToast(
+        i18n.t('cart.lineRemoved', { name: l.product.name, size: l.size ? i18n.t('cart.sizeSuffix', { size: l.size }) : '' }),
+        'error'
+      );
+    }
   };
 
   const removeItem = (key: string) => setLines((prev) => prev.filter((l) => l.key !== key));

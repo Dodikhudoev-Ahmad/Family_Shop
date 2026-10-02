@@ -4,12 +4,23 @@ import type { ReactNode } from 'react';
 import { CartProvider, useCart } from './CartContext';
 import { ToastProvider } from './ToastContext';
 import type { Product } from '../types/product';
-import { validatePromoCode } from '../lib/api';
+import { fetchProduct, validatePromoCode } from '../lib/api';
+import type { ProductDto } from '../types/api';
 
 vi.mock('../lib/api', async () => {
   const actual = await vi.importActual<typeof import('../lib/api')>('../lib/api');
-  return { ...actual, validatePromoCode: vi.fn() };
+  return { ...actual, validatePromoCode: vi.fn(), fetchProduct: vi.fn() };
 });
+
+vi.mock('./CategoriesContext', () => ({
+  useCategories: () => ({
+    categories: [
+      { id: '1', name: 'Женское', slug: 'women', hasSizes: true },
+      { id: '4', name: 'Бытовая техника', slug: 'bytovaya-tehnika', hasSizes: false },
+    ],
+    isLoading: false,
+  }),
+}));
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {
@@ -246,5 +257,66 @@ describe('CartContext', () => {
     });
 
     await waitFor(() => expect(result.current.promo?.code).toBe('B'));
+  });
+});
+
+describe('CartContext.refreshStock - reconciling the cart with the catalogue', () => {
+  const dto = (over: Partial<ProductDto>): ProductDto => ({
+    id: 7, name: 'Худи', description: '', price: 1000, discountPrice: null, stock: 10, categoryId: 1, gender: 1, images: [],
+    createdAt: '2026-09-01T00:00:00Z', isBestseller: false, averageRating: 0, reviewCount: 0, productType: 'Худи', availableSizes: null, ...over,
+  });
+  const hoodie = () => makeProduct({ id: '7', name: 'Худи', categoryId: '1', stock: 10, sizes: ['S', 'M', 'L'] });
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.mocked(fetchProduct).mockReset();
+  });
+
+  it('drops a line whose size the admin has withdrawn, keeps the other sizes, and says so', async () => {
+    vi.mocked(fetchProduct).mockResolvedValue(dto({ availableSizes: ['S', 'M'] }));
+    const { result } = renderHook(() => useCart(), { wrapper });
+    act(() => {
+      result.current.addItem(hoodie(), 'M', 1);
+      result.current.addItem(hoodie(), 'L', 2);
+    });
+
+    await act(() => result.current.refreshStock());
+
+    expect(result.current.lines.map((l) => l.key)).toEqual(['7__M']); // L is gone, the key format is untouched
+    expect(result.current.lines[0].product.sizes).toEqual(['S', 'M']);
+  });
+
+  it('a product that became sizeless drops its sized lines; a sizeless line of a now-sized product too', async () => {
+    const { result } = renderHook(() => useCart(), { wrapper });
+    act(() => result.current.addItem(hoodie(), 'M', 1));
+    vi.mocked(fetchProduct).mockResolvedValue(dto({ categoryId: 4, productType: 'Холодильники' }));
+
+    await act(() => result.current.refreshStock());
+
+    expect(result.current.lines).toEqual([]);
+  });
+
+  it('keeps lines whose sizes are still sold, updates the stock and trims quantities across sizes', async () => {
+    vi.mocked(fetchProduct).mockResolvedValue(dto({ stock: 3 }));
+    const { result } = renderHook(() => useCart(), { wrapper });
+    act(() => {
+      result.current.addItem(hoodie(), 'S', 2);
+      result.current.addItem(hoodie(), 'M', 4);
+    });
+
+    await act(() => result.current.refreshStock());
+
+    expect(result.current.lines.map((l) => [l.key, l.quantity])).toEqual([['7__S', 2], ['7__M', 1]]); // 3 in stock in total
+    expect(result.current.lines.every((l) => l.product.stock === 3)).toBe(true);
+  });
+
+  it('leaves the cart alone for a product that cannot be re-read', async () => {
+    vi.mocked(fetchProduct).mockRejectedValue(new Error('offline'));
+    const { result } = renderHook(() => useCart(), { wrapper });
+    act(() => result.current.addItem(hoodie(), 'M', 1));
+
+    await act(() => result.current.refreshStock());
+
+    expect(result.current.lines.map((l) => l.key)).toEqual(['7__M']);
   });
 });

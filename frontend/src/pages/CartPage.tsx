@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart, type CartLine } from '../context/CartContext';
 import { formatPrice } from '../utils/formatPrice';
@@ -13,7 +13,13 @@ import { useTranslation } from 'react-i18next';
 
 export function CartPage() {
   const { t } = useTranslation();
-  const { lines, updateQuantity, removeItem, remainingStock, totalPrice, promo, finalTotal } = useCart();
+  const { lines, updateQuantity, removeItem, remainingStock, refreshStock, totalPrice, promo, finalTotal } = useCart();
+
+  // Bring the saved cart up to date with the catalogue when it is opened: stock, and sizes the admin has withdrawn.
+  useEffect(() => {
+    void refreshStock();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [pendingRemove, setPendingRemove] = useState<CartLine | null>(null);
 
   const handleRemove = () => {

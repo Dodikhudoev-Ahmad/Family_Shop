@@ -16,6 +16,8 @@ import {
   type ProductUpsertRequest,
 } from '../../lib/api';
 import type { ApiGender, CategoryDto, ProductDto } from '../../types/api';
+import { productTypesFor, sizeGridFor, summarizeSizes } from '../../utils/sizeGrids';
+import { ProductSizesField } from './ProductSizesField';
 import './AdminProductsPage.css';
 
 const PAGE_SIZE = 12;
@@ -55,6 +57,9 @@ interface FormState {
   gender: ApiGender;
   isBestseller: boolean;
   images: ImageSlot[];
+  productType: string;
+  /** The ticked sizes of the grid; meaningless (and not sent) when the type has no grid. */
+  sizes: string[];
 }
 
 function emptyForm(defaultCategoryId: string): FormState {
@@ -69,7 +74,22 @@ function emptyForm(defaultCategoryId: string): FormState {
     gender: 0,
     isBestseller: false,
     images: [],
+    productType: '',
+    sizes: [],
   };
+}
+
+function categoryOf(categories: CategoryDto[], categoryId: string): CategoryDto | undefined {
+  return categories.find((c) => String(c.id) === categoryId);
+}
+
+/** The form after the category and/or type changed: sizes start over as the whole new grid (nothing is carried over
+ * from a different grid), and a type the new category doesn't offer is cleared. */
+function withCategoryAndType(form: FormState, categories: CategoryDto[], categoryId: string, productType: string): FormState {
+  const category = categoryOf(categories, categoryId);
+  const type = productTypesFor(category?.slug).includes(productType) ? productType : '';
+  const grid = sizeGridFor(category, type || null);
+  return { ...form, categoryId, productType: type, sizes: grid ? [...grid.sizes] : [] };
 }
 
 export function AdminProductsPage() {
@@ -163,6 +183,12 @@ export function AdminProductsPage() {
       categoryId: String(product.categoryId),
       gender: product.gender,
       isBestseller: product.isBestseller,
+      productType: product.productType ?? '',
+      sizes: (() => {
+        const grid = sizeGridFor(categoryOf(categories, String(product.categoryId)), product.productType);
+        if (!grid) return [];
+        return product.availableSizes ? grid.sizes.filter((s) => product.availableSizes!.includes(s)) : [...grid.sizes];
+      })(),
       images: product.images.map((url, i) => ({
         id: `existing-${i}-${url}`,
         previewUrl: url,
@@ -190,6 +216,9 @@ export function AdminProductsPage() {
     const stock = Number(form.stock);
     if (form.stock === '' || Number.isNaN(stock) || stock < 0) errors.stock = 'Укажите остаток (0 или больше).';
     if (!form.categoryId) errors.categoryId = 'Выберите категорию.';
+    if (!form.productType) errors.productType = 'Выберите тип товара.';
+    const grid = sizeGridFor(categoryOf(categories, form.categoryId), form.productType || null);
+    if (grid && form.sizes.length === 0) errors.sizes = 'Выберите хотя бы один размер.';
     if (form.images.length === 0) errors.images = 'Добавьте хотя бы одно изображение.';
     else if (form.images.some((img) => img.uploading)) errors.images = 'Дождитесь загрузки изображений.';
     return errors;
@@ -213,6 +242,11 @@ export function AdminProductsPage() {
       gender: impliedGender(categories, form.categoryId) ?? form.gender,
       images: form.images.filter((img) => img.url).map((img) => img.url!),
       isBestseller: form.isBestseller,
+      productType: form.productType,
+      // A type without sizes sends none; for a sized one the server stores null when every size is ticked.
+      availableSizes: sizeGridFor(categoryOf(categories, form.categoryId), form.productType)
+        ? form.sizes
+        : null,
     };
 
     const promise = form.id === null ? createAdminProduct(request) : updateAdminProduct(form.id, request);
@@ -389,6 +423,7 @@ function ProductsTable({
             <th>Товар</th>
             <th>Категория</th>
             <th>Цена</th>
+            <th>Размеры</th>
             <th>Сток</th>
             <th />
           </tr>
@@ -411,6 +446,7 @@ function ProductsTable({
               <td>
                 <PriceCell product={product} />
               </td>
+              <td className="admin-products__sizes">{sizeSummary(product, categoryById)}</td>
               <td>
                 <StockCell stock={product.stock} />
               </td>
@@ -455,6 +491,7 @@ function ProductsCards({
             <span className="admin-product-card__category">{categoryById.get(product.categoryId)?.name ?? '—'}</span>
             <h3>{product.name}</h3>
             <PriceCell product={product} />
+            <span className="admin-products__sizes">Размеры: {sizeSummary(product, categoryById)}</span>
             <StockCell stock={product.stock} />
           </div>
           <div className="admin-product-card__actions">
@@ -469,6 +506,10 @@ function ProductsCards({
       ))}
     </div>
   );
+}
+
+function sizeSummary(product: ProductDto, categoryById: Map<number, CategoryDto>): string {
+  return summarizeSizes(product.availableSizes, sizeGridFor(categoryById.get(product.categoryId), product.productType));
 }
 
 function PriceCell({ product }: { product: ProductDto }) {
@@ -512,6 +553,10 @@ function ProductFormDrawer({
 }) {
   useLockBodyScroll(open);
   const categoryGender = impliedGender(categories, form.categoryId);
+  const category = categoryOf(categories, form.categoryId);
+  // A product whose stored type isn't on the list (legacy data) still shows it, so saving doesn't silently change it.
+  const typeOptions = [...new Set([...productTypesFor(category?.slug), ...(form.productType ? [form.productType] : [])])];
+  const sizeGrid = sizeGridFor(category, form.productType || null);
 
   return (
     <>
@@ -556,8 +601,7 @@ function ProductFormDrawer({
                       const categoryId = e.target.value;
                       const nextGender = impliedGender(categories, categoryId);
                       setForm((prev) => ({
-                        ...prev,
-                        categoryId,
+                        ...withCategoryAndType(prev, categories, categoryId, prev.productType),
                         gender: nextGender ?? prev.gender,
                       }));
                     }}
@@ -586,6 +630,28 @@ function ProductFormDrawer({
                   </Field>
                 )}
               </div>
+
+              <Field label="Тип товара" error={fieldErrors.productType}>
+                <select
+                  value={form.productType}
+                  onChange={(e) => setForm((prev) => withCategoryAndType(prev, categories, prev.categoryId, e.target.value))}
+                >
+                  <option value="">Выберите тип</option>
+                  {typeOptions.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <ProductSizesField
+                grid={sizeGrid}
+                hasType={form.productType !== ''}
+                value={form.sizes}
+                error={fieldErrors.sizes}
+                onChange={(sizes) => setForm((prev) => ({ ...prev, sizes }))}
+              />
 
               <div className="admin-form-row">
                 <Field label="Цена, ₸" error={fieldErrors.price}>

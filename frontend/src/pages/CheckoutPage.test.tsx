@@ -87,4 +87,25 @@ describe('CheckoutPage - 409 out_of_stock', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Промокод не найден.');
     expect(refreshStock).not.toHaveBeenCalled();
   });
+
+  it('size_unavailable: names the product and size, keeps the cart, refreshes it and creates no order', async () => {
+    const { ApiError } = await import('../lib/api');
+    createOrder.mockRejectedValue(
+      new ApiError("Size 'L' is not available for product 'Куртка'.", {
+        status: 409,
+        code: 'size_unavailable',
+        meta: { productId: 7, productName: 'Куртка', size: 'L' },
+      })
+    );
+
+    await reachConfirmStep();
+    fireEvent.click(await screen.findByRole('button', { name: 'Подтвердить заказ' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Размер «L» товара «Куртка» больше недоступен');
+    expect(alert).not.toHaveTextContent('is not available');
+    expect(clearCart).not.toHaveBeenCalled();
+    await waitFor(() => expect(refreshStock).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText('Заказ оформлен!')).not.toBeInTheDocument();
+  });
 });
