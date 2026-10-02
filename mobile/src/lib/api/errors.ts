@@ -4,10 +4,15 @@
  */
 export class ApiError extends Error {
   readonly status: number;
+  /** Machine-readable failure kind from the API envelope ('out_of_stock', 'conflict', ...). */
+  readonly code?: string;
+  readonly meta?: Record<string, unknown>;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, details: { code?: string; meta?: Record<string, unknown> } = {}) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = details.code;
+    this.meta = details.meta;
   }
 }
