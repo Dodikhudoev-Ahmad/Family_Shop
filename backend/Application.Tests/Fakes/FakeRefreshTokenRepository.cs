@@ -92,6 +92,14 @@ public class FakeRefreshTokenRepository : IRefreshTokenRepository
         }
     }
 
+    public Task<int> DeleteAllForUserAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        lock (_gate)
+        {
+            return Task.FromResult(Tokens.RemoveAll(t => t.UserId == userId));
+        }
+    }
+
     public Task<int> DeleteDeadTokensAsync(DateTime olderThan, CancellationToken cancellationToken = default)
     {
         DeleteDeadCalls++;

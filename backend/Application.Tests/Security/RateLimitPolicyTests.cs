@@ -30,6 +30,7 @@ public class RateLimitPolicyTests
     [InlineData(typeof(AuthController), "Logout", RateLimitPolicies.Auth)]
     [InlineData(typeof(AuthController), "Register", RateLimitPolicies.AuthRegister)]
     [InlineData(typeof(AuthController), "Refresh", RateLimitPolicies.AuthRefresh)]
+    [InlineData(typeof(AuthController), "DeleteAccount", RateLimitPolicies.Auth)]
     [InlineData(typeof(MobileAuthController), "Login", RateLimitPolicies.Auth)]
     [InlineData(typeof(MobileAuthController), "Logout", RateLimitPolicies.Auth)]
     [InlineData(typeof(MobileAuthController), "Register", RateLimitPolicies.AuthRegister)]
