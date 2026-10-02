@@ -16,6 +16,18 @@ public interface IAuthService
     /// <summary>The user's live sessions. <paramref name="currentSessionId"/> (the access token's sid) marks the caller's own.</summary>
     Task<IReadOnlyList<SessionDto>> GetSessionsAsync(int userId, Guid? currentSessionId, CancellationToken cancellationToken = default);
 
+    /// <summary>Deletes the caller's own account (App Store 5.1.1(v)): checks the password, ends every session, strips the
+    /// personal data and keeps orders and reviews, detached from it. Administrators cannot use this path.</summary>
+    Task<DeleteAccountOutcome> DeleteAccountAsync(int userId, string password, CancellationToken cancellationToken = default);
+
     /// <summary>Signs out one device. Fails (not found) for a session that is not the user's own.</summary>
     Task<Result<bool>> RevokeSessionAsync(int userId, Guid sessionId, CancellationToken cancellationToken = default);
+}
+
+public enum DeleteAccountOutcome
+{
+    Deleted,
+    InvalidPassword,
+    NotAllowed,
+    NotFound
 }

@@ -25,6 +25,9 @@ public interface IRefreshTokenRepository : IRepository<RefreshToken>
     /// <summary>The user's live sessions - one row (the current token) per family, newest first.</summary>
     Task<IReadOnlyList<RefreshToken>> GetActiveSessionsAsync(int userId, DateTime now, CancellationToken cancellationToken = default);
 
+    /// <summary>Removes every refresh token row of the user (device names, device hashes) - account deletion.</summary>
+    Task<int> DeleteAllForUserAsync(int userId, CancellationToken cancellationToken = default);
+
     /// <summary>Housekeeping: drops tokens that can never be used again and are older than the cutoff.</summary>
     Task<int> DeleteDeadTokensAsync(DateTime olderThan, CancellationToken cancellationToken = default);
 }

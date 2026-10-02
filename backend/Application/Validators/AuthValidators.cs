@@ -106,3 +106,11 @@ public class MobileLogoutRequestValidator : AbstractValidator<MobileLogoutReques
         RuleFor(x => x.DeviceId).MustBeDeviceId();
     }
 }
+
+public class DeleteAccountRequestValidator : AbstractValidator<DeleteAccountRequestDto>
+{
+    public DeleteAccountRequestValidator()
+    {
+        RuleFor(x => x.Password).NotEmpty().MaximumLength(1024);
+    }
+}
