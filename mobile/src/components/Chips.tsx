@@ -9,12 +9,13 @@ const styles = (c: ColorTokens) => ({
     minWidth: MIN_TOUCH_TARGET,
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: c.border,
     backgroundColor: c.bg,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
+  chipSquare: { borderRadius: radius.sm, minWidth: MIN_TOUCH_TARGET, paddingHorizontal: spacing.sm },
   chipActive: { backgroundColor: c.accent, borderColor: c.accent },
   text: { color: c.text, fontFamily: fonts.bodyMedium, fontSize: fontSizes.sm },
   textActive: { color: c.white },
@@ -22,10 +23,11 @@ const styles = (c: ColorTokens) => ({
   scroll: { gap: spacing.sm, paddingHorizontal: spacing.md },
 });
 
-export function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+/** `square` is the website's size chip (small radius); the default is the round filter chip. */
+export function Chip({ label, selected, onPress, square = false }: { label: string; selected: boolean; onPress: () => void; square?: boolean }) {
   const s = useThemedStyles(styles);
   return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected }} accessibilityLabel={label} onPress={onPress} style={[s.chip, selected && s.chipActive]}>
+    <Pressable accessibilityRole="button" accessibilityState={{ selected }} accessibilityLabel={label} onPress={onPress} style={[s.chip, square && s.chipSquare, selected && s.chipActive]}>
       <Text numberOfLines={1} style={[s.text, selected && s.textActive]}>
         {label}
       </Text>

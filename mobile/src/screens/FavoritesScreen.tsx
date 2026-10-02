@@ -2,8 +2,8 @@ import { useNavigation, type ParamListBase } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, Pressable, Text, useWindowDimensions, View } from 'react-native';
-import { ProductCard } from '../components/ProductCard';
+import { FlatList, Pressable, Text, View } from 'react-native';
+import { ProductCard, useGridCardWidth } from '../components/ProductCard';
 import { ProductCardSkeleton } from '../components/Skeleton';
 import { Screen, StateMessage } from '../components/ui';
 import { favoritesView } from '../lib/favorites';
@@ -28,8 +28,7 @@ export function FavoritesScreen() {
   const s = useThemedStyles(styles);
   const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
-  const { width } = useWindowDimensions();
-  const cardWidth = Math.floor((width - spacing.md * 2 - spacing.sm) / 2);
+  const cardWidth = useGridCardWidth();
   const { favoriteIds, removeMany } = useFavorites();
   const { products, isLoading, error, reload } = useProducts();
 
