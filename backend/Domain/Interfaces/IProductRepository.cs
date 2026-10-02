@@ -31,6 +31,9 @@ public interface IProductRepository : IRepository<Product>
     /// change tracker, so already-loaded Product instances keep their stale Stock.</summary>
     Task<bool> TryDecrementStockAsync(int id, int quantity, CancellationToken cancellationToken = default);
 
+    /// <summary>Current stock straight from the database (no tracking), or null if the product doesn't exist.</summary>
+    Task<int?> GetStockAsync(int id, CancellationToken cancellationToken = default);
+
     /// <summary>Atomic <c>Stock = Stock + q</c> (returning cancelled stock). Bypasses the change tracker.</summary>
     Task IncrementStockAsync(int id, int quantity, CancellationToken cancellationToken = default);
 }

@@ -106,6 +106,7 @@ public class OrderService : IOrderService
             .ToList();
 
         Result<OrderDto>? failure = null;
+        int? shortProductId = null;
 
         // One transaction for everything that must stand or fall together: the conditional stock write-offs
         // (UPDATE ... WHERE Stock >= q, no read-check-write gap), the promo usage increment and the order insert.
@@ -116,9 +117,7 @@ public class OrderService : IOrderService
             {
                 if (quantity > int.MaxValue || !await _unitOfWork.Products.TryDecrementStockAsync(productId, (int)quantity, ct))
                 {
-                    failure = Result<OrderDto>.Failure(
-                        $"Insufficient stock for product '{products[productId].Name}'.",
-                        ResultErrorCodes.OutOfStock);
+                    shortProductId = productId;
                     return false;
                 }
             }
@@ -133,6 +132,17 @@ public class OrderService : IOrderService
             await _unitOfWork.SaveChangesAsync(ct);
             return true;
         }, cancellationToken);
+
+        if (!committed && shortProductId is int shortId)
+        {
+            // Read after the rollback, so this is what the next attempt will actually see.
+            var available = Math.Max(0, await _unitOfWork.Products.GetStockAsync(shortId, cancellationToken) ?? 0);
+            var name = products[shortId].Name;
+            return Result<OrderDto>.Failure(
+                $"Insufficient stock for product '{name}'.",
+                ResultErrorCodes.OutOfStock,
+                new Dictionary<string, object?> { ["productId"] = shortId, ["productName"] = name, ["available"] = available });
+        }
 
         if (!committed)
         {
