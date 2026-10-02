@@ -166,6 +166,13 @@ export function reconcileCart(lines: CartLine[], catalogue: Product[]): Reconcil
       removed += 1;
       continue;
     }
+    // A size the admin no longer sells can't be ordered (the server answers size_unavailable): the line goes, with the
+    // usual notice. A sizeless product takes no size, and a sized one needs one. Line keys are left as they are.
+    const sizeSold = product.sizes.length === 0 ? line.size === null : line.size !== null && product.sizes.includes(line.size);
+    if (!sizeSold) {
+      removed += 1;
+      continue;
+    }
     const left = budget.get(product.id) ?? product.stock;
     const quantity = Math.min(line.quantity, left, LIMITS.lineQuantity);
     if (quantity <= 0) {

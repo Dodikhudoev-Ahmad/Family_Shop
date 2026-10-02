@@ -308,7 +308,9 @@
     "submitting": "Placing order...",
     "confirm": "Confirm order",
     "outOfStock": "Not enough of “{{name}}” in stock, only {{count}} left. The order was not placed and your cart is kept — reduce the quantity.",
-    "outOfStockNone": "“{{name}}” is out of stock. The order was not placed; the rest of your cart is kept."
+    "outOfStockNone": "“{{name}}” is out of stock. The order was not placed; the rest of your cart is kept.",
+    "sizeUnavailable": "Size “{{size}}” of “{{name}}” is no longer available. The order was not placed and your cart is kept — choose another size.",
+    "sizeRequired": "“{{name}}” needs a size. The order was not placed and your cart is kept."
   },
   "auth": {
     "passwordMin": "At least {{n}} characters",
@@ -421,7 +423,7 @@
     "registerFailed": "Couldn't create the account. Check your details; if you have registered before, sign in.",
     "cartTooManyLines": "The cart holds at most {{n}} items",
     "cartMaxQty": "At most {{n}} pcs per item",
-    "cartRemovedNotice": "Some items sold out or are unavailable — we removed them from your cart.",
+    "cartRemovedNotice": "Some items or sizes sold out or are unavailable — we removed them from your cart.",
     "estimatedTotal": "Total (estimate)",
     "priceNote": "The final amount is calculated by the server when you place the order.",
     "guestTitle": "Sign in to your account",
