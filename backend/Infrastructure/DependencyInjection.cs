@@ -30,7 +30,9 @@ public static class DependencyInjection
 
         services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
-        services.AddScoped<IImageStorageService, LocalImageStorageService>();
+        services.AddSingleton(sp => new UploadsDirectory(
+            UploadsLocation.Resolve(configuration, sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>().ContentRootPath)));
+        services.AddScoped<IImageStorageService>(sp => new LocalImageStorageService(sp.GetRequiredService<UploadsDirectory>().Path));
 
         return services;
     }
