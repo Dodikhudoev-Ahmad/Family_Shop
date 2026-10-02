@@ -34,6 +34,10 @@ describe('deleting an account: what the screen shows for a refusal', () => {
     expect(deleteErrorKey(new ApiError(400, 'Incorrect password.'))).toEqual({ key: 'mobile.wrongPassword' });
     expect(deleteErrorKey(new ApiError(403, 'This account cannot be deleted from the app.'))).toEqual({ key: 'mobile.adminCannotDelete' });
   });
+  it('active orders (409 active_orders) get an explanation, and any other 409 text is shown as it came', () => {
+    expect(deleteErrorKey(new ApiError(409, 'active_orders'))).toEqual({ key: 'mobile.activeOrdersCannotDelete' });
+    expect(deleteErrorKey(new ApiError(409, 'Something else'))).toEqual({ raw: 'Something else' });
+  });
   it('anything else is shown as the client/server produced it (network, rate limit)', () => {
     expect(deleteErrorKey(new ApiError(429, 'Слишком много попыток.'))).toEqual({ raw: 'Слишком много попыток.' });
     expect(deleteErrorKey(new ApiError(0, 'offline'))).toEqual({ raw: 'offline' });

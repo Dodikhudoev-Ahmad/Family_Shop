@@ -74,6 +74,14 @@ describe('translations', () => {
   });
 });
 
+describe('account deletion messages', () => {
+  it.each([['ru', ru], ['kk', kk], ['en', en]] as [string, Tree][])('%s explains why an account with active orders cannot be deleted', (_n, dict) => {
+    const text = ((dict.mobile as Tree).activeOrdersCannotDelete as string) ?? '';
+    expect(text.trim().length).toBeGreaterThan(30);
+    for (const key of ['wrongPassword', 'adminCannotDelete']) expect(((dict.mobile as Tree)[key] as string).trim()).not.toBe('');
+  });
+});
+
 describe('accessibility', () => {
   /** The opening tag of every <Pressable ...>, balanced over braces so `{() => a > b}` does not end it early. */
   function pressableTags(code: string): string[] {

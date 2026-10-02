@@ -17,9 +17,13 @@ const styles = (c: ColorTokens) => ({
   footer: { gap: spacing.sm },
 });
 
-/** What to show for a refused deletion: the password was wrong, or it is an administrator account. */
-export function deleteErrorKey(error: unknown): { key: 'mobile.wrongPassword' | 'mobile.adminCannotDelete' } | { raw: string } {
+/** What to show for a refused deletion: wrong password, an administrator account, or an order still in progress. */
+export function deleteErrorKey(
+  error: unknown
+): { key: 'mobile.wrongPassword' | 'mobile.adminCannotDelete' | 'mobile.activeOrdersCannotDelete' } | { raw: string } {
   if (error instanceof ApiError) {
+    // 409 + the code "active_orders": an order is still in progress, the account has to stay for now.
+    if (error.status === 409 && error.message.includes('active_orders')) return { key: 'mobile.activeOrdersCannotDelete' };
     if (error.status === 400 && /incorrect password/i.test(error.message)) return { key: 'mobile.wrongPassword' };
     if (error.status === 403) return { key: 'mobile.adminCannotDelete' };
     return { raw: error.message };
