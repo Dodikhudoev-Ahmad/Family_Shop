@@ -133,6 +133,9 @@ function CatalogFrame({ navigation, title, children, toolbar }: Props & { title:
           <Text style={s.title} numberOfLines={1} accessibilityRole="header">
             {title}
           </Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('mobile.search')} onPress={() => navigation.navigate('Search')} style={s.back}>
+            <Ionicons name="search" size={22} color={colors.text} />
+          </Pressable>
         </View>
         {toolbar}
       </View>
@@ -238,6 +241,8 @@ function CatalogContent(props: Props & { categories: ReturnType<typeof useCatego
           columnWrapperStyle={{ gap: spacing.sm, paddingHorizontal: spacing.md }}
           contentContainerStyle={{ paddingBottom: spacing.xl, gap: spacing.md }}
           ListHeaderComponent={header}
+          refreshing={false}
+          onRefresh={pages.reload}
           onEndReachedThreshold={0.6}
           onEndReached={pages.loadMore}
           renderItem={({ item }) => <ProductCard product={item} width={cardWidth} onPress={() => navigation.navigate('Product', { productId: Number(item.id) })} />}
@@ -281,6 +286,7 @@ function CatalogContent(props: Props & { categories: ReturnType<typeof useCatego
               <Pressable
                 key={option}
                 accessibilityRole="radio"
+                accessibilityLabel={t(SORT_LABEL_KEY[option])}
                 accessibilityState={{ selected: option === sort }}
                 onPress={() => {
                   setSort(option);

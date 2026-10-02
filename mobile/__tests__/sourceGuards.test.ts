@@ -32,7 +32,7 @@ describe('project rules', () => {
 
   it('AsyncStorage is never used for secrets - only the language, theme, cart and favourites', () => {
     const users = files.filter((f) => read(f).includes('async-storage')).map(rel).sort();
-    expect(users).toEqual(['src/i18n/index.ts', 'src/state/CartContext.tsx', 'src/state/FavoritesContext.tsx', 'src/theme/ThemeContext.tsx']);
+    expect(users).toEqual(['src/i18n/index.ts', 'src/state/CartContext.tsx', 'src/state/FavoritesContext.tsx', 'src/state/useSearchHistory.ts', 'src/theme/ThemeContext.tsx']);
     for (const f of files.filter((x) => read(x).includes('async-storage'))) {
       expect(read(f)).not.toMatch(/refresh|accessToken|password|deviceId/i);
     }

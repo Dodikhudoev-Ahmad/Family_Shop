@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { AuthForm } from '../components/AuthForm';
 import { ConfirmSheet } from '../components/forms';
+import { DeleteAccountFlow } from '../components/DeleteAccountFlow';
 import { Button, Screen, Segmented } from '../components/ui';
 import { LANGUAGE_META, LANGUAGES, setLanguage, type Language } from '../i18n';
 import { useAuth } from '../state/AuthContext';
@@ -26,6 +27,10 @@ const styles = (c: ColorTokens) => ({
   eyebrow: { color: c.textSecondary, fontFamily: fonts.bodyMedium, fontSize: fontSizes.xs, textTransform: 'uppercase' as const, letterSpacing: 0.6 },
   email: { color: c.textSecondary, fontFamily: fonts.body, fontSize: fontSizes.sm },
   row: { minHeight: MIN_TOUCH_TARGET + 8, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: c.border },
+  notice: { padding: spacing.md, borderRadius: radius.md, backgroundColor: c.accentSoft },
+  noticeText: { color: c.text, fontFamily: fonts.bodyMedium, fontSize: fontSizes.sm },
+  danger: { minHeight: MIN_TOUCH_TARGET, alignItems: 'center' as const, justifyContent: 'center' as const },
+  dangerText: { color: c.error, fontFamily: fonts.bodySemibold, fontSize: fontSizes.md },
   rowText: { color: c.text, fontFamily: fonts.bodyMedium, fontSize: fontSizes.md },
 });
 
@@ -39,6 +44,8 @@ export function ProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const { user, isLoading, logout, logoutAll } = useAuth();
   const [confirm, setConfirm] = useState<Confirm>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deletedNotice, setDeletedNotice] = useState(false);
   const language = (LANGUAGES as readonly string[]).includes(i18n.language) ? (i18n.language as Language) : 'ru';
 
   const initial = user?.name.trim().charAt(0).toUpperCase() || '?';
@@ -73,11 +80,20 @@ export function ProfileScreen() {
               <Text style={s.rowText}>{t('account.myOrders')}</Text>
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('mobile.devices')} onPress={() => navigation.navigate('Devices')} style={s.row}>
+              <Text style={s.rowText}>{t('mobile.devices')}</Text>
+              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+            </Pressable>
           </View>
         ) : (
           <View style={s.section}>
             <Text style={s.title}>{t('mobile.guestTitle')}</Text>
             <Text style={s.muted}>{t('mobile.guestText')}</Text>
+            {deletedNotice ? (
+              <View style={s.notice} accessibilityRole="alert">
+                <Text style={s.noticeText}>{t('mobile.accountDeleted')}</Text>
+              </View>
+            ) : null}
             <AuthForm />
           </View>
         )}
@@ -105,9 +121,24 @@ export function ProfileScreen() {
           <View style={s.section}>
             <Button label={t('header.logout')} variant="secondary" onPress={() => setConfirm('logout')} />
             <Button label={t('mobile.logoutAll')} variant="secondary" onPress={() => setConfirm('logout-all')} />
+            {user.role !== 'Admin' ? (
+              <Pressable accessibilityRole="button" accessibilityLabel={t('mobile.deleteAccount')} onPress={() => setDeleting(true)} style={s.danger}>
+                <Text style={s.dangerText}>{t('mobile.deleteAccount')}</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
       </ScrollView>
+
+      {deleting ? (
+        <DeleteAccountFlow
+          onClose={() => setDeleting(false)}
+          onDeleted={() => {
+            setDeleting(false);
+            setDeletedNotice(true);
+          }}
+        />
+      ) : null}
 
       {confirm ? (
         <ConfirmSheet

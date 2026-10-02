@@ -55,7 +55,7 @@ export function CartScreen() {
     removedNotice > 0 ? (
       <View style={s.notice} accessibilityRole="alert">
         <Text style={s.noticeText}>{t('mobile.cartRemovedNotice')}</Text>
-        <Pressable accessibilityRole="button" onPress={dismissRemovedNotice} style={s.noticeBtn}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('mobile.dismiss')} onPress={dismissRemovedNotice} style={s.noticeBtn}>
           <Text style={s.noticeBtnText}>{t('mobile.dismiss')}</Text>
         </Pressable>
       </View>

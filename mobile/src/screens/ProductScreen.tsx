@@ -3,7 +3,7 @@ import { useNavigation, type ParamListBase, type RouteProp } from '@react-naviga
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, Pressable, ScrollView, Text, useWindowDimensions, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Image, Pressable, RefreshControl, ScrollView, Text, useWindowDimensions, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { ProductReviews } from '../components/ProductReviews';
 import { ProductRow } from '../components/ProductRow';
 import { StarRating } from '../components/StarRating';
@@ -165,7 +165,7 @@ export function ProductScreen({ route }: { route: RouteProp<{ Product: { product
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView contentContainerStyle={s.content} refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor={colors.accent} />}>
         <View style={s.gallery} onLayout={onGalleryLayout}>
           <ScrollView
             ref={galleryRef}
@@ -307,7 +307,7 @@ export function ProductScreen({ route }: { route: RouteProp<{ Product: { product
           {feedback === 'line-quantity' ? <Text style={s.error}>{t('mobile.cartMaxQty', { n: 50 })}</Text> : null}
           {feedback === 'lines' ? <Text style={s.error}>{t('mobile.cartTooManyLines', { n: 50 })}</Text> : null}
           {selectedInCart > 0 ? (
-            <Pressable accessibilityRole="link" onPress={() => navigation.navigate('CartTab')}>
+            <Pressable accessibilityRole="link" accessibilityLabel={t('product.inCartLine', { count: selectedInCart, size: size ? ` (${size})` : '' })} onPress={() => navigation.navigate('CartTab')}>
               <Text style={s.link}>{t('product.inCartLine', { count: selectedInCart, size: size ? ` (${size})` : '' })}</Text>
             </Pressable>
           ) : null}
@@ -323,7 +323,7 @@ export function ProductScreen({ route }: { route: RouteProp<{ Product: { product
         </View>
 
         <View style={s.body}>
-          <ProductReviews productId={Number(product.id)} averageRating={product.averageRating} reviewCount={product.reviewCount} />
+          <ProductReviews productId={Number(product.id)} onChanged={load} />
         </View>
 
         <ProductRow title={t('product.similar')} products={related} onOpen={(p) => navigation.push('Product', { productId: Number(p.id) })} />

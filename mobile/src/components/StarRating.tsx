@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { fontSizes, fonts } from '../theme/tokens';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
@@ -22,6 +22,33 @@ export function StarRating({ value, count, size = 12 }: { value: number; count?:
         <Ionicons key={i} name={rounded >= i ? 'star' : rounded >= i - 0.5 ? 'star-half' : 'star-outline'} size={size} color={colors.accent} />
       ))}
       {count !== undefined ? <Text style={s.count}>({count})</Text> : null}
+    </View>
+  );
+}
+
+const inputStyles = (c: ColorTokens) => ({
+  row: { flexDirection: 'row' as const, alignItems: 'center' as const },
+  star: { width: 44, height: 44, alignItems: 'center' as const, justifyContent: 'center' as const },
+});
+
+/** Tap-to-rate stars (1..5) for the review form: each star is its own 44pt target. */
+export function RatingInput({ value, onChange, label }: { value: number; onChange: (value: number) => void; label: string }) {
+  const s = useThemedStyles(inputStyles);
+  const { colors } = useTheme();
+  return (
+    <View style={s.row} accessibilityRole="radiogroup" accessibilityLabel={label}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Pressable
+          key={i}
+          accessibilityRole="radio"
+          accessibilityState={{ selected: value === i }}
+          accessibilityLabel={`${i} / 5`}
+          onPress={() => onChange(i)}
+          style={s.star}
+        >
+          <Ionicons name={value >= i ? 'star' : 'star-outline'} size={30} color={colors.accent} />
+        </Pressable>
+      ))}
     </View>
   );
 }

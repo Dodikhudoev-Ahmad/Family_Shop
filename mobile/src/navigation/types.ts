@@ -7,11 +7,13 @@ export interface CatalogParams {
 
 export type HomeStackParamList = {
   Home: undefined;
+  Search: undefined;
   Catalog: CatalogParams | undefined;
   Product: { productId: number };
 };
 
 export type CatalogStackParamList = {
+  Search: undefined;
   Catalog: CatalogParams | undefined;
   Product: { productId: number };
 };
@@ -32,6 +34,7 @@ export type FavoritesStackParamList = {
 export type ProfileStackParamList = {
   Profile: undefined;
   Orders: undefined;
+  Devices: undefined;
   OrderDetail: { orderId: number };
 };
 
