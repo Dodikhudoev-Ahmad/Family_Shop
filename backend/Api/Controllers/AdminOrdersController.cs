@@ -66,7 +66,7 @@ public class AdminOrdersController : ControllerBase
         }
 
         var failure = ApiResponse<AdminOrderDto>.Fail(result.Errors, result.ErrorCode, result.ErrorMeta);
-        return result.ErrorCode is ResultErrorCodes.OutOfStock or ResultErrorCodes.Conflict
+        return result.ErrorCode is ResultErrorCodes.OutOfStock or ResultErrorCodes.Conflict or ResultErrorCodes.SizeUnavailable
             ? Conflict(failure)
             : BadRequest(failure);
     }

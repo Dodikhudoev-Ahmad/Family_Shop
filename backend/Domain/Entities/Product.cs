@@ -27,6 +27,12 @@ public class Product
     /// <summary>Тип изделия (рубашка, куртка, кроссовки...) для быстрых фильтров внутри категории.</summary>
     public string? ProductType { get; set; }
 
+    /// <summary>Sizes this product is actually sold in, chosen by the admin. <c>null</c> = every size of the grid of its
+    /// type (SizeGrids.For) - what all products had before this field existed. Never an empty list: a product with a grid
+    /// but no size is not sellable, and a type without a grid has no sizes at all (null). Stock stays one number per
+    /// product, shared by all its sizes.</summary>
+    public List<string>? AvailableSizes { get; set; }
+
     // Denormalized from Review rows and recomputed whenever a review is added/removed,
     // so catalog listing/sorting never has to aggregate Reviews per page.
     public decimal AverageRating { get; set; }

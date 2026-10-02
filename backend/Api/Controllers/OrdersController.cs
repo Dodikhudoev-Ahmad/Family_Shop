@@ -35,7 +35,7 @@ public class OrdersController : ControllerBase
         }
 
         var failure = ApiResponse<OrderDto>.Fail(result.Errors, result.ErrorCode, result.ErrorMeta);
-        return result.ErrorCode is ResultErrorCodes.OutOfStock or ResultErrorCodes.Conflict
+        return result.ErrorCode is ResultErrorCodes.OutOfStock or ResultErrorCodes.Conflict or ResultErrorCodes.SizeUnavailable
             ? Conflict(failure)
             : BadRequest(failure);
     }

@@ -13,6 +13,7 @@ public class OrderServiceTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly IProductRepository _products = Substitute.For<IProductRepository>();
     private readonly IOrderRepository _orders = Substitute.For<IOrderRepository>();
+    private readonly ICategoryRepository _categories = Substitute.For<ICategoryRepository>();
     private readonly IPromoCodeRepository _promoCodes = Substitute.For<IPromoCodeRepository>();
     private readonly OrderService _sut;
 
@@ -21,6 +22,7 @@ public class OrderServiceTests
         _unitOfWork.Products.Returns(_products);
         _unitOfWork.Orders.Returns(_orders);
         _unitOfWork.PromoCodes.Returns(_promoCodes);
+        _unitOfWork.Categories.Returns(_categories);
 
         // Mirrors UnitOfWork.ExecuteInTransactionAsync closely enough for unit tests: runs the
         // callback against the same substitutes, without a real database transaction.
@@ -35,8 +37,12 @@ public class OrderServiceTests
         _sut = new OrderService(_unitOfWork);
     }
 
-    private void Register(Product product)
+    private void Register(Product product, bool sized = false)
     {
+        // The size grid comes from the product's category: a sized (clothing/shoes) one, or none (the default).
+        var category = new Category { Id = product.CategoryId, Name = "c", Slug = "women", HasSizes = sized };
+        _categories.GetByIdAsync(product.CategoryId, Arg.Any<CancellationToken>()).Returns(category);
+
         _products.GetByIdAsync(product.Id, Arg.Any<CancellationToken>()).Returns(product);
         _products.TryDecrementStockAsync(product.Id, Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(call =>
         {
@@ -61,7 +67,7 @@ public class OrderServiceTests
     {
         const int authenticatedUserId = 42;
         var product = new Product { Id = 1, Name = "Shirt", Price = new Money(1000), Stock = 5 };
-        Register(product);
+        Register(product, sized: true);
 
         var request = new CreateOrderRequestDto(
             [new CreateOrderItemDto(1, 2, "M")],
@@ -82,11 +88,11 @@ public class OrderServiceTests
     [Fact]
     public async Task CreateOrderAsync_ReducesProductStockByOrderedQuantity()
     {
-        var product = new Product { Id = 1, Name = "Shoes", Price = new Money(2000), Stock = 10 };
-        Register(product);
+        var product = new Product { Id = 1, Name = "Shoes", Price = new Money(2000), Stock = 10, ProductType = "Кроссовки" };
+        Register(product, sized: true);
 
         var request = new CreateOrderRequestDto(
-            [new CreateOrderItemDto(1, 3, "42")],
+            [new CreateOrderItemDto(1, 3, "38")],
             "Bob",
             "+7 700 000 00 01",
             DeliveryMethod.Pickup,
@@ -104,7 +110,7 @@ public class OrderServiceTests
         // Two cart lines of the same product in different sizes (M and L) must land as two
         // separate OrderItems, and Product.Stock - shared across sizes - must reflect both.
         var product = new Product { Id = 1, Name = "Худи", Price = new Money(1000), Stock = 10 };
-        Register(product);
+        Register(product, sized: true);
 
         var request = new CreateOrderRequestDto(
             [new CreateOrderItemDto(1, 3, "M"), new CreateOrderItemDto(1, 4, "L")],
@@ -131,7 +137,7 @@ public class OrderServiceTests
         // 6 (M) + 6 (L) = 12 requested against a Stock of 10 shared across both sizes - the
         // second line must fail even though it doesn't exceed Stock on its own.
         var product = new Product { Id = 1, Name = "Худи", Price = new Money(1000), Stock = 10 };
-        Register(product);
+        Register(product, sized: true);
 
         var request = new CreateOrderRequestDto(
             [new CreateOrderItemDto(1, 6, "M"), new CreateOrderItemDto(1, 6, "L")],
@@ -362,9 +368,9 @@ public class OrderServiceTests
     [Fact]
     public async Task CreateOrderAsync_WritesOffProductsInAscendingIdOrder_SummingLinesOfTheSameProduct()
     {
-        var a = new Product { Id = 2, Name = "A", Price = new Money(100), Stock = 10 };
-        var b = new Product { Id = 9, Name = "B", Price = new Money(100), Stock = 10 };
-        Register(a);
+        var a = new Product { Id = 2, CategoryId = 1, Name = "A", Price = new Money(100), Stock = 10 };
+        var b = new Product { Id = 9, CategoryId = 2, Name = "B", Price = new Money(100), Stock = 10 };
+        Register(a, sized: true);
         Register(b);
 
         var request = new CreateOrderRequestDto(

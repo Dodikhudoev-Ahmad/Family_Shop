@@ -35,6 +35,9 @@ public static class ResultErrorCodes
     /// <summary>Not enough stock (or the stock was taken by a concurrent order) - maps to 409.</summary>
     public const string OutOfStock = "out_of_stock";
 
+    /// <summary>The ordered size is not (or no longer) sold for this product - maps to 409.</summary>
+    public const string SizeUnavailable = "size_unavailable";
+
     /// <summary>The state changed under a concurrent request (e.g. the order was already moved) - maps to 409.</summary>
     public const string Conflict = "conflict";
 }
