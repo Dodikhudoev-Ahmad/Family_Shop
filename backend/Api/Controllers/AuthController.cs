@@ -135,7 +135,7 @@ public class AuthController : ControllerBase
     /// Удаление собственного аккаунта (App Store 5.1.1(v)). Нужен текущий пароль; под строгим лимитом входа (10/мин на IP) —
     /// чужой украденный access-токен не должен позволять подбирать пароль. Идентификатор берётся только из токена,
     /// поэтому удалить можно лишь свой аккаунт. Все сессии завершаются, персональные данные стираются, заказы и отзывы остаются.
-    /// Неверный пароль — 400 (не 401: иначе клиент решит, что сессия умерла); аккаунт администратора — 403.
+    /// Неверный пароль — 400 (не 401: иначе клиент решит, что сессия умерла); аккаунт администратора — 403; есть активный заказ (не «доставлен»/«отменён») — 409 `active_orders`, проверяется только после пароля.
     /// </summary>
     [Authorize]
     [HttpDelete("me")]
@@ -150,6 +150,8 @@ public class AuthController : ControllerBase
                 return NoContent();
             case DeleteAccountOutcome.InvalidPassword:
                 return BadRequest(ApiResponse<bool>.Fail("Incorrect password."));
+            case DeleteAccountOutcome.ActiveOrders:
+                return Conflict(ApiResponse<bool>.Fail("active_orders"));
             case DeleteAccountOutcome.NotAllowed:
                 return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<bool>.Fail("This account cannot be deleted from the app."));
             default:
