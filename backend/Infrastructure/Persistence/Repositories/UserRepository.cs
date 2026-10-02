@@ -16,4 +16,9 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         var normalized = new Email(email);
         return await DbSet.FirstOrDefaultAsync(u => u.Email == normalized, cancellationToken);
     }
+
+    public Task<bool> IsActiveAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return DbSet.AnyAsync(u => u.Id == userId && u.DeletedAt == null, cancellationToken);
+    }
 }

@@ -99,6 +99,11 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
             ClockSkew = TimeSpan.FromSeconds(30)
         };
+        options.Events = new JwtBearerEvents
+        {
+            // A deleted account's still-valid access token is refused at once (see ActiveAccountTokenValidator).
+            OnTokenValidated = Api.Security.ActiveAccountTokenValidator.ValidateAsync
+        };
     });
 
 // Closed by default: an endpoint that carries neither [Authorize] nor [AllowAnonymous] requires a

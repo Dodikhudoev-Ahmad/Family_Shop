@@ -23,6 +23,16 @@ public record LoginRequestDto(string Email, string Password)
     }
 }
 
+/// <summary>Deleting one's own account needs the current password again: a stolen access token alone must not be enough.</summary>
+public record DeleteAccountRequestDto(string Password)
+{
+    protected virtual bool PrintMembers(StringBuilder builder)
+    {
+        builder.Append("Password = ***");
+        return true;
+    }
+}
+
 public record AuthResponseDto(int UserId, string Email, string Name, string Role, string AccessToken)
 {
     protected virtual bool PrintMembers(StringBuilder builder)
