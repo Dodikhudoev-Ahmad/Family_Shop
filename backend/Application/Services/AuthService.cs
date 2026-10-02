@@ -183,6 +183,13 @@ public class AuthService : IAuthService
             return DeleteAccountOutcome.InvalidPassword;
         }
 
+        // Only after the password has been proven: whether orders exist must not be learnable without it.
+        if (await _unitOfWork.Orders.HasActiveOrdersForUserAsync(userId, cancellationToken))
+        {
+            _logger.LogInformation("Account deletion refused for user {UserId}: active orders.", userId);
+            return DeleteAccountOutcome.ActiveOrders;
+        }
+
         var now = DateTime.UtcNow;
         // One transaction: either the account is anonymised, its orders detached and every session gone, or nothing changed.
         var done = await _unitOfWork.ExecuteInTransactionAsync(async ct =>

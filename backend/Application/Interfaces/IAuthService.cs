@@ -29,5 +29,7 @@ public enum DeleteAccountOutcome
     Deleted,
     InvalidPassword,
     NotAllowed,
+    /// <summary>An order is still in progress; the account stays until it is delivered or cancelled.</summary>
+    ActiveOrders,
     NotFound
 }
