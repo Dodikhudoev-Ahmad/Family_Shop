@@ -8,7 +8,7 @@ const createOrder = vi.hoisted(() => vi.fn());
 const clearCart = vi.fn();
 const refreshStock = vi.fn().mockResolvedValue(undefined);
 
-const lines: CartLine[] = [
+let lines: CartLine[] = [
   {
     key: '7__onesize',
     size: null,
@@ -38,7 +38,12 @@ async function reachConfirmStep() {
   fireEvent.click(screen.getByRole('button', { name: 'Продолжить' }));
 }
 
-beforeEach(() => vi.clearAllMocks());
+const originalLines = lines;
+beforeEach(() => {
+  vi.clearAllMocks();
+  lines = originalLines;
+  refreshStock.mockResolvedValue(undefined);
+});
 afterEach(cleanup);
 
 describe('CheckoutPage - 409 out_of_stock', () => {
@@ -107,5 +112,25 @@ describe('CheckoutPage - 409 out_of_stock', () => {
     expect(clearCart).not.toHaveBeenCalled();
     await waitFor(() => expect(refreshStock).toHaveBeenCalledTimes(1));
     expect(screen.queryByText('Заказ оформлен!')).not.toBeInTheDocument();
+  });
+
+  it('keeps explaining the refusal when the refreshed cart turns out empty', async () => {
+    const { ApiError } = await import('../lib/api');
+    createOrder.mockRejectedValue(
+      new ApiError('x', { status: 409, code: 'size_unavailable', meta: { productId: 7, productName: 'Куртка', size: 'L' } })
+    );
+    // what refreshStock does when the only line's size was withdrawn
+    refreshStock.mockImplementation(() => {
+      lines = [];
+      return Promise.resolve();
+    });
+
+    const view = await reachConfirmStep();
+    void view;
+    fireEvent.click(await screen.findByRole('button', { name: 'Подтвердить заказ' }));
+
+    await waitFor(() => expect(screen.getByText('В корзине нет товаров для оформления.')).toBeInTheDocument());
+    expect(screen.getByRole('alert')).toHaveTextContent('Размер «L» товара «Куртка» больше недоступен');
+    expect(clearCart).not.toHaveBeenCalled();
   });
 });
