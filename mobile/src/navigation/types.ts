@@ -3,16 +3,20 @@ export interface CatalogParams {
   categoryId?: number;
   search?: string;
   discount?: boolean;
+  /** Opens the catalogue already sorted this way ("See all" under Bestsellers / New in). */
+  sort?: 'new' | 'popular' | 'price-asc' | 'price-desc';
 }
 
 export type HomeStackParamList = {
   Home: undefined;
+  About: undefined;
   Search: undefined;
   Catalog: CatalogParams | undefined;
   Product: { productId: number };
 };
 
 export type CatalogStackParamList = {
+  About: undefined;
   Search: undefined;
   Catalog: CatalogParams | undefined;
   Product: { productId: number };

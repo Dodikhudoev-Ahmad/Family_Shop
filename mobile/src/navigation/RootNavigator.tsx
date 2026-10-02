@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CartScreen } from '../screens/CartScreen';
 import { CatalogScreen } from '../screens/CatalogScreen';
+import { AboutScreen } from '../screens/AboutScreen';
 import { AuthScreen } from '../screens/AuthScreen';
 import { CheckoutScreen } from '../screens/CheckoutScreen';
 import { DevicesScreen } from '../screens/DevicesScreen';
@@ -70,10 +71,12 @@ function useStackOptions(): NativeStackNavigationOptions {
 }
 
 function HomeNavigator() {
+  const { t } = useTranslation();
   const options = useStackOptions();
   return (
     <HomeStack.Navigator screenOptions={options}>
       <HomeStack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+      <HomeStack.Screen name="About" component={AboutScreen} options={{ title: t('header.about') }} />
       <HomeStack.Screen name="Search" component={SearchScreen} options={{ headerShown: false }} />
       <HomeStack.Screen name="Catalog" component={CatalogScreen} options={{ headerShown: false }} />
       <HomeStack.Screen name="Product" component={ProductScreen} options={{ title: '' }} />
@@ -82,9 +85,11 @@ function HomeNavigator() {
 }
 
 function CatalogNavigator() {
+  const { t } = useTranslation();
   const options = useStackOptions();
   return (
     <CatalogStack.Navigator screenOptions={options}>
+      <CatalogStack.Screen name="About" component={AboutScreen} options={{ title: t('header.about') }} />
       <CatalogStack.Screen name="Search" component={SearchScreen} options={{ headerShown: false }} />
       <CatalogStack.Screen name="Catalog" component={CatalogScreen} options={{ headerShown: false }} />
       <CatalogStack.Screen name="Product" component={ProductScreen} options={{ title: '' }} />
