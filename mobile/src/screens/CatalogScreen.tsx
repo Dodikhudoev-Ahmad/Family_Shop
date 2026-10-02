@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, Pressable, Text, useWindowDimensions, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { AppHeader } from '../components/AppHeader';
 import { BottomSheet } from '../components/BottomSheet';
 import { ChipStrip } from '../components/Chips';
 import { FilterSheet } from '../components/FilterSheet';
-import { ProductCard } from '../components/ProductCard';
+import { ProductCard, useGridCardWidth } from '../components/ProductCard';
 import { ProductCardSkeleton } from '../components/Skeleton';
 import { Screen, StateMessage } from '../components/ui';
 import {
@@ -24,7 +24,9 @@ import {
   type SortOption,
 } from '../lib/catalog/catalogFilters';
 import { availableProductTypes } from '../lib/catalog/productTypes';
+import { useSmartHeader, type SmartHeader } from '../hooks/useSmartHeader';
 import { useLabels } from '../i18n/labels';
+import type { Category } from '../lib/types';
 import type { CatalogStackParamList } from '../navigation/types';
 import { useCategories } from '../state/CategoriesContext';
 import { useProducts } from '../state/ProductsContext';
@@ -45,23 +47,37 @@ const SORT_LABEL_KEY: Record<SortOption, 'catalog.sortNew' | 'catalog.sortPopula
 const COLUMNS = 2;
 
 const styles = (c: ColorTokens) => ({
-  topBar: { flexDirection: 'row' as const, alignItems: 'center' as const, minHeight: MIN_TOUCH_TARGET + 8, paddingRight: spacing.md },
-  back: { width: MIN_TOUCH_TARGET + 8, height: MIN_TOUCH_TARGET + 8, alignItems: 'center' as const, justifyContent: 'center' as const },
-  title: { flex: 1, color: c.text, fontFamily: fonts.heading, fontSize: fontSizes.xl },
-  toolbar: { flexDirection: 'row' as const, gap: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
-  tool: {
-    flex: 1,
-    minHeight: MIN_TOUCH_TARGET,
+  head: { gap: spacing.md, paddingBottom: spacing.sm },
+  crumbs: { flexDirection: 'row' as const, alignItems: 'center' as const, paddingHorizontal: spacing.md },
+  crumb: { minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' as const },
+  crumbText: { color: c.textSecondary, fontFamily: fonts.body, fontSize: fontSizes.sm },
+  crumbCurrent: { color: c.text, fontFamily: fonts.body, fontSize: fontSizes.sm },
+  title: { color: c.text, fontFamily: fonts.headingBold, fontSize: fontSizes.display, paddingHorizontal: spacing.md },
+  toolbar: { flexDirection: 'row' as const, gap: spacing.sm, paddingHorizontal: spacing.md },
+  filterBtn: {
+    minHeight: MIN_TOUCH_TARGET + 4,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     gap: spacing.xs,
-    borderRadius: radius.pill,
-    borderWidth: 1,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
     borderColor: c.border,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
-  toolText: { color: c.text, fontFamily: fonts.bodyMedium, fontSize: fontSizes.sm, flexShrink: 1 },
+  select: {
+    flex: 1,
+    minHeight: MIN_TOUCH_TARGET + 4,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    gap: spacing.xs,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: c.border,
+    paddingHorizontal: spacing.md,
+  },
+  toolText: { color: c.text, fontFamily: fonts.bodyMedium, fontSize: fontSizes.md, flexShrink: 1 },
   count: { minWidth: 20, height: 20, borderRadius: 10, backgroundColor: c.accent, alignItems: 'center' as const, justifyContent: 'center' as const, paddingHorizontal: 5 },
   countText: { color: c.white, fontFamily: fonts.bodySemibold, fontSize: fontSizes.xs },
   searchChip: { alignSelf: 'flex-start' as const, flexDirection: 'row' as const, alignItems: 'center' as const, minHeight: MIN_TOUCH_TARGET, gap: spacing.xs, borderRadius: radius.pill, backgroundColor: c.accentSoft, paddingHorizontal: spacing.md, marginHorizontal: spacing.md },
@@ -71,9 +87,10 @@ const styles = (c: ColorTokens) => ({
   optionActive: { color: c.accent },
 });
 
-/** Catalogue: 2-column grid, server paging with infinite scroll, sort, type chips and filters in a bottom sheet. */
+/** Catalogue, laid out like the website on a phone: shared header, breadcrumb, title, type chips, Filters + sort, 2-column grid. */
 export function CatalogScreen(props: Props) {
   const { t } = useTranslation();
+  const smart = useSmartHeader();
   const { isLoading, error, products, reload } = useProducts();
   const { categories, isLoading: categoriesLoading } = useCategories();
   const params = props.route.params;
@@ -81,30 +98,32 @@ export function CatalogScreen(props: Props) {
   // The filters' starting point (price window, type chips) comes from the whole catalogue, so wait for it.
   if (isLoading || categoriesLoading) {
     return (
-      <CatalogFrame {...props} title={t('catalog.title')}>
+      <Frame smart={smart} activeCategoryId={params?.categoryId !== undefined ? String(params.categoryId) : null}>
         <SkeletonGrid />
-      </CatalogFrame>
+      </Frame>
     );
   }
   if (error && products.length === 0) {
     return (
-      <CatalogFrame {...props} title={t('catalog.title')}>
+      <Frame smart={smart} activeCategoryId={null}>
         <StateMessage message={t('mobile.productsLoadError')} actionLabel={t('mobile.retry')} onAction={() => void reload()} />
-      </CatalogFrame>
+      </Frame>
     );
   }
 
-  // A different category / search / "discounts" from outside is a different list: start it from scratch.
-  return <CatalogContent key={`${params?.categoryId ?? ''}|${params?.search ?? ''}|${params?.discount ? 1 : 0}`} {...props} categories={categories} />;
-}
-
-function useGridWidth() {
-  const { width } = useWindowDimensions();
-  return Math.floor((width - spacing.md * 2 - spacing.sm * (COLUMNS - 1)) / COLUMNS);
+  // A different category / search / sort / "discounts" from outside is a different list: start it from scratch.
+  return (
+    <CatalogContent
+      key={`${params?.categoryId ?? ''}|${params?.search ?? ''}|${params?.discount ? 1 : 0}|${params?.sort ?? ''}`}
+      {...props}
+      smart={smart}
+      categories={categories}
+    />
+  );
 }
 
 function SkeletonGrid() {
-  const cardWidth = useGridWidth();
+  const cardWidth = useGridCardWidth();
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, padding: spacing.md }}>
       {Array.from({ length: 6 }).map((_, i) => (
@@ -114,51 +133,33 @@ function SkeletonGrid() {
   );
 }
 
-function CatalogFrame({ navigation, title, children, toolbar }: Props & { title: string; children: React.ReactNode; toolbar?: React.ReactNode }) {
-  const s = useThemedStyles(styles);
-  const { colors } = useTheme();
-  const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
+/** Header + a content area that starts right below it (the header floats above and slides away on scroll). */
+function Frame({ smart, activeCategoryId, children }: { smart: SmartHeader; activeCategoryId: string | null; children: ReactNode }) {
   return (
     <Screen>
-      <View style={{ paddingTop: insets.top }}>
-        <View style={s.topBar}>
-          {navigation.canGoBack() ? (
-            <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => navigation.goBack()} style={s.back}>
-              <Ionicons name="chevron-back" size={24} color={colors.text} />
-            </Pressable>
-          ) : (
-            <View style={{ width: spacing.md }} />
-          )}
-          <Text style={s.title} numberOfLines={1} accessibilityRole="header">
-            {title}
-          </Text>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('mobile.search')} onPress={() => navigation.navigate('Search')} style={s.back}>
-            <Ionicons name="search" size={22} color={colors.text} />
-          </Pressable>
-        </View>
-        {toolbar}
-      </View>
-      <View style={{ flex: 1 }}>{children}</View>
+      <View style={{ flex: 1, paddingTop: smart.height }}>{children}</View>
+      <AppHeader smart={smart} activeCategoryId={activeCategoryId} />
     </Screen>
   );
 }
 
-function CatalogContent(props: Props & { categories: ReturnType<typeof useCategories>['categories'] }) {
-  const { navigation, route, categories } = props;
+function CatalogContent(props: Props & { categories: Category[]; smart: SmartHeader }) {
+  const { navigation, route, categories, smart } = props;
   const s = useThemedStyles(styles);
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { categoryName, productType: typeName } = useLabels();
-  const { products: allProducts } = useProducts();
-  const cardWidth = useGridWidth();
+  const { products: allProducts, reload: reloadProducts } = useProducts();
+  const cardWidth = useGridCardWidth();
 
   const [filters, setFilters] = useState<CatalogFilters>(() =>
     initialFilters(allProducts, route.params?.categoryId !== undefined ? String(route.params.categoryId) : null, route.params?.discount === true)
   );
-  const [sort, setSort] = useState<SortOption>('new');
+  const [sort, setSort] = useState<SortOption>(route.params?.sort ?? 'new');
   const [search, setSearch] = useState<string | null>(route.params?.search ?? null);
   const [sheet, setSheet] = useState<'filters' | 'sort' | null>(null);
+
+  useEffect(() => smart.setOverlayOpen('sheet', sheet !== null), [sheet, smart.setOverlayOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // What the server is asked: category, type, price window, search, sort. Size and "only discounted" refine locally.
   const bounds = useMemo(() => priceBoundsFor(allProducts, filters.categoryId), [allProducts, filters.categoryId]);
@@ -185,7 +186,20 @@ function CatalogContent(props: Props & { categories: ReturnType<typeof useCatego
   const showSkeleton = pages.items.length === 0 && pages.loading;
 
   const header = (
-    <View style={{ gap: spacing.sm, paddingBottom: spacing.sm }}>
+    <View style={s.head}>
+      <View style={{ height: smart.height }} />
+      {activeCategory ? (
+        <View style={s.crumbs} accessibilityRole="header">
+          <Pressable accessibilityRole="link" accessibilityLabel={t('common.home')} onPress={() => navigation.navigate('HomeTab' as never)} style={s.crumb}>
+            <Text style={s.crumbText}>{t('common.home')}</Text>
+          </Pressable>
+          <Text style={s.crumbText}> / </Text>
+          <Text style={s.crumbCurrent}>{title}</Text>
+        </View>
+      ) : null}
+      <Text style={s.title} accessibilityRole="header">
+        {title}
+      </Text>
       {search ? (
         <Pressable accessibilityRole="button" accessibilityLabel={t('mobile.clearSearch')} onPress={() => setSearch(null)} style={s.searchChip}>
           <Text style={s.searchChipText} numberOfLines={1}>
@@ -201,38 +215,32 @@ function CatalogContent(props: Props & { categories: ReturnType<typeof useCatego
           options={[{ value: null, label: t('common.all') }, ...types.map((type) => ({ value: type, label: typeName(type) }))]}
         />
       ) : null}
-    </View>
-  );
-
-  const toolbar = (
-    <View style={s.toolbar}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('catalog.filters')} onPress={() => setSheet('filters')} style={s.tool}>
-        <Ionicons name="options-outline" size={18} color={colors.text} />
-        <Text style={s.toolText} numberOfLines={1}>
-          {t('catalog.filters')}
-        </Text>
-        {filterCount > 0 ? (
-          <View style={s.count}>
-            <Text style={s.countText}>{filterCount}</Text>
-          </View>
-        ) : null}
-      </Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel={`${t('mobile.sort')}: ${t(SORT_LABEL_KEY[sort])}`} onPress={() => setSheet('sort')} style={s.tool}>
-        <Ionicons name="swap-vertical-outline" size={18} color={colors.text} />
-        <Text style={s.toolText} numberOfLines={1}>
-          {t(SORT_LABEL_KEY[sort])}
-        </Text>
-      </Pressable>
+      <View style={s.toolbar}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('catalog.filters')} onPress={() => setSheet('filters')} style={s.filterBtn}>
+          <Text style={s.toolText}>{t('catalog.filters')}</Text>
+          {filterCount > 0 ? (
+            <View style={s.count}>
+              <Text style={s.countText}>{filterCount}</Text>
+            </View>
+          ) : null}
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={`${t('mobile.sort')}: ${t(SORT_LABEL_KEY[sort])}`} onPress={() => setSheet('sort')} style={s.select}>
+          <Text style={s.toolText} numberOfLines={1}>
+            {t(SORT_LABEL_KEY[sort])}
+          </Text>
+          <Ionicons name="chevron-down" size={16} color={colors.text} />
+        </Pressable>
+      </View>
     </View>
   );
 
   return (
-    <CatalogFrame {...props} title={title} toolbar={toolbar}>
+    <Screen>
       {showSkeleton ? (
-        <>
+        <View style={{ flex: 1 }}>
           {header}
           <SkeletonGrid />
-        </>
+        </View>
       ) : (
         <FlatList
           data={visible}
@@ -241,18 +249,13 @@ function CatalogContent(props: Props & { categories: ReturnType<typeof useCatego
           columnWrapperStyle={{ gap: spacing.sm, paddingHorizontal: spacing.md }}
           contentContainerStyle={{ paddingBottom: spacing.xl, gap: spacing.md }}
           ListHeaderComponent={header}
-          refreshing={false}
-          onRefresh={pages.reload}
+          scrollEventThrottle={16}
+          onScroll={smart.onScroll}
+          refreshControl={<RefreshControl refreshing={false} onRefresh={() => { void reloadProducts(); pages.reload(); }} tintColor={colors.accent} progressViewOffset={smart.height} />}
           onEndReachedThreshold={0.6}
           onEndReached={pages.loadMore}
           renderItem={({ item }) => <ProductCard product={item} width={cardWidth} onPress={() => navigation.navigate('Product', { productId: Number(item.id) })} />}
-          ListEmptyComponent={
-            showEmpty ? (
-              <StateMessage message={t('catalog.empty')} />
-            ) : pages.failed ? null : (
-              <SkeletonGrid />
-            )
-          }
+          ListEmptyComponent={showEmpty ? <StateMessage message={t('catalog.empty')} /> : pages.failed ? null : <SkeletonGrid />}
           ListFooterComponent={
             pages.failed ? (
               <StateMessage message={t('mobile.productsLoadError')} actionLabel={t('mobile.retry')} onAction={pages.retry} />
@@ -265,6 +268,8 @@ function CatalogContent(props: Props & { categories: ReturnType<typeof useCatego
           }
         />
       )}
+
+      <AppHeader smart={smart} activeCategoryId={filters.categoryId} />
 
       {sheet === 'filters' ? (
         <FilterSheet
@@ -301,6 +306,6 @@ function CatalogContent(props: Props & { categories: ReturnType<typeof useCatego
           </View>
         </BottomSheet>
       ) : null}
-    </CatalogFrame>
+    </Screen>
   );
 }
