@@ -12,6 +12,8 @@ interface AuthContextValue {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   logoutAll: () => Promise<void>;
+  /** Deletes the account for good (needs the current password). Throws the server's refusal (wrong password, admin). */
+  deleteAccount: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -73,9 +75,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => endVoluntarily(() => api.logout()), [endVoluntarily]);
   const logoutAll = useCallback(() => endVoluntarily(() => api.logoutAll()), [endVoluntarily]);
 
+  // Unlike logout, a refusal (wrong password) must leave the user signed in: only success ends the session.
+  const deleteAccount = useCallback(async (password: string) => {
+    voluntary.current = true;
+    try {
+      await api.deleteAccount(password);
+    } catch (e: unknown) {
+      voluntary.current = false;
+      throw e;
+    }
+    setUser(null);
+    setSessionEnded(false);
+    voluntary.current = false;
+  }, []);
+
   const value = useMemo(
-    () => ({ user, isLoading, sessionEnded, login, register, logout, logoutAll }),
-    [user, isLoading, sessionEnded, login, register, logout, logoutAll]
+    () => ({ user, isLoading, sessionEnded, login, register, logout, logoutAll, deleteAccount }),
+    [user, isLoading, sessionEnded, login, register, logout, logoutAll, deleteAccount]
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

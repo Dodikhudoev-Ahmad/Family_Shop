@@ -111,6 +111,15 @@ export interface CreateOrderRequest {
   promoCode?: string;
 }
 
+export interface ReviewSummaryDto {
+  averageRating: number;
+  reviewCount: number;
+  ratingCounts: Record<number, number>;
+}
+
+/** 0=Newest, 1=HighestRating, 2=LowestRating - matches backend ReviewSortBy. */
+export type ReviewSortBy = 0 | 1 | 2;
+
 /** 0=Home, 1=Cart, 2=Both - matches backend PromoBannerPlacement. */
 export type ApiPromoBannerPlacement = 0 | 1 | 2;
 
