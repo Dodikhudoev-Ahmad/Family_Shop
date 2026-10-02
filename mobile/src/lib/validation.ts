@@ -24,6 +24,7 @@ export const LIMITS = {
   orderLines: 50,
   lineQuantity: 50,
   size: 20,
+  review: 2000,
 } as const;
 
 /** UTF-8 length without TextEncoder (not guaranteed on every JS engine): bcrypt cuts at 72 BYTES, not characters. */
@@ -142,6 +143,17 @@ export function validateOrderLines(lines: OrderLineInput[]): FieldError | null {
     }
     if (line.size !== null && line.size.length > LIMITS.size) return err('checkout.failed');
   }
+  return null;
+}
+
+// ---- reviews ----
+
+/** A review needs a rating of 1..5 and a non-empty text of at most 2000 characters (CreateReviewRequestValidator). */
+export function validateReview(rating: number, comment: string): FieldError | null {
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) return err('reviews.chooseRating');
+  const text = comment.trim();
+  if (!text) return err('reviews.writeText');
+  if (text.length > LIMITS.review) return err('mobile.tooLong', { n: LIMITS.review });
   return null;
 }
 
