@@ -108,6 +108,17 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         return Context.Set<OrderItem>().AnyAsync(i => i.ProductId == productId, cancellationToken);
     }
 
+    public Task<int> AnonymizeContactDataForUserAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return DbSet
+            .Where(o => o.UserId == userId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(o => o.ContactName, string.Empty)
+                .SetProperty(o => o.ContactPhone, string.Empty)
+                .SetProperty(o => o.City, (string?)null)
+                .SetProperty(o => o.Address, (string?)null), cancellationToken);
+    }
+
     public Task<bool> AnyByPromoCodeIdAsync(int promoCodeId, CancellationToken cancellationToken = default)
     {
         return DbSet.AnyAsync(o => o.PromoCodeId == promoCodeId, cancellationToken);

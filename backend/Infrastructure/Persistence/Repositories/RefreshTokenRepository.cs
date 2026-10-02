@@ -55,6 +55,11 @@ public class RefreshTokenRepository : RepositoryBase<RefreshToken>, IRefreshToke
             .ToListAsync(cancellationToken);
     }
 
+    public Task<int> DeleteAllForUserAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return DbSet.Where(rt => rt.UserId == userId).ExecuteDeleteAsync(cancellationToken);
+    }
+
     public Task<int> DeleteDeadTokensAsync(DateTime olderThan, CancellationToken cancellationToken = default)
     {
         return DbSet

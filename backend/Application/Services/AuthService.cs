@@ -63,7 +63,10 @@ public class AuthService : IAuthService
 
     public async Task<Result<AuthResult>> LoginAsync(LoginRequestDto request, SessionContext session, CancellationToken cancellationToken = default)
     {
-        var user = await _unitOfWork.Users.GetByEmailAsync(request.Email, cancellationToken);
+        var found = await _unitOfWork.Users.GetByEmailAsync(request.Email, cancellationToken);
+
+        // A deleted account is "no such user": its placeholder e-mail must not be usable to sign in.
+        var user = found is { IsDeleted: false } ? found : null;
 
         // Always run one password verification, against a dummy hash if there is no such user.
         var hash = user?.PasswordHash ?? GetDummyHash();
@@ -157,6 +160,49 @@ public class AuthService : IAuthService
         var revoked = await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(userId, DateTime.UtcNow, cancellationToken);
         _logger.LogInformation("Revoked all sessions for user {UserId} ({Count} tokens).", userId, revoked);
         return revoked;
+    }
+
+    public async Task<DeleteAccountOutcome> DeleteAccountAsync(int userId, string password, CancellationToken cancellationToken = default)
+    {
+        var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
+        if (user is null || user.IsDeleted)
+        {
+            return DeleteAccountOutcome.NotFound;
+        }
+
+        // The administrator account is the way into the back office; it is removed by hand, never from the app.
+        if (user.Role == UserRole.Admin)
+        {
+            _logger.LogWarning("Account deletion refused for administrator {UserId}.", userId);
+            return DeleteAccountOutcome.NotAllowed;
+        }
+
+        if (!_passwordHasher.Verify(password, user.PasswordHash))
+        {
+            _logger.LogWarning("Account deletion refused for user {UserId}: wrong password.", userId);
+            return DeleteAccountOutcome.InvalidPassword;
+        }
+
+        var now = DateTime.UtcNow;
+        // One transaction: either the account is anonymised, its orders detached and every session gone, or nothing changed.
+        var done = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
+        {
+            await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(userId, now, ct);
+            await _unitOfWork.RefreshTokens.DeleteAllForUserAsync(userId, ct);
+            await _unitOfWork.Orders.AnonymizeContactDataForUserAsync(userId, ct);
+            user.Anonymize(now);
+            await _unitOfWork.SaveChangesAsync(ct);
+            return true;
+        }, cancellationToken);
+
+        if (!done)
+        {
+            return DeleteAccountOutcome.NotFound;
+        }
+
+        // Reviews and order lines stay as they are: they point at the (now anonymous) row, which still exists.
+        _logger.LogInformation("Account {UserId} deleted by its owner.", userId);
+        return DeleteAccountOutcome.Deleted;
     }
 
     public async Task<IReadOnlyList<SessionDto>> GetSessionsAsync(int userId, Guid? currentSessionId, CancellationToken cancellationToken = default)

@@ -29,5 +29,9 @@ public interface IOrderRepository : IRepository<Order>
 
     Task<bool> HasItemsForProductAsync(int productId, CancellationToken cancellationToken = default);
 
+    /// <summary>Blanks the contact name, phone, city and address of all of the user's orders (account deletion).
+    /// The orders themselves - lines, totals, status, dates - stay for the shop's records.</summary>
+    Task<int> AnonymizeContactDataForUserAsync(int userId, CancellationToken cancellationToken = default);
+
     Task<bool> AnyByPromoCodeIdAsync(int promoCodeId, CancellationToken cancellationToken = default);
 }

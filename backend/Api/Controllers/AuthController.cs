@@ -131,6 +131,32 @@ public class AuthController : ControllerBase
         return result.IsSuccess ? NoContent() : NotFound(ApiResponse<bool>.Fail(result.Errors));
     }
 
+    /// <summary>
+    /// Удаление собственного аккаунта (App Store 5.1.1(v)). Нужен текущий пароль; под строгим лимитом входа (10/мин на IP) —
+    /// чужой украденный access-токен не должен позволять подбирать пароль. Идентификатор берётся только из токена,
+    /// поэтому удалить можно лишь свой аккаунт. Все сессии завершаются, персональные данные стираются, заказы и отзывы остаются.
+    /// Неверный пароль — 400 (не 401: иначе клиент решит, что сессия умерла); аккаунт администратора — 403.
+    /// </summary>
+    [Authorize]
+    [HttpDelete("me")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    public async Task<IActionResult> DeleteAccount(DeleteAccountRequestDto request, CancellationToken cancellationToken)
+    {
+        var outcome = await _authService.DeleteAccountAsync(GetUserId(), request.Password, cancellationToken);
+        switch (outcome)
+        {
+            case DeleteAccountOutcome.Deleted:
+                Response.Cookies.Delete(RefreshTokenCookie, BuildCookieOptions(null));
+                return NoContent();
+            case DeleteAccountOutcome.InvalidPassword:
+                return BadRequest(ApiResponse<bool>.Fail("Incorrect password."));
+            case DeleteAccountOutcome.NotAllowed:
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<bool>.Fail("This account cannot be deleted from the app."));
+            default:
+                return NotFound(ApiResponse<bool>.Fail("Account not found."));
+        }
+    }
+
     private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     private Guid? GetSessionId()
