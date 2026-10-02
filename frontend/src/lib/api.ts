@@ -5,9 +5,17 @@ import i18n from '../i18n';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5280/api/v1';
 
 export class ApiError extends Error {
-  constructor(message: string) {
+  readonly status: number;
+  /** Machine-readable failure kind from the API envelope ('out_of_stock', 'conflict', ...). */
+  readonly code?: string;
+  readonly meta?: Record<string, unknown>;
+
+  constructor(message: string, details: { status?: number; code?: string; meta?: Record<string, unknown> } = {}) {
     super(message);
     this.name = 'ApiError';
+    this.status = details.status ?? 0;
+    this.code = details.code;
+    this.meta = details.meta;
   }
 }
 
@@ -77,7 +85,11 @@ async function parseEnvelope<T>(res: Response): Promise<T> {
   }
 
   if (!json.success) {
-    throw new ApiError(json.errors.join('; ') || i18n.t('errors.failed'));
+    throw new ApiError(json.errors.join('; ') || i18n.t('errors.failed'), {
+      status: res.status,
+      code: json.code,
+      meta: json.meta,
+    });
   }
 
   return json.data;
