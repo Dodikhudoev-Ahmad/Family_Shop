@@ -124,7 +124,7 @@ public class OrderStockConcurrencyTests : IClassFixture<PostgresFixture>
 
         // 12 orders of 2 units against 10 in stock -> exactly 5 fit.
         var results = await RaceAsync(Enumerable.Range(0, 12)
-            .Select<int, Func<Task<Result<OrderDto>>>>(_ => () => PlaceAsync(userId, Request(null, (productId, 2, null)))));
+            .Select<int, Func<Task<Result<OrderDto>>>>(_ => () => PlaceAsync(userId, Request(null, (productId, 2, "M")))));
 
         Assert.Equal(5, results.Count(r => r.IsSuccess));
         Assert.Equal(0, await StockAsync(productId));
@@ -137,12 +137,12 @@ public class OrderStockConcurrencyTests : IClassFixture<PostgresFixture>
         var ids = await NewProductsAsync(1, 1, 1, 1, 1, 50, 50);
 
         // Five independent single-unit products...
-        var independent = ids.Take(5).Select<int, Func<Task<Result<OrderDto>>>>(id => () => PlaceAsync(userId, Request(null, (id, 1, null))));
+        var independent = ids.Take(5).Select<int, Func<Task<Result<OrderDto>>>>(id => () => PlaceAsync(userId, Request(null, (id, 1, "M"))));
         // ...and 40 orders over the same two products with the lines listed in opposite orders (lock-order trap).
         var a = ids[5];
         var b = ids[6];
         var crossing = Enumerable.Range(0, 40).Select<int, Func<Task<Result<OrderDto>>>>(i => () => PlaceAsync(userId,
-            i % 2 == 0 ? Request(null, (a, 1, null), (b, 1, null)) : Request(null, (b, 1, null), (a, 1, null))));
+            i % 2 == 0 ? Request(null, (a, 1, "M"), (b, 1, "M")) : Request(null, (b, 1, "M"), (a, 1, "M"))));
 
         var results = await RaceAsync(independent.Concat(crossing));
 
@@ -187,7 +187,7 @@ public class OrderStockConcurrencyTests : IClassFixture<PostgresFixture>
         var userId = await NewUserAsync();
         var ids = await NewProductsAsync(5, 1); // ids ascend: the plentiful one is written off first, then rolled back
 
-        var result = await PlaceAsync(userId, Request(null, (ids[0], 2, null), (ids[1], 2, null)));
+        var result = await PlaceAsync(userId, Request(null, (ids[0], 2, "M"), (ids[1], 2, "M")));
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ResultErrorCodes.OutOfStock, result.ErrorCode);
@@ -213,7 +213,7 @@ public class OrderStockConcurrencyTests : IClassFixture<PostgresFixture>
         }
 
         var results = await RaceAsync(Enumerable.Range(0, 6)
-            .Select<int, Func<Task<Result<OrderDto>>>>(_ => () => PlaceAsync(userId, Request(code, (productId, 1, null)))));
+            .Select<int, Func<Task<Result<OrderDto>>>>(_ => () => PlaceAsync(userId, Request(code, (productId, 1, "M")))));
 
         Assert.Equal(1, results.Count(r => r.IsSuccess));
         Assert.Equal(99, await StockAsync(productId)); // the five losers gave their unit back with the rollback
@@ -240,7 +240,7 @@ public class OrderStockConcurrencyTests : IClassFixture<PostgresFixture>
     {
         var userId = await NewUserAsync();
         var productId = (await NewProductsAsync(5))[0];
-        var order = (await PlaceAsync(userId, Request(null, (productId, 4, null)))).Value!;
+        var order = (await PlaceAsync(userId, Request(null, (productId, 4, "M")))).Value!;
         Assert.Equal(1, await StockAsync(productId));
 
         var results = await RaceAsync(Enumerable.Range(0, 10)
@@ -256,7 +256,7 @@ public class OrderStockConcurrencyTests : IClassFixture<PostgresFixture>
     {
         var userId = await NewUserAsync();
         var productId = (await NewProductsAsync(5))[0];
-        var order = (await PlaceAsync(userId, Request(null, (productId, 2, null)))).Value!;
+        var order = (await PlaceAsync(userId, Request(null, (productId, 2, "M")))).Value!;
         Assert.True((await SetStatusAsync(order.Id, OrderStatus.Processing)).IsSuccess);
 
         var results = await RaceAsync(new Func<Task<Result<AdminOrderDto>>>[]

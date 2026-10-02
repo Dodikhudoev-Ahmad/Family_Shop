@@ -56,6 +56,9 @@ public static class ProductTypeClassifier
         ("Чехлы", ["чехол"]),
     ];
 
+    /// <summary>Every type the catalogue knows - what the admin can pick for a product.</summary>
+    public static IReadOnlyList<string> KnownTypes { get; } = Rules.Select(r => r.Type).Distinct().ToList();
+
     public static string? Infer(string? name)
     {
         if (string.IsNullOrWhiteSpace(name))

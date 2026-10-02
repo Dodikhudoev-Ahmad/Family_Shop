@@ -55,6 +55,13 @@ public class ProductService : IProductService
             return Result<ProductDto>.Failure("Категория не найдена.");
         }
 
+        var type = ResolveType(dto, existingType: null);
+        var sizes = ProductSizeRules.Normalize(dto.AvailableSizes, SizeGrids.For(category, type));
+        if (!sizes.IsSuccess)
+        {
+            return Result<ProductDto>.Failure(sizes.Errors);
+        }
+
         var product = new Product
         {
             Name = dto.Name.Trim(),
@@ -66,7 +73,8 @@ public class ProductService : IProductService
             Gender = dto.Gender,
             Images = dto.Images,
             IsBestseller = dto.IsBestseller,
-            ProductType = ProductTypeClassifier.Infer(dto.Name),
+            ProductType = type,
+            AvailableSizes = sizes.Value,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -90,6 +98,13 @@ public class ProductService : IProductService
             return Result<ProductDto>.Failure("Категория не найдена.");
         }
 
+        var type = ResolveType(dto, existingType: product.ProductType);
+        var sizes = ProductSizeRules.Normalize(dto.AvailableSizes, SizeGrids.For(category, type));
+        if (!sizes.IsSuccess)
+        {
+            return Result<ProductDto>.Failure(sizes.Errors);
+        }
+
         product.Name = dto.Name.Trim();
         product.Description = dto.Description.Trim();
         product.Price = new Money(dto.Price);
@@ -99,7 +114,8 @@ public class ProductService : IProductService
         product.Gender = dto.Gender;
         product.Images = dto.Images;
         product.IsBestseller = dto.IsBestseller;
-        product.ProductType = ProductTypeClassifier.Infer(dto.Name);
+        product.ProductType = type;
+        product.AvailableSizes = sizes.Value;
 
         _unitOfWork.Products.Update(product);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -126,6 +142,13 @@ public class ProductService : IProductService
         return Result<bool>.Success(true);
     }
 
+    // An explicit type from the admin wins; without one a new product gets the type inferred from its name, and an
+    // edited one keeps the type it has (an old client that doesn't send a type must not reset it).
+    private static string? ResolveType(ProductUpsertDto dto, string? existingType) =>
+        !string.IsNullOrWhiteSpace(dto.ProductType)
+            ? dto.ProductType.Trim()
+            : existingType ?? ProductTypeClassifier.Infer(dto.Name);
+
     private static ProductDto ToDto(Domain.Entities.Product p) =>
-        new(p.Id, p.Name, p.Description, p.Price.Amount, p.DiscountPrice?.Amount, p.Stock, p.CategoryId, p.Gender, p.Images, p.CreatedAt, p.IsBestseller, p.AverageRating, p.ReviewCount, p.ProductType);
+        new(p.Id, p.Name, p.Description, p.Price.Amount, p.DiscountPrice?.Amount, p.Stock, p.CategoryId, p.Gender, p.Images, p.CreatedAt, p.IsBestseller, p.AverageRating, p.ReviewCount, p.ProductType, p.AvailableSizes);
 }
