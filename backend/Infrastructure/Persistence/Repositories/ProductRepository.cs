@@ -88,4 +88,20 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
     {
         return DbSet.AnyAsync(p => p.CategoryId == categoryId, cancellationToken);
     }
+
+    public async Task<bool> TryDecrementStockAsync(int id, int quantity, CancellationToken cancellationToken = default)
+    {
+        var affected = await DbSet
+            .Where(p => p.Id == id && p.Stock >= quantity)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(p => p.Stock, p => p.Stock - quantity), cancellationToken);
+
+        return affected > 0;
+    }
+
+    public Task IncrementStockAsync(int id, int quantity, CancellationToken cancellationToken = default)
+    {
+        return DbSet
+            .Where(p => p.Id == id)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(p => p.Stock, p => p.Stock + quantity), cancellationToken);
+    }
 }

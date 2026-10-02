@@ -126,6 +126,15 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
                 .SetProperty(o => o.Address, (string?)null), cancellationToken);
     }
 
+    public async Task<bool> TryChangeStatusAsync(int orderId, OrderStatus expected, OrderStatus newStatus, CancellationToken cancellationToken = default)
+    {
+        var affected = await DbSet
+            .Where(o => o.Id == orderId && o.Status == expected)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(o => o.Status, newStatus), cancellationToken);
+
+        return affected > 0;
+    }
+
     public Task<bool> AnyByPromoCodeIdAsync(int promoCodeId, CancellationToken cancellationToken = default)
     {
         return DbSet.AnyAsync(o => o.PromoCodeId == promoCodeId, cancellationToken);
