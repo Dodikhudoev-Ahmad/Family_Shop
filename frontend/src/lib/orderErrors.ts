@@ -18,6 +18,27 @@ export function outOfStockInfo(err: unknown): OutOfStockInfo | null {
   };
 }
 
+export interface SizeUnavailableInfo {
+  productName: string;
+  size: string | null;
+}
+
+/** The 409 "size_unavailable" answer of POST /orders: the size isn't (or is no longer) sold for that product. */
+export function sizeUnavailableInfo(err: unknown): SizeUnavailableInfo | null {
+  if (!(err instanceof ApiError) || err.status !== 409 || err.code !== 'size_unavailable') return null;
+  const meta = err.meta ?? {};
+  return {
+    productName: typeof meta.productName === 'string' ? meta.productName : '',
+    size: typeof meta.size === 'string' && meta.size ? meta.size : null,
+  };
+}
+
+export function sizeUnavailableMessage(info: SizeUnavailableInfo, t: TFunction): string {
+  return info.size
+    ? t('checkout.sizeUnavailable', { name: info.productName, size: info.size })
+    : t('checkout.sizeRequired', { name: info.productName });
+}
+
 /** The 409 "conflict" answer of an order status change: someone else changed the order first. */
 export function isOrderConflict(err: unknown): boolean {
   return err instanceof ApiError && err.status === 409 && err.code === 'conflict';

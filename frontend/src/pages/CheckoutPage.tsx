@@ -7,7 +7,7 @@ import { Button } from '../components/Button/Button';
 import { FadeImage } from '../components/FadeImage/FadeImage';
 import { PromoCodeInput } from '../components/PromoCodeInput/PromoCodeInput';
 import { ApiError, createOrder, type ApiDeliveryMethod } from '../lib/api';
-import { outOfStockInfo, outOfStockMessage } from '../lib/orderErrors';
+import { outOfStockInfo, outOfStockMessage, sizeUnavailableInfo, sizeUnavailableMessage } from '../lib/orderErrors';
 import type { DeliveryDetails, DeliveryMethod } from '../types/order';
 import './CheckoutPage.css';
 import { useTranslation } from 'react-i18next';
@@ -182,7 +182,14 @@ export function CheckoutPage() {
         setSubmitError(outOfStockMessage(shortage, t));
         void refreshStock();
       } else {
-        setSubmitError(err instanceof ApiError ? err.message : t('checkout.failed'));
+        const sizeProblem = sizeUnavailableInfo(err);
+        if (sizeProblem) {
+          // The size isn't sold (any more): no order, the cart stays; the refresh drops that line with a notice.
+          setSubmitError(sizeUnavailableMessage(sizeProblem, t));
+          void refreshStock();
+        } else {
+          setSubmitError(err instanceof ApiError ? err.message : t('checkout.failed'));
+        }
       }
     } finally {
       setIsSubmitting(false);
