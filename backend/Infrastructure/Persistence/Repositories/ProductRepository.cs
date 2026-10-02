@@ -98,6 +98,11 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
         return affected > 0;
     }
 
+    public async Task<int?> GetStockAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return await DbSet.AsNoTracking().Where(p => p.Id == id).Select(p => (int?)p.Stock).FirstOrDefaultAsync(cancellationToken);
+    }
+
     public Task IncrementStockAsync(int id, int quantity, CancellationToken cancellationToken = default)
     {
         return DbSet
