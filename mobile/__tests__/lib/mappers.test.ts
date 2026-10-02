@@ -1,4 +1,4 @@
-import { CLOTHING_SIZES, discountPercent, formatPrice, KIDS_SHOE_SIZES, SHOE_SIZES, sizesFor } from '../../src/lib/mappers';
+import { CLOTHING_SIZES, discountPercent, formatPrice, KIDS_SHOE_SIZES, productSizes, SHOE_SIZES, sizesFor } from '../../src/lib/mappers';
 import type { Category } from '../../src/lib/types';
 
 const categories: Category[] = [
@@ -28,5 +28,24 @@ describe('price formatting', () => {
     expect(discountPercent(10000, 8000)).toBe(20);
     expect(discountPercent(10000, undefined)).toBeNull();
     expect(discountPercent(10000, 10000)).toBeNull();
+  });
+});
+
+describe('productSizes - the sizes a customer can pick', () => {
+  const dto = (over: Record<string, unknown>) => ({ categoryId: 1, productType: 'Худи', availableSizes: null, ...over }) as never;
+
+  it('null (every product before sizes became editable) = the whole grid of the type', () => {
+    expect(productSizes(dto({}), categories)).toEqual(CLOTHING_SIZES);
+    expect(productSizes(dto({ productType: 'Кроссовки' }), categories)).toEqual(SHOE_SIZES);
+    expect(productSizes(dto({ categoryId: 3, productType: 'Кроссовки' }), categories)).toEqual(KIDS_SHOE_SIZES);
+  });
+
+  it('a selection limits the sizes, in grid order, and ignores anything outside the grid', () => {
+    expect(productSizes(dto({ availableSizes: ['XL', 'S', 'XS', '38'] }), categories)).toEqual(['S', 'XL']);
+  });
+
+  it('a product without a grid has no sizes whatever the API says', () => {
+    expect(productSizes(dto({ categoryId: 7, productType: 'Тарелки', availableSizes: ['M'] }), categories)).toEqual([]);
+    expect(productSizes(dto({ productType: 'Сумки', availableSizes: ['M'] }), categories)).toEqual([]);
   });
 });

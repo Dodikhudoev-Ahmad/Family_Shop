@@ -4,7 +4,7 @@ import { createApiClient } from '../src/lib/api/client';
 import { ApiError } from '../src/lib/api/errors';
 import { createTokenStore } from '../src/lib/api/tokenStore';
 import { createDeviceIdProvider } from '../src/lib/deviceId';
-import { isOrderConflict, outOfStockInfo, outOfStockMessage } from '../src/lib/orderErrors';
+import { isOrderConflict, outOfStockInfo, outOfStockMessage, sizeUnavailableInfo, sizeUnavailableMessage } from '../src/lib/orderErrors';
 import { CheckoutScreen } from '../src/screens/CheckoutScreen';
 import { ThemeProvider } from '../src/theme/ThemeContext';
 import { jsonResponse, memorySecretStore } from '../test-utils/auth';
@@ -142,5 +142,49 @@ describe('CheckoutScreen on 409 out_of_stock', () => {
     const tree = await submit(new ApiError(400, 'Промокод не найден.'));
     expect(textOf(tree.root.find((n) => n.props.accessibilityRole === 'alert'))).toContain('Промокод не найден.');
     expect(mockReload).not.toHaveBeenCalled();
+  });
+});
+
+describe('size_unavailable', () => {
+  const unavailable = (size: string | null) =>
+    new ApiError(409, "Size 'XL' is not available for product 'Куртка'.", { code: 'size_unavailable', meta: { productId: 7, productName: 'Куртка', size } });
+
+  it('is read from the 409 envelope meta', () => {
+    expect(sizeUnavailableInfo(unavailable('XL'))).toEqual({ productName: 'Куртка', size: 'XL' });
+    expect(sizeUnavailableInfo(shortage(1))).toBeNull();
+    expect(sizeUnavailableInfo(new ApiError(400, 'bad'))).toBeNull();
+  });
+
+  it.each([
+    ['ru', 'Размер «XL» товара «Куртка» больше недоступен'],
+    ['en', 'Size “XL” of “Куртка” is no longer available'],
+    ['kk', '«Куртка» тауарының «XL» өлшемі енді қолжетімсіз'],
+  ])('names the product and size in %s', async (lang, expected) => {
+    await i18n.changeLanguage(lang);
+    expect(sizeUnavailableMessage({ productName: 'Куртка', size: 'XL' }, i18n.t.bind(i18n))).toContain(expected);
+  });
+
+  it('CheckoutScreen shows it, keeps the cart, reloads the catalogue and does not show success', async () => {
+    mockCreateOrder.mockRejectedValue(unavailable('XL'));
+    let tree!: ReturnType<typeof create>;
+    await act(async () => {
+      tree = create(
+        <ThemeProvider>
+          <CheckoutScreen />
+        </ThemeProvider>
+      );
+    });
+    mounted.push(tree);
+    const byLabel = (label: string) => tree.root.find((n) => n.props.accessibilityLabel === label && typeof (n.props.onChangeText ?? n.props.onPress) === 'function');
+    await act(async () => byLabel(i18n.t('checkout.phone')).props.onChangeText('7001234567'));
+    await act(async () => byLabel(i18n.t('checkout.pickup')).props.onPress());
+    await act(async () => byLabel(i18n.t('checkout.confirm')).props.onPress());
+
+    const alert = tree.root.find((n) => n.props.accessibilityRole === 'alert');
+    const text = (node: ReactTestInstance): string => node.children.map((c) => (typeof c === 'string' ? c : text(c))).join('');
+    expect(text(alert)).toContain('Размер «XL» товара «Куртка» больше недоступен');
+    expect(mockClear).not.toHaveBeenCalled();
+    expect(mockReload).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(tree.toJSON())).not.toContain(i18n.t('checkout.successTitle'));
   });
 });

@@ -11,7 +11,7 @@ import { createOrder } from '../lib/api/endpoints';
 import type { ApiDeliveryMethod } from '../lib/api/types';
 import { formatPrice } from '../lib/mappers';
 import { orderNumber } from '../lib/orders';
-import { outOfStockInfo, outOfStockMessage } from '../lib/orderErrors';
+import { outOfStockInfo, outOfStockMessage, sizeUnavailableInfo, sizeUnavailableMessage } from '../lib/orderErrors';
 import { formatPhoneInput, LIMITS, validateAddress, validateOrderLines, validatePhone } from '../lib/validation';
 import { useAuth } from '../state/AuthContext';
 import { useCart } from '../state/CartContext';
@@ -158,7 +158,17 @@ export function CheckoutScreen() {
         setStockNotice(message);
         void reloadProducts();
       } else {
-        setError(e instanceof Error && e.message ? e.message : t('checkout.failed'));
+        const sizeProblem = sizeUnavailableInfo(e);
+        if (sizeProblem) {
+          // The size isn't sold (any more): no order, the cart stays; the reloaded catalogue lets the cart reconcile
+          // itself (that line is dropped with the usual notice on the cart screen).
+          const message = sizeUnavailableMessage(sizeProblem, t);
+          setError(message);
+          setStockNotice(message);
+          void reloadProducts();
+        } else {
+          setError(e instanceof Error && e.message ? e.message : t('checkout.failed'));
+        }
       }
     } finally {
       inFlight.current = false;

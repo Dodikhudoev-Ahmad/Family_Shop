@@ -53,3 +53,18 @@ describe('availableSizeGroups', () => {
     expect(availableSizeGroups(products, null, null).map((g) => g.id)).toEqual(['clothing', 'shoes']);
   });
 });
+
+describe('availableSizeGroups with per-product sizes', () => {
+  it('offers only sizes some product really sells', () => {
+    const limited = [make(1, 'men', 'Худи', ['M', 'L']), make(2, 'men', 'Брюки', ['L', 'XL']), make(3, 'men', 'Кроссовки', ['39', '40'])];
+
+    expect(flat(availableSizeGroups(limited, 'men', null))).toEqual(['M', 'L', 'XL', '39', '40']);
+    expect(flat(availableSizeGroups(limited, 'men', 'Худи'))).toEqual(['M', 'L']);
+    expect(flat(availableSizeGroups(limited, 'men', 'Кроссовки'))).toEqual(['39', '40']);
+  });
+
+  it('a size nobody sells any more disappears from the filter, and sizeless products add nothing', () => {
+    expect(flat(availableSizeGroups([make(1, 'men', 'Худи', ['M']), make(2, 'men', 'Сумки', [])], 'men', null))).toEqual(['M']);
+    expect(availableSizeGroups([make(3, 'sport', 'Гантели', [])], 'sport', null)).toEqual([]);
+  });
+});

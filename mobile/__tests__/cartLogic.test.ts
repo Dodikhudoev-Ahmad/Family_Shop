@@ -141,8 +141,8 @@ describe('stored cart normalisation', () => {
 });
 
 describe('reconcileCart (cart vs live catalogue)', () => {
-  const product = (id: string, stock: number, price = 1000, discountPrice?: number): Product =>
-    ({ id, name: `Live ${id}`, price, discountPrice, stock, images: [`img${id}`], sizes: [] }) as unknown as Product;
+  const product = (id: string, stock: number, price = 1000, discountPrice?: number, sizes: string[] = ['M', 'L']): Product =>
+    ({ id, name: `Live ${id}`, price, discountPrice, stock, images: [`img${id}`], sizes }) as unknown as Product;
   const line = (productId: string, size: string | null, quantity: number, price = 1000, stock = 10) => ({
     key: `${productId}__${size ?? 'onesize'}`, productId, name: 'old', price, size, quantity, stock,
   });
@@ -155,7 +155,7 @@ describe('reconcileCart (cart vs live catalogue)', () => {
   });
 
   it('removes vanished and sold-out products and says how many', () => {
-    const r = reconcileCart([line('1', null, 1), line('2', null, 1), line('3', null, 1)], [product('1', 5), product('2', 0)]);
+    const r = reconcileCart([line('1', null, 1), line('2', null, 1), line('3', null, 1)], [product('1', 5, 1000, undefined, []), product('2', 0)]);
     expect(r.lines.map((l) => l.productId)).toEqual(['1']);
     expect(r.removed).toBe(2);
   });
@@ -168,8 +168,20 @@ describe('reconcileCart (cart vs live catalogue)', () => {
     expect(r2.removed).toBe(1);
   });
 
+  it('removes a line whose size the admin no longer sells, keeps the other size, and counts it for the notice', () => {
+    const r = reconcileCart([line('1', 'M', 1), line('1', 'XL', 2)], [product('1', 10, 1000, undefined, ['S', 'M', 'L'])]);
+    expect(r.lines.map((l) => l.key)).toEqual(['1__M']); // the key format productId__size is untouched
+    expect(r.removed).toBe(1);
+    expect(r.changed).toBe(true);
+  });
+
+  it('a product that became sizeless drops its sized lines, and a sized product drops a size-less line', () => {
+    expect(reconcileCart([line('1', 'M', 1)], [product('1', 10, 1000, undefined, [])]).lines).toEqual([]);
+    expect(reconcileCart([line('1', null, 1)], [product('1', 10)]).lines).toEqual([]);
+  });
+
   it('reports no change when everything already matches', () => {
-    const r = reconcileCart([{ ...line('1', null, 2, 1000, 10), name: 'Live 1', image: 'img1' }], [product('1', 10)]);
+    const r = reconcileCart([{ ...line('1', null, 2, 1000, 10), name: 'Live 1', image: 'img1' }], [product('1', 10, 1000, undefined, [])]);
     expect(r.changed).toBe(false);
   });
 });
