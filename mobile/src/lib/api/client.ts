@@ -245,6 +245,16 @@ export function createApiClient(deps: ApiClientDeps) {
       }
     },
 
+    /**
+     * Deletes the signed-in user's own account (App Store 5.1.1(v)). The current password is required; the server
+     * answers 400 for a wrong one (the session stays), 403 for an administrator. On success every session is gone
+     * server-side and this device forgets its tokens too.
+     */
+    async deleteAccount(password: string): Promise<void> {
+      await request<void>('/auth/me', { method: 'DELETE', body: { password }, auth: 'required' });
+      await tokens.clear();
+    },
+
     fetchSessions: (): Promise<SessionDto[]> => request<SessionDto[]>('/auth/sessions', { auth: 'required' }),
 
     revokeSession: (sessionId: string): Promise<void> =>
