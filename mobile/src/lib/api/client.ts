@@ -91,7 +91,7 @@ export function createApiClient(deps: ApiClientDeps) {
     }
 
     if (!json.success) {
-      throw new ApiError(res.status, json.errors.join('; ') || i18n.t('errors.failed'));
+      throw new ApiError(res.status, json.errors.join('; ') || i18n.t('errors.failed'), { code: json.code, meta: json.meta });
     }
     return json.data;
   }

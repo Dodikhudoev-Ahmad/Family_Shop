@@ -2,6 +2,10 @@ export interface ApiResponse<T> {
   success: boolean;
   data: T;
   errors: string[];
+  /** Machine-readable failure kind, e.g. 'out_of_stock' or 'conflict' (HTTP 409). */
+  code?: string;
+  /** Details for `code`, e.g. { productId, productName, available }. */
+  meta?: Record<string, unknown>;
 }
 
 export interface PagedResult<T> {

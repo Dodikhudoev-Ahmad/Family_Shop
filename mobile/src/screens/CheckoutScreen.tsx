@@ -11,9 +11,11 @@ import { createOrder } from '../lib/api/endpoints';
 import type { ApiDeliveryMethod } from '../lib/api/types';
 import { formatPrice } from '../lib/mappers';
 import { orderNumber } from '../lib/orders';
+import { outOfStockInfo, outOfStockMessage } from '../lib/orderErrors';
 import { formatPhoneInput, LIMITS, validateAddress, validateOrderLines, validatePhone } from '../lib/validation';
 import { useAuth } from '../state/AuthContext';
 import { useCart } from '../state/CartContext';
+import { useProducts } from '../state/ProductsContext';
 import { fontSizes, fonts, MIN_TOUCH_TARGET, radius, spacing } from '../theme/tokens';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import type { ColorTokens } from '../theme/tokens';
@@ -55,6 +57,7 @@ export function CheckoutScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const { user, isLoading } = useAuth();
   const { lines, totalPrice, finalTotal, promo, clear } = useCart();
+  const { reload: reloadProducts } = useProducts();
 
   const [phone, setPhone] = useState('');
   const [method, setMethod] = useState<Method>('courier');
@@ -62,6 +65,8 @@ export function CheckoutScreen() {
   const [touched, setTouched] = useState<{ phone?: boolean; address?: boolean }>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Kept apart from `error`: if the shortage empties the cart, the empty state still explains what happened.
+  const [stockNotice, setStockNotice] = useState<string | null>(null);
   const [placed, setPlaced] = useState<string | null>(null);
   const inFlight = useRef(false);
 
@@ -110,7 +115,7 @@ export function CheckoutScreen() {
   if (lines.length === 0) {
     return (
       <Screen>
-        <StateMessage message={t('checkout.empty')} actionLabel={t('checkout.toCatalog')} onAction={() => navigation.navigate('CatalogTab')} />
+        <StateMessage message={stockNotice ?? t('checkout.empty')} actionLabel={t('checkout.toCatalog')} onAction={() => navigation.navigate('CatalogTab')} />
       </Screen>
     );
   }
@@ -124,6 +129,7 @@ export function CheckoutScreen() {
     if (inFlight.current) return; // a double tap must not place two orders
     setTouched({ phone: true, address: true });
     setError(null);
+    setStockNotice(null);
     if (phoneError || addressError || linesError) {
       setError(text(linesError));
       return;
@@ -143,7 +149,17 @@ export function CheckoutScreen() {
       // Nothing to go back to: the cart is empty now.
       navigation.setOptions({ headerShown: false, gestureEnabled: false });
     } catch (e: unknown) {
-      setError(e instanceof Error && e.message ? e.message : t('checkout.failed'));
+      const shortage = outOfStockInfo(e);
+      if (shortage) {
+        // No order was created and the cart is untouched. Re-reading the catalogue lets the cart reconcile itself
+        // with the real stock (quantities trimmed, sold-out lines dropped with the usual notice on the cart screen).
+        const message = outOfStockMessage(shortage, t);
+        setError(message);
+        setStockNotice(message);
+        void reloadProducts();
+      } else {
+        setError(e instanceof Error && e.message ? e.message : t('checkout.failed'));
+      }
     } finally {
       inFlight.current = false;
       setSubmitting(false);
