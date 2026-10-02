@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image, Pressable, Text, View } from 'react-native';
+import { Image, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { isLowStock, isOutOfStock } from '../lib/catalog/stock';
 import { discountPercent, formatPrice } from '../lib/mappers';
@@ -35,6 +35,12 @@ const styles = (c: ColorTokens) => ({
   priceOld: { color: c.textSecondary, fontFamily: fonts.body, fontSize: fontSizes.xs, textDecorationLine: 'line-through' as const },
   stock: { color: c.warning, fontFamily: fonts.bodyMedium, fontSize: fontSizes.xs },
 });
+
+/** Width of one card in the two-column grid (16pt side margins, 8pt gap) - the same everywhere products are listed. */
+export function useGridCardWidth(): number {
+  const { width } = useWindowDimensions();
+  return Math.floor((width - spacing.md * 2 - spacing.sm) / 2);
+}
 
 interface ProductCardProps {
   product: Product;

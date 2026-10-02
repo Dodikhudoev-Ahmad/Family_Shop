@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Pressable, RefreshControl, ScrollView, Text, useWindowDimensions, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { ProductReviews } from '../components/ProductReviews';
-import { ProductRow } from '../components/ProductRow';
+import { ProductGridSection } from '../components/ProductGridSection';
 import { StarRating } from '../components/StarRating';
 import { SkeletonBlock } from '../components/Skeleton';
 import { Button, Screen, StateMessage } from '../components/ui';
@@ -326,7 +326,12 @@ export function ProductScreen({ route }: { route: RouteProp<{ Product: { product
           <ProductReviews productId={Number(product.id)} onChanged={load} />
         </View>
 
-        <ProductRow title={t('product.similar')} products={related} onOpen={(p) => navigation.push('Product', { productId: Number(p.id) })} />
+        <ProductGridSection
+          title={t('product.similar')}
+          products={related}
+          onOpen={(p) => navigation.push('Product', { productId: Number(p.id) })}
+          onSeeAll={() => navigation.navigate('CatalogTab', { screen: 'Catalog', params: { categoryId: Number(product.categoryId) } })}
+        />
       </ScrollView>
     </Screen>
   );
