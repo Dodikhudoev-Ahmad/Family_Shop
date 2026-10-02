@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Hosting;
-using NSubstitute;
 using Xunit;
 using Infrastructure.Storage;
 
@@ -12,9 +10,7 @@ public class LocalImageStorageServiceTests : IDisposable
 
     public LocalImageStorageServiceTests()
     {
-        var environment = Substitute.For<IHostEnvironment>();
-        environment.ContentRootPath.Returns(_tempRoot);
-        _sut = new LocalImageStorageService(environment);
+        _sut = new LocalImageStorageService(Path.Combine(_tempRoot, "uploads"));
     }
 
     public void Dispose()
