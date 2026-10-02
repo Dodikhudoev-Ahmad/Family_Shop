@@ -387,6 +387,10 @@ export interface ProductUpsertRequest {
   gender: ApiGender;
   images: string[];
   isBestseller: boolean;
+  /** What the product is; decides its size grid. */
+  productType: string;
+  /** The sizes it is sold in; null for a type without sizes (the server also stores null for the whole grid). */
+  availableSizes: string[] | null;
 }
 
 export function createAdminProduct(request: ProductUpsertRequest): Promise<ProductDto> {

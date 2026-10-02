@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import i18n, { setLanguage } from '../i18n';
 import { createOrder, updateAdminOrderStatus, ApiError } from './api';
-import { isOrderConflict, outOfStockInfo, outOfStockMessage } from './orderErrors';
+import { isOrderConflict, outOfStockInfo, outOfStockMessage, sizeUnavailableInfo, sizeUnavailableMessage } from './orderErrors';
 
 const envelope = (status: number, body: unknown) =>
   vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(body), { status }));
@@ -65,5 +65,28 @@ describe('out-of-stock message', () => {
       setLanguage(lang);
       expect(i18n.t('errors.orderChanged').length).toBeGreaterThan(10);
     }
+  });
+});
+
+describe('size_unavailable', () => {
+  it('is read from the 409 envelope', async () => {
+    envelope(409, { success: false, errors: ['x'], code: 'size_unavailable', meta: { productId: 7, productName: 'Куртка', size: 'XL' } });
+    const err = await createOrder(order).catch((e: unknown) => e);
+
+    expect(sizeUnavailableInfo(err)).toEqual({ productName: 'Куртка', size: 'XL' });
+    expect(outOfStockInfo(err)).toBeNull();
+  });
+
+  it.each([
+    ['ru', 'Размер «XL» товара «Куртка» больше недоступен'],
+    ['en', 'Size “XL” of “Куртка” is no longer available'],
+    ['kk', '«Куртка» тауарының «XL» өлшемі енді қолжетімсіз'],
+  ])('names the product and size in %s', (lang, expected) => {
+    setLanguage(lang as 'ru' | 'en' | 'kk');
+    expect(sizeUnavailableMessage({ productName: 'Куртка', size: 'XL' }, i18n.t.bind(i18n))).toContain(expected);
+  });
+
+  it('asks for a size when none was sent', () => {
+    expect(sizeUnavailableMessage({ productName: 'Куртка', size: null }, i18n.t.bind(i18n))).toContain('нужно выбрать размер');
   });
 });
