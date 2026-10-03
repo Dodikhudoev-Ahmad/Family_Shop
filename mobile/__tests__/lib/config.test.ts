@@ -6,6 +6,17 @@ describe('resolveApiBaseUrl', () => {
     expect(DEFAULT_API_BASE_URL.startsWith('https://')).toBe(true);
   });
 
+  it('the production default is the shop\'s own API domain, not a hosting address', () => {
+    expect(DEFAULT_API_BASE_URL).toBe('https://api.familyshop10.kz/api/v1');
+    expect(DEFAULT_API_BASE_URL).not.toMatch(/railway/i);
+    expect(resolveApiBaseUrl('', false)).toBe('https://api.familyshop10.kz/api/v1');
+  });
+
+  it('a release build still refuses a non-https address, the new default included only over https', () => {
+    expect(() => resolveApiBaseUrl('http://api.familyshop10.kz/api/v1', false)).toThrow();
+    expect(resolveApiBaseUrl('https://api.familyshop10.kz/api/v1', false)).toBe('https://api.familyshop10.kz/api/v1');
+  });
+
   it('trims whitespace and trailing slashes', () => {
     expect(resolveApiBaseUrl('  https://api.example.kz/api/v1//  ', false)).toBe('https://api.example.kz/api/v1');
   });
