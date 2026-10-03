@@ -291,3 +291,52 @@
     flex: 0 0 auto;
   }
 }
+
+/* A size the admin doesn't sell: shown, but muted and crossed out, and not selectable (aria-disabled keeps it focusable
+   so a screen reader announces it and pressing it explains why). Same box as every other size. */
+.size-btn.is-unavailable {
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border);
+  border-style: dashed;
+  cursor: not-allowed;
+  overflow: hidden;
+}
+
+.size-btn.is-unavailable::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top right,
+    transparent calc(50% - 0.75px),
+    var(--color-text-secondary) calc(50% - 0.75px),
+    var(--color-text-secondary) calc(50% + 0.75px),
+    transparent calc(50% + 0.75px)
+  );
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.size-btn.is-unavailable:hover {
+  border-color: var(--color-border);
+}
+
+.size-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* The explanation under the sizes: always in the DOM (a live region must exist before its text changes). */
+.product-page__size-note {
+  min-height: 20px;
+  margin: var(--space-2) 0 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+/* "В корзину" before an available size is picked: looks inactive, but stays focusable and explains itself on press. */
+.product-page__add-btn[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

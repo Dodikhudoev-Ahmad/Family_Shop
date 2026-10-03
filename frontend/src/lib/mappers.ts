@@ -57,6 +57,7 @@ export function mapProduct(dto: ProductDto, categories: Category[]): Product {
     gender: GENDER_MAP[dto.gender] ?? 'female',
     images: dto.images,
     sizes: productSizes(dto, categories),
+    gridSizes: sizesFor(dto.categoryId, categories, dto.productType),
     isBestseller: dto.isBestseller,
     createdAt: dto.createdAt,
     averageRating: dto.averageRating,

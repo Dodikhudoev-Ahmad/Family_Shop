@@ -17,7 +17,10 @@ export interface Product {
   categoryId: string;
   gender: Gender;
   images: string[];
+  /** The sizes that can be bought (the admin's selection within the grid, or the whole grid). */
   sizes: string[];
+  /** The whole size grid of the product's type, to show unavailable sizes muted; absent in old snapshots. */
+  gridSizes?: string[];
   isNew?: boolean;
   isBestseller?: boolean;
   createdAt: string;

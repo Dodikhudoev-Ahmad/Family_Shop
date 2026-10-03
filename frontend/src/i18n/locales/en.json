@@ -217,7 +217,9 @@
     "composition": "Composition & care",
     "compositionText": "Composition is on the garment label. Gentle wash at 30°C recommended.",
     "similar": "Similar products",
-    "notFound": "Product not found."
+    "notFound": "Product not found.",
+    "sizeUnavailableNote": "Size {{size}} is unavailable right now. Choose another.",
+    "sizeUnavailableAria": "{{size}}, unavailable"
   },
   "reviews": {
     "sortNewest": "Newest first",
