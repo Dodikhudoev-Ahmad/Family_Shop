@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { useCategories } from '../context/CategoriesContext';
+import { fetchProduct } from '../lib/api';
+import { mapProduct } from '../lib/mappers';
+import type { Product } from '../types/product';
 import { useRecentlyViewed } from '../context/RecentlyViewedContext';
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 import { RecentlyViewed } from '../components/RecentlyViewed/RecentlyViewed';
@@ -31,8 +34,14 @@ export function ProductPage() {
   const { t } = useTranslation();
   const { id } = useParams();
   const { products, isLoading } = useProducts();
-  const { categories } = useCategories();
-  const product = products.find((p) => p.id === id);
+  const { categories, isLoading: categoriesLoading } = useCategories();
+  const known = products.find((p) => p.id === id);
+  // The catalogue in the context is loaded once when the app opens. A product added (or restored) after that is in the
+  // catalogue page - it asks the API afresh - but not in this list, so the page asks the API for it by id before
+  // giving up. Not-found is only for an id the API itself doesn't know.
+  const [fetched, setFetched] = useState<{ id: string; product: Product | null } | null>(null);
+  const product = known ?? (fetched && fetched.id === id ? (fetched.product ?? undefined) : undefined);
+  const isFetchingMissing = !known && id !== undefined && !(fetched && fetched.id === id);
   const { lines: cartLines, addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { showToast } = useToast();
@@ -57,6 +66,22 @@ export function ProductPage() {
   };
   useEffect(() => () => window.clearTimeout(noteTimer.current), []);
 
+  useEffect(() => {
+    if (known || id === undefined || isLoading || categoriesLoading) return;
+    const numericId = Number(id);
+    if (!Number.isInteger(numericId) || numericId <= 0) {
+      setFetched({ id, product: null });
+      return;
+    }
+    let cancelled = false;
+    fetchProduct(numericId)
+      .then((dto) => !cancelled && setFetched({ id, product: mapProduct(dto, categories) }))
+      .catch(() => !cancelled && setFetched({ id, product: null }));
+    return () => {
+      cancelled = true;
+    };
+  }, [id, known, isLoading, categoriesLoading, categories]);
+
   useSeo({
     title: product ? `${product.name} — ${SITE_NAME}` : SITE_NAME,
     description: product ? truncateDescription(product.description) : t('product.notFound'),
@@ -71,7 +96,7 @@ export function ProductPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id]);
 
-  if (isLoading) {
+  if (isLoading || isFetchingMissing) {
     return <div className="container product-page__not-found">{t('common.loading')}</div>;
   }
 
