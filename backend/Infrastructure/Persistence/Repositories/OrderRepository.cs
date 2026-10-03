@@ -95,8 +95,11 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
 
         var totalOrders = await DbSet.CountAsync(cancellationToken);
         var newOrdersCount = await DbSet.CountAsync(o => o.Status == OrderStatus.Created, cancellationToken);
+        // Today's orders and revenue count every order that is still alive - new, in progress, shipped and delivered (an order
+        // is paid on receipt, so waiting for "delivered" would show an empty dashboard all day) - and never a cancelled one:
+        // it brings no money, and its goods went back on sale. "Всего заказов" stays a count of every order ever placed.
         var todaysTotals = await DbSet
-            .Where(o => o.CreatedAt >= today)
+            .Where(o => o.CreatedAt >= today && o.Status != OrderStatus.Cancelled)
             .Select(o => o.TotalPrice)
             .ToListAsync(cancellationToken);
 
