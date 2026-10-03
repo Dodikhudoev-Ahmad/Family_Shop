@@ -24,6 +24,11 @@ import { useLabels } from '../i18n/labels';
 
 type SortOption = 'price-asc' | 'price-desc' | 'new' | 'popular';
 
+// Only price sorting is offered. 'new' / 'popular' stay in the type and the mapping because the API still understands
+// them (and an old link or a future caller may still ask for one): such an order is applied, the field just shows its
+// "Сортировка" placeholder because none of the two choices is active.
+const SORT_CHOICES: SortOption[] = ['price-asc', 'price-desc'];
+
 const PAGE_SIZE = 8;
 
 const SORT_TO_API: Record<SortOption, ProductSortBy> = {
@@ -64,7 +69,8 @@ export function CatalogPage() {
   const [priceRange, setPriceRange] = useState<[number, number]>(priceBounds);
   const [discountOnly, setDiscountOnly] = useState(() => searchParams.get('discount') === 'true');
   const [productType, setProductType] = useState<string | null>(null);
-  const [sort, setSort] = useState<SortOption>('new');
+  // null = no sort chosen: the server's default order (newest first), the placeholder is shown.
+  const [sort, setSort] = useState<SortOption | null>(null);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const isLoadingMoreRef = useRef(false);
@@ -173,7 +179,7 @@ export function CatalogPage() {
       productType: productType ?? undefined,
       minPrice: minPrice > priceBounds[0] ? minPrice : undefined,
       maxPrice: maxPrice < priceBounds[1] ? maxPrice : undefined,
-      sortBy: SORT_TO_API[sort],
+      sortBy: sort ? SORT_TO_API[sort] : undefined,
       page: 1,
       pageSize: PAGE_SIZE,
     })
@@ -211,7 +217,7 @@ export function CatalogPage() {
       productType: productType ?? undefined,
       minPrice: minPrice > priceBounds[0] ? minPrice : undefined,
       maxPrice: maxPrice < priceBounds[1] ? maxPrice : undefined,
-      sortBy: SORT_TO_API[sort],
+      sortBy: sort ? SORT_TO_API[sort] : undefined,
       page: nextPage,
       pageSize: PAGE_SIZE,
     })
@@ -271,9 +277,14 @@ export function CatalogPage() {
           <button className="catalog__filter-toggle" onClick={() => setIsFilterSheetOpen(true)}>
             {t('catalog.filters')}
           </button>
-          <select className="catalog__sort" value={sort} onChange={(e) => setSort(e.target.value as SortOption)}>
-            <option value="new">{t('catalog.sortNew')}</option>
-            <option value="popular">{t('catalog.sortPopular')}</option>
+          <select
+            className="catalog__sort"
+            aria-label={t('catalog.sort')}
+            value={sort && SORT_CHOICES.includes(sort) ? sort : ''}
+            onChange={(e) => setSort((e.target.value || null) as SortOption | null)}
+          >
+            {/* Choosing the placeholder again goes back to the default order. */}
+            <option value="">{t('catalog.sort')}</option>
             <option value="price-asc">{t('catalog.sortPriceAsc')}</option>
             <option value="price-desc">{t('catalog.sortPriceDesc')}</option>
           </select>

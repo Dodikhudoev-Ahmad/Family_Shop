@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CatalogPage } from './CatalogPage';
@@ -141,5 +141,45 @@ describe('CatalogPage: changing the category from the filter panel', () => {
     expect(await screen.findByText('Тарелки 0')).toBeInTheDocument();
     expect(lastQuery().minPrice).toBeUndefined();
     expect(lastQuery().maxPrice).toBeUndefined();
+  });
+});
+
+describe('CatalogPage: sort', () => {
+  const sortSelect = () => document.querySelector('.catalog__sort') as HTMLSelectElement;
+  const shown = () => sortSelect().options[sortSelect().selectedIndex].text;
+
+  it('offers a placeholder and exactly the two price orders - no "по новизне" / "по популярности"', async () => {
+    renderAt('/catalog');
+    await screen.findAllByText(/Платья 0/);
+
+    expect([...sortSelect().options].map((o) => o.text)).toEqual(['Сортировка', 'Цена: по возрастанию', 'Цена: по убыванию']);
+    expect(shown()).toBe('Сортировка');
+    expect(screen.queryByText('По новизне')).not.toBeInTheDocument();
+    expect(screen.queryByText('По популярности')).not.toBeInTheDocument();
+  });
+
+  it('starts with the server default order (no sortBy), applies a price order, and the placeholder resets it', async () => {
+    renderAt('/catalog');
+    await screen.findAllByText(/Платья 0/);
+    expect(lastQuery().sortBy).toBeUndefined();
+
+    fireEvent.change(sortSelect(), { target: { value: 'price-desc' } });
+    await waitFor(() => expect(lastQuery().sortBy).toBe(2));
+    expect(shown()).toBe('Цена: по убыванию');
+
+    fireEvent.change(sortSelect(), { target: { value: 'price-asc' } });
+    await waitFor(() => expect(lastQuery().sortBy).toBe(1));
+
+    fireEvent.change(sortSelect(), { target: { value: '' } });
+    await waitFor(() => expect(lastQuery().sortBy).toBeUndefined());
+    expect(shown()).toBe('Сортировка');
+  });
+
+  it('ignores a sort in the URL (old links): the catalogue loads in the default order with the placeholder', async () => {
+    renderAt('/catalog?sort=popular&sortBy=3');
+    await screen.findAllByText(/Платья 0/);
+
+    expect(lastQuery().sortBy).toBeUndefined();
+    expect(shown()).toBe('Сортировка');
   });
 });

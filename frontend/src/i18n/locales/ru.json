@@ -159,8 +159,7 @@
   "catalog": {
     "title": "Каталог",
     "filters": "Фильтры",
-    "sortNew": "По новизне",
-    "sortPopular": "По популярности",
+    "sort": "Сортировка",
     "sortPriceAsc": "Цена: по возрастанию",
     "sortPriceDesc": "Цена: по убыванию",
     "loadError": "Не удалось загрузить товары: {{error}}",
