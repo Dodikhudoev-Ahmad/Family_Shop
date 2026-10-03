@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Api.Common;
+using Api.Security;
 using Api.Filters;
 using Api.RateLimiting;
 using Application.Common;
@@ -19,12 +20,12 @@ public class AuthController : ControllerBase
 {
     private const string RefreshTokenCookie = "refreshToken";
     private readonly IAuthService _authService;
-    private readonly IWebHostEnvironment _environment;
+    private readonly RefreshCookiePolicy _cookiePolicy;
 
-    public AuthController(IAuthService authService, IWebHostEnvironment environment)
+    public AuthController(IAuthService authService, RefreshCookiePolicy cookiePolicy)
     {
         _authService = authService;
-        _environment = environment;
+        _cookiePolicy = cookiePolicy;
     }
 
     /// <summary>Регистрация нового пользователя.</summary>
@@ -172,20 +173,7 @@ public class AuthController : ControllerBase
         Response.Cookies.Append(RefreshTokenCookie, refreshToken, BuildCookieOptions(new DateTimeOffset(DateTime.SpecifyKind(expiresAtUtc, DateTimeKind.Utc))));
     }
 
-    // In production the SPA and the API live on different sites (separate *.up.railway.app
-    // hosts, and up.railway.app is on the Public Suffix List), so a SameSite=Strict cookie is
-    // rejected outright on the cross-site fetch response and every page reload logged the user
-    // out. SameSite=None+Secure lets the browser store/send it; CORS (credentials + strict
-    // origin whitelist) still stops other origins from reading the response, and CookieCsrfFilter
-    // stops them from using it. Once the SPA and API share one registrable domain (custom domain),
-    // this can go back to Strict. Delete() must use the same Path/SameSite/Secure as Append(),
-    // or the browser ignores it.
-    private CookieOptions BuildCookieOptions(DateTimeOffset? expires) => new()
-    {
-        HttpOnly = true,
-        Secure = true,
-        SameSite = _environment.IsDevelopment() ? SameSiteMode.Strict : SameSiteMode.None,
-        Expires = expires,
-        Path = "/api/v1/auth"
-    };
+    // Domain / SameSite / Secure depend on where the API is reached (see RefreshCookiePolicy). Delete() must use the same
+    // attributes as Append(), or the browser ignores it.
+    private CookieOptions BuildCookieOptions(DateTimeOffset? expires) => _cookiePolicy.Build(Request, expires);
 }

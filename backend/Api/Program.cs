@@ -121,6 +121,9 @@ builder.Services.AddAuthorization(options =>
 // CORS: строгий whitelist origin фронтенда из конфига (Cors:AllowedOrigins / Cors:AllowedOriginsList), не AllowAnyOrigin
 builder.Services.AddFamilyShopCors(builder.Configuration);
 
+// Refresh-token cookie attributes (domain / SameSite) depend on the environment and on the host the API is reached on.
+builder.Services.AddSingleton<RefreshCookiePolicy>();
+
 // Rate limiting: строгие лимиты на вход/регистрацию/refresh, общий лимит на весь API (см. Api/RateLimiting)
 builder.Services.AddFamilyShopRateLimiting();
 
