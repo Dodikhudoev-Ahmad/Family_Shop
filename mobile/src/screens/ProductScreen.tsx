@@ -59,6 +59,10 @@ const styles = (c: ColorTokens) => ({
     paddingHorizontal: spacing.sm,
   },
   sizeActive: { backgroundColor: c.accent, borderColor: c.accent },
+  // A size the admin doesn't sell: same box, muted, dashed border, struck-through. Still focusable (see accessibilityState).
+  sizeOff: { backgroundColor: c.bgSecondary, borderStyle: 'dashed' as const },
+  sizeTextOff: { color: c.textSecondary, textDecorationLine: 'line-through' as const },
+  sizeNote: { color: c.textSecondary, fontFamily: fonts.body, fontSize: fontSizes.sm, minHeight: 20 },
   sizeText: { color: c.text, fontFamily: fonts.bodyMedium, fontSize: fontSizes.md },
   sizeTextActive: { color: c.white },
   sizeBadge: { position: 'absolute' as const, top: -7, right: -7, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: c.text, alignItems: 'center' as const, justifyContent: 'center' as const, paddingHorizontal: 4 },
@@ -76,6 +80,9 @@ const styles = (c: ColorTokens) => ({
   section: { gap: spacing.xs },
   text: { color: c.text, fontFamily: fonts.body, fontSize: fontSizes.md, lineHeight: 22 },
 });
+
+// How long the "size unavailable" explanation stays.
+const UNAVAILABLE_NOTE_MS = 4000;
 
 type Feedback = 'added' | 'size' | 'stock' | 'line-quantity' | 'lines' | null;
 
@@ -98,6 +105,9 @@ export function ProductScreen({ route }: { route: RouteProp<{ Product: { product
   const [error, setError] = useState<string | null>(null);
   const [size, setSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  // The size whose "unavailable" explanation is shown under the sizes (a live region; no modal, no toast).
+  const [unavailableSize, setUnavailableSize] = useState<string | null>(null);
+  const noteTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [imageIndex, setImageIndex] = useState(0);
   const [galleryWidth, setGalleryWidth] = useState(windowWidth);
@@ -113,6 +123,19 @@ export function ProductScreen({ route }: { route: RouteProp<{ Product: { product
   };
 
   useEffect(load, [productId, categories.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => clearTimeout(noteTimer.current), []);
+
+  const showUnavailable = (value: string) => {
+    clearTimeout(noteTimer.current);
+    setUnavailableSize(value);
+    noteTimer.current = setTimeout(() => setUnavailableSize(null), UNAVAILABLE_NOTE_MS);
+  };
+  const selectSize = (value: string) => {
+    clearTimeout(noteTimer.current);
+    setUnavailableSize(null);
+    setSize(value);
+    setFeedback(null);
+  };
 
   useEffect(() => {
     if (product) navigation.setOptions({ title: product.name });
@@ -150,8 +173,13 @@ export function ProductScreen({ route }: { route: RouteProp<{ Product: { product
   const selectedInCart = inCart(size);
   const effectiveQuantity = Math.min(quantity, Math.max(room, 1));
 
+  // The whole grid is shown; the ones missing from product.sizes are muted and can't be picked.
+  const gridSizes = product.gridSizes ?? product.sizes;
+  // Nothing can be added until an available size is picked.
+  const needsSize = gridSizes.length > 0 && !(size && product.sizes.includes(size));
+
   const handleAdd = () => {
-    if (product.sizes.length > 0 && !size) {
+    if (needsSize) {
       setFeedback('size');
       return;
     }
@@ -236,27 +264,28 @@ export function ProductScreen({ route }: { route: RouteProp<{ Product: { product
             <Text style={s.muted}>{t('mobile.stockLeft', { count: product.stock })}</Text>
           )}
 
-          {product.sizes.length > 0 ? (
+          {gridSizes.length > 0 ? (
             <View style={{ gap: spacing.sm }}>
               <Text style={s.blockTitle}>{t('product.size')}</Text>
               <View style={s.sizes}>
-                {product.sizes.map((value) => {
+                {gridSizes.map((value) => {
                   const selected = size === value;
                   const count = inCart(value);
+                  const unavailable = !product.sizes.includes(value);
+                  // Not `disabled`: an unavailable size stays focusable and pressable, so it can say why it can't be chosen.
                   return (
                     <Pressable
                       key={value}
                       accessibilityRole="radio"
-                      accessibilityState={{ selected, disabled: outOfStock }}
-                      accessibilityLabel={count > 0 ? `${value}, ${t('product.inCartAria', { count })}` : value}
+                      accessibilityState={{ selected, disabled: outOfStock || unavailable }}
+                      accessibilityLabel={
+                        unavailable ? t('product.sizeUnavailableAria', { size: value }) : count > 0 ? `${value}, ${t('product.inCartAria', { count })}` : value
+                      }
                       disabled={outOfStock}
-                      onPress={() => {
-                        setSize(value);
-                        setFeedback(null);
-                      }}
-                      style={[s.size, selected && s.sizeActive, outOfStock && s.stepOff]}
+                      onPress={() => (unavailable ? showUnavailable(value) : selectSize(value))}
+                      style={[s.size, selected && s.sizeActive, unavailable && s.sizeOff, outOfStock && s.stepOff]}
                     >
-                      <Text style={[s.sizeText, selected && s.sizeTextActive]}>{value}</Text>
+                      <Text style={[s.sizeText, selected && s.sizeTextActive, unavailable && s.sizeTextOff]}>{value}</Text>
                       {count > 0 ? (
                         <View style={s.sizeBadge}>
                           <Text style={s.sizeBadgeText}>{count}</Text>
@@ -266,6 +295,9 @@ export function ProductScreen({ route }: { route: RouteProp<{ Product: { product
                   );
                 })}
               </View>
+              <Text style={s.sizeNote} accessibilityLiveRegion="polite">
+                {unavailableSize ? t('product.sizeUnavailableNote', { size: unavailableSize }) : ''}
+              </Text>
             </View>
           ) : null}
 
@@ -289,7 +321,7 @@ export function ProductScreen({ route }: { route: RouteProp<{ Product: { product
               style={{ flex: 1 }}
               label={outOfStock ? t('common.outOfStock') : room === 0 ? t('common.left', { count: product.stock }) : selectedInCart > 0 ? t('product.addMore') : t('common.addToCart')}
               onPress={handleAdd}
-              disabled={outOfStock || room === 0}
+              disabled={outOfStock || room === 0 || needsSize}
             />
             <Pressable
               accessibilityRole="button"
@@ -301,6 +333,7 @@ export function ProductScreen({ route }: { route: RouteProp<{ Product: { product
               <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={22} color={favorite ? colors.accent : colors.text} />
             </Pressable>
           </View>
+          {needsSize && !outOfStock && feedback !== 'size' ? <Text style={s.muted}>{t('common.chooseSize')}</Text> : null}
           {feedback === 'added' ? <Text style={s.feedback}>{t('mobile.addedToCart')}</Text> : null}
           {feedback === 'size' ? <Text style={s.error}>{t('common.chooseSize')}</Text> : null}
           {feedback === 'stock' ? <Text style={s.error}>{t('common.left', { count: product.stock })}</Text> : null}
