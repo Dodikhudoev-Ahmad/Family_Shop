@@ -133,4 +133,20 @@ describe('CheckoutPage - 409 out_of_stock', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Размер «L» товара «Куртка» больше недоступен');
     expect(clearCart).not.toHaveBeenCalled();
   });
+
+  it('sends an Idempotency-Key, and the same one when the same request is repeated after a refusal', async () => {
+    const { ApiError } = await import('../lib/api');
+    createOrder.mockRejectedValue(new ApiError('x', { status: 409, code: 'out_of_stock', meta: { productName: 'Куртка', available: 3 } }));
+
+    await reachConfirmStep();
+    fireEvent.click(await screen.findByRole('button', { name: 'Подтвердить заказ' }));
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить заказ' }));
+    await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(2));
+
+    const [firstKey, secondKey] = createOrder.mock.calls.map((call) => call[1]);
+    expect(firstKey).toMatch(/^[A-Za-z0-9._:-]{8,100}$/);
+    expect(secondKey).toBe(firstKey); // nothing changed, so the server may recognise it
+    expect(createOrder.mock.calls[0][0]).toEqual(createOrder.mock.calls[1][0]);
+  });
 });

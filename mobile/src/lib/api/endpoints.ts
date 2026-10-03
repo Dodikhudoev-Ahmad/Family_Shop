@@ -85,8 +85,14 @@ export function fetchProduct(id: number): Promise<ProductDto> {
   return api.request<ProductDto>(`/products/${id}`);
 }
 
-export function createOrder(request: CreateOrderRequest): Promise<OrderDto> {
-  return api.request<OrderDto>('/orders', { method: 'POST', body: request, auth: 'required' });
+export function createOrder(request: CreateOrderRequest, idempotencyKey?: string): Promise<OrderDto> {
+  // The key lets the server recognise a repeated request (double tap, retry after a lost answer) and not create a second order.
+  return api.request<OrderDto>('/orders', {
+    method: 'POST',
+    body: request,
+    auth: 'required',
+    headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+  });
 }
 
 export function fetchOrders(): Promise<OrderDto[]> {

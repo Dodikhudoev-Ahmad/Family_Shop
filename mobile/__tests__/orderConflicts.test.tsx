@@ -188,3 +188,30 @@ describe('size_unavailable', () => {
     expect(JSON.stringify(tree.toJSON())).not.toContain(i18n.t('checkout.successTitle'));
   });
 });
+
+describe('Idempotency-Key at checkout', () => {
+  it('sends a key, and the same one when the same request is repeated after a refusal', async () => {
+    mockCreateOrder.mockRejectedValue(shortage(3));
+    let tree!: ReturnType<typeof create>;
+    await act(async () => {
+      tree = create(
+        <ThemeProvider>
+          <CheckoutScreen />
+        </ThemeProvider>
+      );
+    });
+    mounted.push(tree);
+    const byLabel = (label: string) => tree.root.find((n) => n.props.accessibilityLabel === label && typeof (n.props.onChangeText ?? n.props.onPress) === 'function');
+    await act(async () => byLabel(i18n.t('checkout.phone')).props.onChangeText('7001234567'));
+    await act(async () => byLabel(i18n.t('checkout.pickup')).props.onPress());
+
+    await act(async () => byLabel(i18n.t('checkout.confirm')).props.onPress());
+    await act(async () => byLabel(i18n.t('checkout.confirm')).props.onPress());
+
+    expect(mockCreateOrder).toHaveBeenCalledTimes(2);
+    const [firstKey, secondKey] = mockCreateOrder.mock.calls.map((call) => call[1] as string);
+    expect(firstKey).toMatch(/^[A-Za-z0-9._:-]{8,100}$/);
+    expect(secondKey).toBe(firstKey);
+    expect(mockCreateOrder.mock.calls[0][0]).toEqual(mockCreateOrder.mock.calls[1][0]);
+  });
+});

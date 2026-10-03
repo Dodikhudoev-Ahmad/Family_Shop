@@ -7,6 +7,7 @@ import { Button } from '../components/Button/Button';
 import { FadeImage } from '../components/FadeImage/FadeImage';
 import { PromoCodeInput } from '../components/PromoCodeInput/PromoCodeInput';
 import { ApiError, createOrder, type ApiDeliveryMethod } from '../lib/api';
+import { createIdempotencyKeyHolder } from '../lib/idempotency';
 import { outOfStockInfo, outOfStockMessage, sizeUnavailableInfo, sizeUnavailableMessage } from '../lib/orderErrors';
 import type { DeliveryDetails, DeliveryMethod } from '../types/order';
 import './CheckoutPage.css';
@@ -116,6 +117,8 @@ export function CheckoutPage() {
   // grows the string mid-typing; without this the browser keeps the caret at
   // its old index instead of the end, so digits get inserted out of order.
   const phoneInputRef = useRef<HTMLInputElement>(null);
+  // Checkout opens with its own idempotency key; it changes with the request body and after a placed order.
+  const idempotencyKeys = useRef(createIdempotencyKeyHolder());
   useEffect(() => {
     const el = phoneInputRef.current;
     if (el && document.activeElement === el) {
@@ -163,7 +166,7 @@ export function CheckoutPage() {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      const order = await createOrder({
+      const request = {
         items: lines.map((line) => ({
           productId: Number(line.product.id),
           quantity: line.quantity,
@@ -173,7 +176,9 @@ export function CheckoutPage() {
         deliveryMethod: DELIVERY_METHOD_TO_API[details.method],
         address: details.method === 'courier' ? details.address : undefined,
         promoCode: promo?.code,
-      });
+      };
+      const order = await createOrder(request, idempotencyKeys.current.keyFor(JSON.stringify(request)));
+      idempotencyKeys.current.reset();
       clearCart();
       setOrderNumber(`FS-${order.id}`);
     } catch (err) {
