@@ -159,8 +159,7 @@
   "catalog": {
     "title": "Catalog",
     "filters": "Filters",
-    "sortNew": "Newest",
-    "sortPopular": "Most popular",
+    "sort": "Sort",
     "sortPriceAsc": "Price: low to high",
     "sortPriceDesc": "Price: high to low",
     "loadError": "Couldn't load products: {{error}}",
