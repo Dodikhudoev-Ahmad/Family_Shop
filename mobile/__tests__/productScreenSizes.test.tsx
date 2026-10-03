@@ -18,6 +18,7 @@ jest.mock('../src/state/CategoriesContext', () => ({
       { id: '1', name: 'Женское', slug: 'women', hasSizes: true },
       { id: '3', name: 'Детское', slug: 'kids', hasSizes: true },
       { id: '4', name: 'Бытовая техника', slug: 'bytovaya-tehnika', hasSizes: false },
+      { id: '6', name: 'Спортивные товары', slug: 'sport', hasSizes: false },
     ],
   }),
 }));
@@ -174,5 +175,21 @@ describe('ProductScreen - sizes', () => {
       expect(addButton(tree).props.accessibilityState.disabled).toBe(false);
       act(() => mounted.pop()!.unmount());
     }
+  });
+
+  it('opens a product that is not in the loaded catalogue, with no size grid and no type (sport, gender 1)', async () => {
+    // The screen asks the API by id, so a product added after the app started opens (the website once relied on its list).
+    for (const productType of ['Экипировка', null]) {
+      mockKnown = [];
+      const tree = await show(dto({ id: 307, name: 'Foto MU', categoryId: 6, gender: 1, productType, availableSizes: null }));
+
+      const texts = tree.root.findAllByType(Text).map((n) => String(n.props.children));
+      expect(texts).toContain('Foto MU');
+      expect(texts).not.toContain(i18n.t('product.notFound'));
+      expect(values(tree)).toEqual([]);
+      expect(addButton(tree).props.accessibilityState.disabled).toBe(false);
+      act(() => mounted.pop()!.unmount());
+    }
+    expect(mockFetchProduct).toHaveBeenCalledWith(7); // route param of the test screen
   });
 });
