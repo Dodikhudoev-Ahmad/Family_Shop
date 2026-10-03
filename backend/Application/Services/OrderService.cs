@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using Application.Common;
 using Application.DTOs;
 using Application.Interfaces;
@@ -15,8 +18,28 @@ public class OrderService : IOrderService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result<OrderDto>> CreateOrderAsync(int userId, CreateOrderRequestDto request, CancellationToken cancellationToken = default)
+    /// <summary>How long a saved response can be replayed. The cleanup job removes older rows.</summary>
+    public static readonly TimeSpan IdempotencyKeyLifetime = TimeSpan.FromHours(24);
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    public Task<Result<OrderDto>> CreateOrderAsync(int userId, CreateOrderRequestDto request, CancellationToken cancellationToken = default) =>
+        CreateOrderAsync(userId, request, null, cancellationToken);
+
+    public async Task<Result<OrderDto>> CreateOrderAsync(int userId, CreateOrderRequestDto request, string? idempotencyKey, CancellationToken cancellationToken = default)
     {
+        string? requestHash = null;
+        var notBefore = DateTime.UtcNow - IdempotencyKeyLifetime;
+        if (idempotencyKey is not null)
+        {
+            requestHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request, JsonOptions))));
+            var saved = await _unitOfWork.IdempotencyKeys.GetAsync(userId, idempotencyKey, notBefore, cancellationToken);
+            if (saved is not null)
+            {
+                return Replay(saved, requestHash);
+            }
+        }
+
         var contactName = request.ContactName?.Trim();
         if (string.IsNullOrEmpty(contactName))
         {
@@ -130,8 +153,18 @@ public class OrderService : IOrderService
         // One transaction for everything that must stand or fall together: the conditional stock write-offs
         // (UPDATE ... WHERE Stock >= q, no read-check-write gap), the promo usage increment and the order insert.
         // Any refusal rolls the whole thing back, so a half-failed order never keeps stock or a promo use.
+        var lostClaim = false;
         var committed = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
+            // Claim the key first, before touching any stock: of two requests racing with one key the unique index lets one
+            // through and holds the other here until the first commits (then it replays the saved answer) or rolls back.
+            if (idempotencyKey is not null
+                && !await _unitOfWork.IdempotencyKeys.TryClaimAsync(userId, idempotencyKey, requestHash!, DateTime.UtcNow, notBefore, ct))
+            {
+                lostClaim = true;
+                return false;
+            }
+
             foreach (var (productId, quantity) in demand)
             {
                 if (quantity > int.MaxValue || !await _unitOfWork.Products.TryDecrementStockAsync(productId, (int)quantity, ct))
@@ -149,8 +182,24 @@ public class OrderService : IOrderService
 
             await _unitOfWork.Orders.AddAsync(order, ct);
             await _unitOfWork.SaveChangesAsync(ct);
+
+            // The saved answer is written in the same transaction as the order: either both exist or neither does.
+            if (idempotencyKey is not null)
+            {
+                await _unitOfWork.IdempotencyKeys.CompleteAsync(
+                    userId, idempotencyKey, 200, JsonSerializer.Serialize(ToDto(order), JsonOptions), ct);
+            }
+
             return true;
         }, cancellationToken);
+
+        if (!committed && lostClaim)
+        {
+            var winner = await _unitOfWork.IdempotencyKeys.GetAsync(userId, idempotencyKey!, notBefore, cancellationToken);
+            return winner is null
+                ? Result<OrderDto>.Failure("The request with this Idempotency-Key is still being processed.", ResultErrorCodes.Conflict)
+                : Replay(winner, requestHash!);
+        }
 
         if (!committed && shortProductId is int shortId)
         {
@@ -169,6 +218,21 @@ public class OrderService : IOrderService
         }
 
         return Result<OrderDto>.Success(ToDto(order));
+    }
+
+    // A saved answer: the same body gets it back, a different body under the same key is a client bug.
+    private static Result<OrderDto> Replay(IdempotencyKey saved, string requestHash)
+    {
+        if (!string.Equals(saved.RequestHash, requestHash, StringComparison.Ordinal))
+        {
+            return Result<OrderDto>.Failure(
+                "This Idempotency-Key was already used with a different request.", ResultErrorCodes.IdempotencyMismatch);
+        }
+
+        var order = saved.ResponseBody is null ? null : JsonSerializer.Deserialize<OrderDto>(saved.ResponseBody, JsonOptions);
+        return order is null
+            ? Result<OrderDto>.Failure("The request with this Idempotency-Key is still being processed.", ResultErrorCodes.Conflict)
+            : Result<OrderDto>.Replay(order);
     }
 
     public async Task<IReadOnlyList<OrderDto>> GetOrdersByUserIdAsync(int userId, CancellationToken cancellationToken = default)

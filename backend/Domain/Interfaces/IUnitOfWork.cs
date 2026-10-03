@@ -10,6 +10,7 @@ public interface IUnitOfWork
     IReviewRepository Reviews { get; }
     IPromoCodeRepository PromoCodes { get; }
     IPromoBannerRepository PromoBanners { get; }
+    IIdempotencyKeyRepository IdempotencyKeys { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

@@ -22,6 +22,7 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<PromoCode> PromoCodes => Set<PromoCode>();
     public DbSet<PromoBanner> PromoBanners => Set<PromoBanner>();
+    public DbSet<IdempotencyKey> IdempotencyKeys => Set<IdempotencyKey>();
     public DbSet<Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey> DataProtectionKeys => Set<Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
