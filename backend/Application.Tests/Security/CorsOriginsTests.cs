@@ -44,6 +44,23 @@ public class CorsOriginsTests
         Assert.Equal([Www, Root, "http://localhost:5173"], origins);
     }
 
+    [Fact]
+    public void AllowedOriginsGivenAsOnePlainVariable_IsReadToo_NotSilentlyIgnored()
+    {
+        // Cors__AllowedOrigins=https://www.familyshop10.kz,https://familyshop10.kz  (a string, not Cors__AllowedOrigins__0, __1 ...)
+        var origins = CorsOrigins.Read(Config(("Cors:AllowedOrigins", "https://www.familyshop10.kz, https://familyshop10.kz")));
+
+        Assert.Equal([Www, Root], origins);
+    }
+
+    [Fact]
+    public void TheIndexedVariablesAndThePlainOneWorkTogether()
+    {
+        var origins = CorsOrigins.Read(Config(("Cors:AllowedOrigins:0", Www), ("Cors:AllowedOrigins:1", Root)));
+
+        Assert.Equal([Www, Root], origins);
+    }
+
     [Theory]
     [InlineData("*")]
     [InlineData("www.familyshop10.kz")]
