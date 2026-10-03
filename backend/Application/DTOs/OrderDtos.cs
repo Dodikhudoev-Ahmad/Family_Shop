@@ -65,4 +65,5 @@ public record OrderStatsDto(
     int OrdersToday,
     decimal RevenueToday,
     int NewOrdersCount,
-    int TotalOrders);
+    int TotalOrders,
+    string? StoreTimeZone = null);

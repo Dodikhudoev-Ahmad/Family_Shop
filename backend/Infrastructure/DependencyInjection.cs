@@ -19,6 +19,9 @@ public static class DependencyInjection
 
         services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
 
+        // The shop's calendar (today / this week / this month) is the shop's time zone, not UTC.
+        services.AddSingleton(Application.Common.StoreClock.FromId(configuration["Store:TimeZone"]));
+
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
