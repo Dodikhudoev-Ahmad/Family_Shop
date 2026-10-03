@@ -152,4 +152,23 @@ describe('ProductPage - sizes', () => {
     fireEvent.click(addButton());
     expect(addItem).toHaveBeenCalledWith(expect.objectContaining({ id: '8' }), null, 1);
   });
+
+  it('falls back to the available sizes when gridSizes is missing (old snapshot) or null', () => {
+    for (const gridSizes of [undefined, null]) {
+      cleanup();
+      catalogue = [{ ...mapProduct(dto({ availableSizes: ['M', 'L'] }), categories), gridSizes: gridSizes as unknown as undefined }];
+      render(
+        <MemoryRouter initialEntries={['/product/7']}>
+          <Routes>
+            <Route path="/product/:id" element={<ProductPage />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      expect(labels()).toEqual(['M', 'L']); // only what can be bought, as before gridSizes existed
+      expect(unavailable()).toEqual([]);
+      fireEvent.click(sizeButtons()[1]);
+      expect(addButton()).not.toHaveAttribute('aria-disabled');
+    }
+  });
 });
