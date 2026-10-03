@@ -24,8 +24,8 @@ public class CookieCsrfFilter : IActionFilter
 
     public CookieCsrfFilter(IConfiguration configuration)
     {
-        var origins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
-        _allowedOrigins = new HashSet<string>(origins.Select(Normalize), StringComparer.OrdinalIgnoreCase);
+        // The same list as CORS, from the same configuration keys (see CorsOrigins).
+        _allowedOrigins = new HashSet<string>(Security.CorsOrigins.Read(configuration), StringComparer.OrdinalIgnoreCase);
     }
 
     public void OnActionExecuting(ActionExecutingContext context)
@@ -38,7 +38,9 @@ public class CookieCsrfFilter : IActionFilter
         var originOk = true;
         if (request.Headers.TryGetValue("Origin", out var origin) && !string.IsNullOrEmpty(origin))
         {
-            originOk = _allowedOrigins.Contains(Normalize(origin.ToString()));
+            // An Origin that is not a plain origin at all ('null', a path...) is not on the list.
+            var normalized = Security.CorsOrigins.TryNormalize(origin.ToString());
+            originOk = normalized is not null && _allowedOrigins.Contains(normalized);
         }
 
         if (!hasMarker || !originOk)
@@ -53,6 +55,4 @@ public class CookieCsrfFilter : IActionFilter
     public void OnActionExecuted(ActionExecutedContext context)
     {
     }
-
-    private static string Normalize(string origin) => origin.Trim().TrimEnd('/');
 }
