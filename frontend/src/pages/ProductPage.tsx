@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { useCategories } from '../context/CategoriesContext';
@@ -23,6 +23,9 @@ import './ProductPage.css';
 import { useTranslation } from 'react-i18next';
 import { useLabels } from '../i18n/labels';
 
+// How long the "size unavailable" explanation stays.
+const UNAVAILABLE_NOTE_MS = 4000;
+
 export function ProductPage() {
   const { categoryName } = useLabels();
   const { t } = useTranslation();
@@ -38,6 +41,21 @@ export function ProductPage() {
   const [activeImage, setActiveImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  // The size whose "unavailable" explanation is on screen (a live region under the sizes, no modal / toast).
+  const [unavailableSize, setUnavailableSize] = useState<string | null>(null);
+  const noteTimer = useRef<number | undefined>(undefined);
+
+  const showUnavailable = (size: string) => {
+    window.clearTimeout(noteTimer.current);
+    setUnavailableSize(size);
+    noteTimer.current = window.setTimeout(() => setUnavailableSize(null), UNAVAILABLE_NOTE_MS);
+  };
+  const selectSize = (size: string) => {
+    window.clearTimeout(noteTimer.current);
+    setUnavailableSize(null);
+    setSelectedSize(size);
+  };
+  useEffect(() => () => window.clearTimeout(noteTimer.current), []);
 
   useSeo({
     title: product ? `${product.name} — ${SITE_NAME}` : SITE_NAME,
@@ -82,8 +100,13 @@ export function ProductPage() {
     cartLines.find((l) => l.product.id === product.id && l.size === size)?.quantity ?? 0;
   const selectedSizeCartQuantity = cartQuantityFor(selectedSize);
 
+  // The whole grid is shown; the ones missing from product.sizes are muted and can't be picked.
+  const gridSizes = product.gridSizes ?? product.sizes;
+  // Nothing can be added until an available size is picked (the button stays focusable: pressing it says why).
+  const needsSize = gridSizes.length > 0 && !(selectedSize && product.sizes.includes(selectedSize));
+
   const handleAddToCart = () => {
-    if (product.sizes.length > 0 && !selectedSize) {
+    if (needsSize) {
       showToast(t('common.chooseSize'), 'error');
       return;
     }
@@ -140,17 +163,23 @@ export function ProductPage() {
           {lowStock && <span className="product-page__stock-warning">{t('common.left', { count: product.stock })}</span>}
           {outOfStock && <span className="product-page__stock-warning product-page__stock-warning--out">{t('common.outOfStock')}</span>}
 
-          {product.sizes.length > 0 && (
+          {gridSizes.length > 0 && (
             <div className="product-page__block">
               <span className="product-page__block-title">{t('product.size')}</span>
               <div className="product-page__sizes">
-                {product.sizes.map((size) => {
+                {gridSizes.map((size) => {
                   const inCartQuantity = cartQuantityFor(size);
+                  const unavailable = !product.sizes.includes(size);
+                  // aria-disabled (not disabled) keeps an unavailable size focusable: a screen reader reads it as
+                  // unavailable, and pressing it explains why instead of doing nothing.
                   return (
                     <button
                       key={size}
-                      className={`size-btn ${selectedSize === size ? 'is-selected' : ''} ${inCartQuantity > 0 ? 'has-in-cart' : ''}`}
-                      onClick={() => setSelectedSize(size)}
+                      type="button"
+                      className={`size-btn ${selectedSize === size ? 'is-selected' : ''} ${inCartQuantity > 0 ? 'has-in-cart' : ''} ${unavailable ? 'is-unavailable' : ''}`}
+                      aria-disabled={unavailable || undefined}
+                      aria-label={unavailable ? t('product.sizeUnavailableAria', { size }) : undefined}
+                      onClick={() => (unavailable ? showUnavailable(size) : selectSize(size))}
                     >
                       {size}
                       {inCartQuantity > 0 && (
@@ -162,6 +191,9 @@ export function ProductPage() {
                   );
                 })}
               </div>
+              <p className="product-page__size-note" role="status" aria-live="polite">
+                {unavailableSize ? t('product.sizeUnavailableNote', { size: unavailableSize }) : ''}
+              </p>
             </div>
           )}
 
@@ -191,6 +223,7 @@ export function ProductPage() {
               className="product-page__add-btn"
               onClick={handleAddToCart}
               disabled={outOfStock}
+              aria-disabled={needsSize || undefined}
             >
               {outOfStock ? t('common.outOfStock') : selectedSizeCartQuantity > 0 ? t('product.addMore') : t('common.addToCart')}
             </Button>
