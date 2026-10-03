@@ -89,9 +89,10 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
     }
 
     public async Task<(int OrdersToday, decimal RevenueToday, int NewOrdersCount, int TotalOrders)> GetStatsAsync(
+        DateTime todayStartUtc,
         CancellationToken cancellationToken = default)
     {
-        var today = DateTime.UtcNow.Date;
+        var today = todayStartUtc;
 
         var totalOrders = await DbSet.CountAsync(cancellationToken);
         var newOrdersCount = await DbSet.CountAsync(o => o.Status == OrderStatus.Created, cancellationToken);

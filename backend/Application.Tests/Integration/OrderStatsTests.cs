@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Domain.Entities;
 using Domain.ValueObjects;
+using Application.Common;
+using Application.DTOs;
 using Application.Services;
 using Infrastructure.Persistence;
 
@@ -112,5 +114,55 @@ public class OrderStatsTests : IClassFixture<PostgresFixture>
     {
         await using var ctx = _db.CreateContext();
         return await ctx.Set<Product>().AsNoTracking().Where(p => p.Id == productId).Select(p => p.Stock).SingleAsync();
+    }
+
+    // ---- the shop's calendar (Asia/Almaty, UTC+5), with a fixed clock far from every other test's data ----
+
+    // 12:00 on 15 May 2030 in Almaty (07:00 UTC).
+    private static readonly DateTime FixedNowUtc = new(2030, 5, 15, 7, 0, 0, DateTimeKind.Utc);
+    private static StoreClock FixedClock() => StoreClock.FromId("Asia/Almaty", () => FixedNowUtc);
+
+    private async Task<OrderStatsDto> StatsAtFixedClockAsync()
+    {
+        await using var ctx = _db.CreateContext();
+        return await new OrderService(new UnitOfWork(ctx), FixedClock()).GetStatsAsync();
+    }
+
+    [PostgresFact]
+    public async Task AnOrderAt0030Local_CountsForThatLocalDay_AndOneAt2330TheDayBefore_DoesNot()
+    {
+        var (userId, productId) = await SeedAsync();
+        // 00:30 on 15 May in Almaty = 19:30 on 14 May UTC: UTC's calendar would call it yesterday.
+        await AddOrderAsync(userId, productId, 1_000, OrderStatus.Created, new DateTime(2030, 5, 14, 19, 30, 0, DateTimeKind.Utc));
+        // 23:30 on 15 May in Almaty = 18:30 on 15 May UTC: the same local day, though UTC's day is still the 15th too.
+        await AddOrderAsync(userId, productId, 2_000, OrderStatus.Created, new DateTime(2030, 5, 15, 18, 30, 0, DateTimeKind.Utc));
+        // 23:30 on 14 May in Almaty = 18:30 on 14 May UTC: yesterday in both calendars.
+        await AddOrderAsync(userId, productId, 4_000, OrderStatus.Created, new DateTime(2030, 5, 14, 18, 30, 0, DateTimeKind.Utc));
+
+        var stats = await StatsAtFixedClockAsync();
+
+        Assert.Equal(2, stats.OrdersToday);
+        Assert.Equal(3_000m, stats.RevenueToday);
+        Assert.Equal("Asia/Almaty", stats.StoreTimeZone);
+    }
+
+    [PostgresFact]
+    public async Task TheDateFilterOfTheOrdersPage_IsTheShopsCalendarDay_BothEndsIncluded()
+    {
+        var (userId, productId) = await SeedAsync();
+        var early = await AddOrderAsync(userId, productId, 1_000, OrderStatus.Created, new DateTime(2029, 5, 14, 19, 30, 0, DateTimeKind.Utc)); // 00:30 on 15 May local
+        var late = await AddOrderAsync(userId, productId, 2_000, OrderStatus.Created, new DateTime(2029, 5, 15, 18, 30, 0, DateTimeKind.Utc));  // 23:30 on 15 May local
+        var yesterday = await AddOrderAsync(userId, productId, 3_000, OrderStatus.Created, new DateTime(2029, 5, 14, 18, 30, 0, DateTimeKind.Utc)); // 23:30 on 14 May local
+        var tomorrow = await AddOrderAsync(userId, productId, 4_000, OrderStatus.Created, new DateTime(2029, 5, 15, 19, 30, 0, DateTimeKind.Utc)); // 00:30 on 16 May local
+
+        await using var ctx = _db.CreateContext();
+        var page = await new OrderService(new UnitOfWork(ctx), FixedClock()).GetOrdersAsync(
+            new OrderFilterDto(DateFrom: new DateTime(2029, 5, 15), DateTo: new DateTime(2029, 5, 15), Page: 1, PageSize: 50));
+
+        var ids = page.Items.Select(o => o.Id).ToHashSet();
+        Assert.Contains(early, ids);
+        Assert.Contains(late, ids);
+        Assert.DoesNotContain(yesterday, ids);
+        Assert.DoesNotContain(tomorrow, ids);
     }
 }
