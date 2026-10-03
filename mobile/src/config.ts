@@ -1,5 +1,5 @@
 /** Production API. Override for local work with EXPO_PUBLIC_API_URL (e.g. http://192.168.1.5:5280/api/v1). */
-export const DEFAULT_API_BASE_URL = 'https://familyshop-production.up.railway.app/api/v1';
+export const DEFAULT_API_BASE_URL = 'https://api.familyshop10.kz/api/v1';
 
 /**
  * Tokens travel in request/response bodies and the Authorization header, so a release build must never
