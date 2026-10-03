@@ -55,7 +55,7 @@ public class AccountDeletionEndpointTests
 
     private static AuthController ControllerFor(IAuthService service, int userId)
     {
-        var controller = new AuthController(service, Substitute.For<IWebHostEnvironment>());
+        var controller = new AuthController(service, new Api.Security.RefreshCookiePolicy(new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build(), Substitute.For<IWebHostEnvironment>()));
         var http = new DefaultHttpContext
         {
             User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, userId.ToString()) }, "test"))
