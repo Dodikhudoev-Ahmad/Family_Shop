@@ -7,6 +7,7 @@ import { useToast } from '../../context/ToastContext';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { formatPrice } from '../../utils/formatPrice';
+import { formatStoreDate, formatStoreDateTime, setStoreTimeZone } from '../../utils/storeTime';
 import {
   ApiError,
   fetchAdminOrders,
@@ -34,14 +35,6 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
 ];
 
 const DELIVERY_LABEL: Record<0 | 1, string> = { 0: 'Курьером', 1: 'Самовывоз' };
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
 
 export function AdminOrdersPage() {
   const { showToast } = useToast();
@@ -83,6 +76,7 @@ export function AdminOrdersPage() {
   const loadStats = () => {
     fetchAdminOrderStats()
       .then((data) => {
+        setStoreTimeZone(data.storeTimeZone); // dates below follow the shop's zone, like the figures
         setStats(data);
         setStatsError(false);
       })
@@ -311,7 +305,7 @@ function OrdersTable({
           {orders.map((order) => (
             <tr key={order.id} className={pendingId === order.id ? 'is-updating' : ''}>
               <td className="admin-table__id">FS-{order.id}</td>
-              <td>{formatDate(order.createdAt)}</td>
+              <td>{formatStoreDate(order.createdAt)}</td>
               <td>
                 <div className="admin-table__customer">{order.contactName}</div>
                 <div className="admin-table__phone">{order.contactPhone}</div>
@@ -356,7 +350,7 @@ function OrdersCards({
           <div className="admin-order-card__customer">{order.contactName}</div>
           <div className="admin-order-card__phone">{order.contactPhone}</div>
           <div className="admin-order-card__meta">
-            <span>{formatDate(order.createdAt)}</span>
+            <span>{formatStoreDate(order.createdAt)}</span>
             <span>{order.itemsCount} тов.</span>
             <span className="admin-order-card__total">{formatPrice(order.totalPrice)}</span>
           </div>
@@ -421,7 +415,7 @@ function OrderDrawer({ order, onClose }: { order: AdminOrderDto | null; onClose:
             <div className="admin-drawer__header">
               <div>
                 <h2>Заказ FS-{order.id}</h2>
-                <span className="admin-drawer__date">{formatDateTime(order.createdAt)}</span>
+                <span className="admin-drawer__date">{formatStoreDateTime(order.createdAt)}</span>
               </div>
               <button className="admin-drawer__close" onClick={onClose} aria-label="Закрыть">
                 &times;
