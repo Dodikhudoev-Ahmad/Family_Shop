@@ -167,6 +167,27 @@ catch (Exception ex)
     app.Logger.LogError(ex, "Database migration/seed failed on startup");
 }
 
+// Uploaded-image URLs saved before the move to the shop's own domain still carry the old host: move them to the
+// configured public base URL (UPDATE in place, idempotent, only our own upload shape). Skipped when not configured.
+try
+{
+    var publicBaseUrl = Infrastructure.Storage.UploadsLocation.ResolvePublicBaseUrl(app.Configuration);
+    if (publicBaseUrl is not null)
+    {
+        using var urlScope = app.Services.CreateScope();
+        await Infrastructure.Persistence.UploadUrlNormalizer.NormalizeAsync(
+            urlScope.ServiceProvider.GetRequiredService<AppDbContext>(), publicBaseUrl, app.Logger);
+    }
+}
+catch (InvalidOperationException)
+{
+    throw; // a malformed Uploads:PublicBaseUrl is a configuration error: fail the start-up
+}
+catch (Exception ex)
+{
+    app.Logger.LogError(ex, "Normalizing uploaded image URLs failed on startup");
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
