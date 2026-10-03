@@ -133,6 +133,9 @@ builder.Services.AddCors(options =>
 // Rate limiting: строгие лимиты на вход/регистрацию/refresh, общий лимит на весь API (см. Api/RateLimiting)
 builder.Services.AddFamilyShopRateLimiting();
 
+// Hourly removal of expired Idempotency-Key records (order creation keeps them 24 h).
+builder.Services.AddHostedService<Api.Background.IdempotencyKeyCleanupService>();
+
 builder.Services.AddHsts(options =>
 {
     options.MaxAge = TimeSpan.FromDays(365);

@@ -10,6 +10,9 @@ public class Result<T>
     /// status other than 400; null for ordinary validation-style failures.</summary>
     public string? ErrorCode { get; }
 
+    /// <summary>True when this success is a saved answer replayed for a repeated Idempotency-Key, not a new operation.</summary>
+    public bool IsReplay { get; private init; }
+
     /// <summary>Structured details for <see cref="ErrorCode"/> (e.g. which product and how many units are left), so
     /// clients can build their own localized message instead of parsing <see cref="Errors"/>.</summary>
     public IReadOnlyDictionary<string, object?>? ErrorMeta { get; }
@@ -25,6 +28,7 @@ public class Result<T>
 
     public static Result<T> Success(T value) => new(true, value, Array.Empty<string>());
     public static Result<T> Failure(string error) => new(false, default, new[] { error });
+    public static Result<T> Replay(T value) => new(true, value, Array.Empty<string>()) { IsReplay = true };
     public static Result<T> Failure(IReadOnlyList<string> errors) => new(false, default, errors);
     public static Result<T> Failure(string error, string errorCode, IReadOnlyDictionary<string, object?>? meta = null) =>
         new(false, default, new[] { error }, errorCode, meta);
@@ -37,6 +41,9 @@ public static class ResultErrorCodes
 
     /// <summary>The ordered size is not (or no longer) sold for this product - maps to 409.</summary>
     public const string SizeUnavailable = "size_unavailable";
+
+    /// <summary>The same Idempotency-Key was reused with a different request body - maps to 422.</summary>
+    public const string IdempotencyMismatch = "idempotency_mismatch";
 
     /// <summary>The state changed under a concurrent request (e.g. the order was already moved) - maps to 409.</summary>
     public const string Conflict = "conflict";
