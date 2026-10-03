@@ -85,8 +85,15 @@ export function activeFilterCount(filters: CatalogFilters, bounds: PriceRange): 
   );
 }
 
+/** Every order the API supports. Only price sorting is offered in the UI (`SORT_OPTIONS`); 'new' / 'popular' are still
+ * accepted from outside (the "See all" links on the home screen, old deep links) and applied. */
 export type SortOption = 'new' | 'popular' | 'price-asc' | 'price-desc';
-export const SORT_OPTIONS: SortOption[] = ['new', 'popular', 'price-asc', 'price-desc'];
+export const SORT_OPTIONS = ['price-asc', 'price-desc'] as const satisfies readonly SortOption[];
+
+/** The sort field shows a choice only when it is one of the offered ones; any other order (or none) shows the placeholder. */
+export function isOfferedSort(sort: SortOption | null): sort is 'price-asc' | 'price-desc' {
+  return sort !== null && (SORT_OPTIONS as readonly SortOption[]).includes(sort);
+}
 
 const SORT_TO_API: Record<SortOption, ProductSortBy> = { new: 0, 'price-asc': 1, 'price-desc': 2, popular: 3 };
 
@@ -98,7 +105,7 @@ export const CATALOG_PAGE_SIZE = 12;
 export function buildProductQuery(
   filters: CatalogFilters,
   bounds: PriceRange,
-  sort: SortOption,
+  sort: SortOption | null,
   search: string | null,
   page: number,
   pageSize = CATALOG_PAGE_SIZE
@@ -110,7 +117,8 @@ export function buildProductQuery(
     minPrice: min > bounds[0] ? min : undefined,
     maxPrice: max < bounds[1] ? max : undefined,
     search: search?.trim() ? search.trim() : undefined,
-    sortBy: SORT_TO_API[sort],
+    // No sort chosen: the parameter is left out and the server's default order (newest first) applies.
+    sortBy: sort ? SORT_TO_API[sort] : undefined,
     page,
     pageSize,
   };

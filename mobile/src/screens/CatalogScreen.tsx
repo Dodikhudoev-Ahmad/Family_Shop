@@ -21,6 +21,7 @@ import {
   shouldShowEmpty,
   SORT_OPTIONS,
   type CatalogFilters,
+  isOfferedSort,
   type SortOption,
 } from '../lib/catalog/catalogFilters';
 import { availableProductTypes } from '../lib/catalog/productTypes';
@@ -37,12 +38,10 @@ import type { ColorTokens } from '../theme/tokens';
 
 type Props = NativeStackScreenProps<CatalogStackParamList, 'Catalog'>;
 
-const SORT_LABEL_KEY: Record<SortOption, 'catalog.sortNew' | 'catalog.sortPopular' | 'catalog.sortPriceAsc' | 'catalog.sortPriceDesc'> = {
-  new: 'catalog.sortNew',
-  popular: 'catalog.sortPopular',
+const SORT_LABEL_KEY = {
   'price-asc': 'catalog.sortPriceAsc',
   'price-desc': 'catalog.sortPriceDesc',
-};
+} as const;
 
 const COLUMNS = 2;
 
@@ -155,7 +154,10 @@ function CatalogContent(props: Props & { categories: Category[]; smart: SmartHea
   const [filters, setFilters] = useState<CatalogFilters>(() =>
     initialFilters(allProducts, route.params?.categoryId !== undefined ? String(route.params.categoryId) : null, route.params?.discount === true)
   );
-  const [sort, setSort] = useState<SortOption>(route.params?.sort ?? 'new');
+  // null = no sort chosen: the server's default order. An order from outside (home "See all" links) is applied too,
+  // but only the two price orders are offered, so for any other the field keeps its "Sort" placeholder.
+  const [sort, setSort] = useState<SortOption | null>(route.params?.sort ?? null);
+  const offeredSort = isOfferedSort(sort) ? sort : null;
   const [search, setSearch] = useState<string | null>(route.params?.search ?? null);
   const [sheet, setSheet] = useState<'filters' | 'sort' | null>(null);
 
@@ -224,9 +226,9 @@ function CatalogContent(props: Props & { categories: Category[]; smart: SmartHea
             </View>
           ) : null}
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel={`${t('mobile.sort')}: ${t(SORT_LABEL_KEY[sort])}`} onPress={() => setSheet('sort')} style={s.select}>
+        <Pressable accessibilityRole="button" accessibilityLabel={offeredSort ? `${t('mobile.sort')}: ${t(SORT_LABEL_KEY[offeredSort])}` : t('mobile.sort')} onPress={() => setSheet('sort')} style={s.select}>
           <Text style={s.toolText} numberOfLines={1}>
-            {t(SORT_LABEL_KEY[sort])}
+            {offeredSort ? t(SORT_LABEL_KEY[offeredSort]) : t('mobile.sort')}
           </Text>
           <Ionicons name="chevron-down" size={16} color={colors.text} />
         </Pressable>
@@ -294,7 +296,8 @@ function CatalogContent(props: Props & { categories: Category[]; smart: SmartHea
                 accessibilityLabel={t(SORT_LABEL_KEY[option])}
                 accessibilityState={{ selected: option === sort }}
                 onPress={() => {
-                  setSort(option);
+                  // Choosing the active option again goes back to the default order.
+                  setSort(option === sort ? null : option);
                   setSheet(null);
                 }}
                 style={s.option}
