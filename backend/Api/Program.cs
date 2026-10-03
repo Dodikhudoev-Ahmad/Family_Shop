@@ -118,18 +118,8 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
-// CORS: строгий whitelist origin фронтенда, не AllowAnyOrigin
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("Frontend", policy =>
-    {
-        policy.WithOrigins(allowedOrigins)
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
-    });
-});
+// CORS: строгий whitelist origin фронтенда из конфига (Cors:AllowedOrigins / Cors:AllowedOriginsList), не AllowAnyOrigin
+builder.Services.AddFamilyShopCors(builder.Configuration);
 
 // Rate limiting: строгие лимиты на вход/регистрацию/refresh, общий лимит на весь API (см. Api/RateLimiting)
 builder.Services.AddFamilyShopRateLimiting();
@@ -196,7 +186,7 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseCors("Frontend");
+app.UseFamilyShopCors();
 
 // Uploaded photos are served from the configured uploads directory (Uploads:Path; a mounted volume in production),
 // under the same /uploads/* URLs as always. Requests that miss fall through to wwwroot as before.
