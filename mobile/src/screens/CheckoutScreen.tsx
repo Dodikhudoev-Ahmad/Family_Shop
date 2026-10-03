@@ -10,6 +10,7 @@ import { useFieldError } from '../i18n/labels';
 import { createOrder } from '../lib/api/endpoints';
 import type { ApiDeliveryMethod } from '../lib/api/types';
 import { formatPrice } from '../lib/mappers';
+import { createIdempotencyKeyHolder } from '../lib/idempotency';
 import { orderNumber } from '../lib/orders';
 import { outOfStockInfo, outOfStockMessage, sizeUnavailableInfo, sizeUnavailableMessage } from '../lib/orderErrors';
 import { formatPhoneInput, LIMITS, validateAddress, validateOrderLines, validatePhone } from '../lib/validation';
@@ -69,6 +70,8 @@ export function CheckoutScreen() {
   const [stockNotice, setStockNotice] = useState<string | null>(null);
   const [placed, setPlaced] = useState<string | null>(null);
   const inFlight = useRef(false);
+  // Checkout opens with its own idempotency key; it changes with the request body and after a placed order.
+  const idempotencyKeys = useRef(createIdempotencyKeyHolder());
 
   // Leaving the confirmation resets the cart tab to its (empty) cart, so it is never shown again later.
   const leave = (go: () => void) => {
@@ -137,13 +140,15 @@ export function CheckoutScreen() {
     inFlight.current = true;
     setSubmitting(true);
     try {
-      const order = await createOrder({
+      const request = {
         items: orderLines.map((l) => ({ productId: Number(l.productId), quantity: l.quantity, size: l.size })),
         contactPhone: phone,
         deliveryMethod: METHOD_TO_API[method],
         address: method === 'courier' ? address.trim() : undefined,
         promoCode: promo?.code,
-      });
+      };
+      const order = await createOrder(request, idempotencyKeys.current.keyFor(JSON.stringify(request)));
+      idempotencyKeys.current.reset();
       clear();
       setPlaced(orderNumber(order.id));
       // Nothing to go back to: the cart is empty now.

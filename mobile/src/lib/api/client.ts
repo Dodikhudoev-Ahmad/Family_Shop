@@ -17,6 +17,8 @@ interface RequestOptions {
   body?: unknown;
   /** 'required' attaches the access token (refreshing it when needed); 'none' sends no credentials. */
   auth?: AuthMode;
+  /** Extra request headers (e.g. Idempotency-Key); never Authorization / Content-Type, which the client owns. */
+  headers?: Record<string, string>;
 }
 
 type RefreshOutcome =
@@ -59,6 +61,10 @@ export function createApiClient(deps: ApiClientDeps) {
 
   async function send(path: string, options: RequestOptions, accessToken: string | null): Promise<Response> {
     const headers: Record<string, string> = { Accept: 'application/json' };
+    for (const [name, value] of Object.entries(options.headers ?? {})) {
+      // The client owns these: a caller cannot swap the credentials or the body type.
+      if (!['authorization', 'content-type', 'accept'].includes(name.toLowerCase())) headers[name] = value;
+    }
     if (options.body !== undefined) headers['Content-Type'] = 'application/json';
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 

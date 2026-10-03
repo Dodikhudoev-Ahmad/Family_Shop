@@ -253,8 +253,13 @@ export interface CreateOrderRequest {
   promoCode?: string;
 }
 
-export function createOrder(request: CreateOrderRequest): Promise<OrderDto> {
-  return apiFetch<OrderDto>('/orders', { method: 'POST', body: JSON.stringify(request) });
+export function createOrder(request: CreateOrderRequest, idempotencyKey?: string): Promise<OrderDto> {
+  return apiFetch<OrderDto>('/orders', {
+    method: 'POST',
+    body: JSON.stringify(request),
+    // Lets the server recognise a repeated request (double click, retry after a lost answer) and not create a second order.
+    headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+  });
 }
 
 export function fetchOrders(): Promise<OrderDto[]> {
