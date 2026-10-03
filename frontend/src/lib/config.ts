@@ -8,9 +8,9 @@ export const DEV_API_BASE_URL = 'http://localhost:5280/api/v1';
  *  - otherwise the local development API.
  * A trailing slash is dropped (paths are appended with a leading one).
  */
-export function resolveApiBaseUrl(env: { VITE_API_URL?: string; VITE_API_BASE_URL?: string }): string {
-  const value = env.VITE_API_URL?.trim() || env.VITE_API_BASE_URL?.trim() || DEV_API_BASE_URL;
-  return value.replace(/\/+$/, '');
+export function resolveApiBaseUrl(env: Record<string, unknown>): string {
+  const text = (name: string) => (typeof env[name] === 'string' ? (env[name] as string).trim() : '');
+  return (text('VITE_API_URL') || text('VITE_API_BASE_URL') || DEV_API_BASE_URL).replace(/\/+$/, '');
 }
 
 export const API_BASE_URL = resolveApiBaseUrl(import.meta.env);
