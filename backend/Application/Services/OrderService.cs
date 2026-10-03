@@ -12,10 +12,12 @@ namespace Application.Services;
 public class OrderService : IOrderService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly StoreClock _clock;
 
-    public OrderService(IUnitOfWork unitOfWork)
+    public OrderService(IUnitOfWork unitOfWork, StoreClock? clock = null)
     {
         _unitOfWork = unitOfWork;
+        _clock = clock ?? StoreClock.Default;
     }
 
     /// <summary>How long a saved response can be replayed. The cleanup job removes older rows.</summary>
@@ -257,8 +259,10 @@ public class OrderService : IOrderService
 
         var (items, totalCount) = await _unitOfWork.Orders.GetByFilterAsync(
             filter.Status,
-            filter.DateFrom,
-            filter.DateTo,
+            // The date inputs of the admin page are calendar days of the shop: "from" is the start of that local day,
+            // "to" its last instant (the day itself is included).
+            filter.DateFrom is { } from ? _clock.StartOfLocalDayUtc(from) : null,
+            filter.DateTo is { } to ? _clock.EndOfLocalDayUtc(to) : null,
             filter.Search,
             sortOrder,
             filter.Page,
@@ -326,8 +330,10 @@ public class OrderService : IOrderService
 
     public async Task<OrderStatsDto> GetStatsAsync(CancellationToken cancellationToken = default)
     {
-        var (ordersToday, revenueToday, newOrdersCount, totalOrders) = await _unitOfWork.Orders.GetStatsAsync(cancellationToken);
-        return new OrderStatsDto(ordersToday, revenueToday, newOrdersCount, totalOrders);
+        // "Today" begins at the shop's local midnight (Store:TimeZone), whatever UTC says; dates stay stored in UTC.
+        var (ordersToday, revenueToday, newOrdersCount, totalOrders) =
+            await _unitOfWork.Orders.GetStatsAsync(_clock.StartOfTodayUtc(), cancellationToken);
+        return new OrderStatsDto(ordersToday, revenueToday, newOrdersCount, totalOrders, _clock.ZoneId);
     }
 
     private static AdminOrderDto ToAdminDto(Order order) => new(
