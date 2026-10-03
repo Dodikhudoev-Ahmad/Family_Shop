@@ -1,5 +1,4 @@
-# NOTE: static file, not processed by Vite - currently points at the Railway domain;
-# update it if a custom domain is connected (keep in sync with VITE_SITE_URL and sitemap.xml).
+# NOTE: static file, not processed by Vite - points at the canonical domain (keep in sync with VITE_SITE_URL and sitemap.xml).
 User-agent: *
 Allow: /
 Disallow: /account
@@ -7,4 +6,4 @@ Disallow: /checkout
 Disallow: /login
 Disallow: /favorites
 
-Sitemap: https://endearing-consideration-production-6e0c.up.railway.app/sitemap.xml
+Sitemap: https://www.familyshop10.kz/sitemap.xml

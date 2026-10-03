@@ -2,7 +2,7 @@ import type { ApiGender, ApiResponse, CategoryDto, PagedResult, ProductDto, Prod
 import { getAccessToken, setAccessToken } from './authToken';
 import i18n from '../i18n';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5280/api/v1';
+import { API_BASE_URL } from './config';
 
 export class ApiError extends Error {
   readonly status: number;

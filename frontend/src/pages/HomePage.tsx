@@ -10,6 +10,7 @@ import { PromoBanner } from '../components/PromoBanner/PromoBanner';
 import { RecentlyViewed } from '../components/RecentlyViewed/RecentlyViewed';
 import { useSeo } from '../hooks/useSeo';
 import { SITE_NAME } from '../data/seo';
+import { API_BASE_URL } from '../lib/config';
 import './HomePage.css';
 import { useTranslation } from 'react-i18next';
 
@@ -50,7 +51,7 @@ export function HomePage() {
 
       {error && (
         <p className="container home__error">
-          {t('home.loadError', { error, url: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5280/api/v1' })}
+          {t('home.loadError', { error, url: API_BASE_URL })}
         </p>
       )}
 
