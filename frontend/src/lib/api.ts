@@ -290,6 +290,8 @@ export interface OrderStatsDto {
   revenueToday: number;
   newOrdersCount: number;
   totalOrders: number;
+  /** The shop's IANA time zone ("today" and the date filters follow it); absent from older servers. */
+  storeTimeZone?: string | null;
 }
 
 export interface AdminOrderQuery {
