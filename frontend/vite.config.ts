@@ -7,7 +7,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_')
   // CSP connect-src treats a path without a trailing slash as an exact match, so the API base
   // URL (with /api/v1) can't be used directly - only its origin is templated into index.html.
-  const apiOrigin = new URL(env.VITE_API_BASE_URL ?? 'http://localhost:5280/api/v1').origin
+  // Same precedence as src/lib/config.ts: VITE_API_URL, then the earlier VITE_API_BASE_URL, then the local API.
+  const apiOrigin = new URL(env.VITE_API_URL || env.VITE_API_BASE_URL || 'http://localhost:5280/api/v1').origin
 
   return {
     plugins: [
