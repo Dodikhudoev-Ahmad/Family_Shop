@@ -18,8 +18,12 @@ public static class CorsOrigins
     /// <summary>Canonical, distinct, configured origins. A malformed entry stops the start-up with a message that names it.</summary>
     public static IReadOnlyList<string> Read(IConfiguration configuration)
     {
+        // Cors__AllowedOrigins can arrive as indexed entries (__0, __1 ...) or as ONE string with several origins; a plain string
+        // would bind to nothing as an array and be dropped silently, so it is split here as well.
+        var separators = new[] { ',', ';', ' ', '\n', '\r', '\t' };
         var raw = (configuration.GetSection(ArrayKey).Get<string[]>() ?? [])
-            .Concat((configuration[ListKey] ?? string.Empty).Split([',', ';', ' ', '\n', '\r', '\t'], StringSplitOptions.RemoveEmptyEntries));
+            .Concat((configuration[ArrayKey] ?? string.Empty).Split(separators, StringSplitOptions.RemoveEmptyEntries))
+            .Concat((configuration[ListKey] ?? string.Empty).Split(separators, StringSplitOptions.RemoveEmptyEntries));
 
         var origins = new List<string>();
         foreach (var entry in raw.Where(e => !string.IsNullOrWhiteSpace(e)))
