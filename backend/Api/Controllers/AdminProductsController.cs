@@ -17,11 +17,13 @@ public class AdminProductsController : ControllerBase
 
     private readonly IProductService _productService;
     private readonly IImageStorageService _imageStorageService;
+    private readonly string? _publicBaseUrl;
 
-    public AdminProductsController(IProductService productService, IImageStorageService imageStorageService)
+    public AdminProductsController(IProductService productService, IImageStorageService imageStorageService, IConfiguration configuration)
     {
         _productService = productService;
         _imageStorageService = imageStorageService;
+        _publicBaseUrl = Infrastructure.Storage.UploadsLocation.ResolvePublicBaseUrl(configuration);
     }
 
     /// <summary>Создаёт новый товар.</summary>
@@ -71,7 +73,8 @@ public class AdminProductsController : ControllerBase
             return BadRequest(ApiResponse<string>.Fail(result.Errors));
         }
 
-        var absoluteUrl = $"{Request.Scheme}://{Request.Host}{result.Value}";
+        // The configured public origin (Uploads:PublicBaseUrl) wins over the host this request happened to arrive on.
+        var absoluteUrl = $"{_publicBaseUrl ?? $"{Request.Scheme}://{Request.Host}"}{result.Value}";
         return Ok(ApiResponse<string>.Ok(absoluteUrl));
     }
 }
