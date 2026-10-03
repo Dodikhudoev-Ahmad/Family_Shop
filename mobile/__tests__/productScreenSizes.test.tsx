@@ -21,7 +21,8 @@ jest.mock('../src/state/CategoriesContext', () => ({
     ],
   }),
 }));
-jest.mock('../src/state/ProductsContext', () => ({ useProducts: () => ({ products: [] }) }));
+let mockKnown: unknown[] = [];
+jest.mock('../src/state/ProductsContext', () => ({ useProducts: () => ({ products: mockKnown }) }));
 jest.mock('../src/state/CartContext', () => ({ useCart: () => ({ lines: [], addItem: mockAddItem }) }));
 jest.mock('../src/state/FavoritesContext', () => ({ useFavorites: () => ({ isFavorite: () => false, toggleFavorite: jest.fn() }) }));
 
@@ -37,6 +38,7 @@ afterEach(() => {
 });
 beforeEach(async () => {
   jest.clearAllMocks();
+  mockKnown = [];
   await i18n.changeLanguage('ru');
 });
 
@@ -149,5 +151,28 @@ describe('ProductScreen - sizes', () => {
 
     await press(addButton(tree));
     expect(mockAddItem).toHaveBeenCalledWith(expect.objectContaining({ id: '8' }), null, 1);
+  });
+
+  it('falls back to the available sizes when gridSizes is missing (old snapshot) or null', async () => {
+    for (const gridSizes of [undefined, null]) {
+      // The already-loaded catalogue entry is shown at once; the refresh from the API fails, so it stays on screen.
+      mockKnown = [{ id: '7', name: 'Худи', description: '', price: 9000, stock: 5, categoryId: '1', gender: 'female', images: ['a.jpg'], sizes: ['M', 'L'], gridSizes, productType: 'Худи', createdAt: '2026-09-01T00:00:00Z', averageRating: 0, reviewCount: 0 }];
+      mockFetchProduct.mockRejectedValue(new Error('offline'));
+      let tree!: ReturnType<typeof create>;
+      await act(async () => {
+        tree = create(
+          <ThemeProvider>
+            <ProductScreen route={{ key: 'p', name: 'Product', params: { productId: 7 } } as never} />
+          </ThemeProvider>
+        );
+      });
+      mounted.push(tree);
+
+      expect(values(tree)).toEqual(['M', 'L']); // only what can be bought, as before gridSizes existed
+      expect(unavailable(tree)).toEqual([]);
+      await press(radio(tree, 'L'));
+      expect(addButton(tree).props.accessibilityState.disabled).toBe(false);
+      act(() => mounted.pop()!.unmount());
+    }
   });
 });
