@@ -218,7 +218,9 @@
     "composition": "Состав и уход",
     "compositionText": "Состав уточняется на бирке изделия. Рекомендуется деликатная стирка при 30°C.",
     "similar": "Похожие товары",
-    "notFound": "Товар не найден."
+    "notFound": "Товар не найден.",
+    "sizeUnavailableNote": "Размер {{size}} сейчас недоступен. Выберите другой.",
+    "sizeUnavailableAria": "{{size}}, недоступен"
   },
   "reviews": {
     "sortNewest": "Сначала новые",
