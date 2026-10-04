@@ -42,31 +42,48 @@ async function rawFetch(path: string, options: RequestInit = {}): Promise<Respon
 }
 
 // Refresh token lives in an httpOnly cookie, so this call carries no body - the browser
-// sends the cookie automatically because of credentials: 'include'. Concurrent 401s share
-// one in-flight refresh instead of each firing their own /auth/refresh request.
-let refreshPromise: Promise<boolean> | null = null;
+// sends the cookie automatically because of credentials: 'include'. The server rotates the cookie on
+// every use, so two refreshes racing with the same cookie would fail the second one: every caller
+// (page-load restore, a request that met a 401, a double-mounted effect) shares ONE in-flight request.
+//  - ok:          a new access token was issued (already stored);
+//  - rejected:    the server refused (401/403) - the session is over;
+//  - unavailable: network, 429, 5xx or an unreadable answer - the session may be fine, so it is kept.
+type RefreshOutcome =
+  | { outcome: 'ok'; data: AuthResponseDto }
+  | { outcome: 'rejected' }
+  | { outcome: 'unavailable' };
 
-async function refreshAccessToken(): Promise<boolean> {
-  if (!refreshPromise) {
-    refreshPromise = (async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: COOKIE_REQUEST_HEADERS,
-        });
-        if (!res.ok) return false;
-        const json = (await res.json()) as ApiResponse<{ accessToken: string }>;
-        if (!json.success) return false;
-        setAccessToken(json.data.accessToken);
-        return true;
-      } catch {
-        return false;
-      } finally {
-        refreshPromise = null;
-      }
-    })();
+let refreshPromise: Promise<RefreshOutcome> | null = null;
+
+async function doRefresh(): Promise<RefreshOutcome> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: COOKIE_REQUEST_HEADERS,
+    });
+  } catch {
+    return { outcome: 'unavailable' };
   }
+
+  if (res.status === 401 || res.status === 403) return { outcome: 'rejected' };
+  if (!res.ok) return { outcome: 'unavailable' };
+
+  try {
+    const json = (await res.json()) as ApiResponse<AuthResponseDto>;
+    if (!json.success) return { outcome: 'unavailable' };
+    setAccessToken(json.data.accessToken);
+    return { outcome: 'ok', data: json.data };
+  } catch {
+    return { outcome: 'unavailable' };
+  }
+}
+
+function refreshSession(): Promise<RefreshOutcome> {
+  refreshPromise ??= doRefresh().finally(() => {
+    refreshPromise = null;
+  });
   return refreshPromise;
 }
 
@@ -95,15 +112,20 @@ async function parseEnvelope<T>(res: Response): Promise<T> {
   return json.data;
 }
 
-/** Fetches an endpoint behind the standard ApiResponse envelope, retrying once after a
- *  silent token refresh if the server returns 401 (expired access token). */
+/** Fetches an endpoint behind the standard ApiResponse envelope. On 401 (expired access token) it refreshes
+ *  the session once (shared with every other caller) and retries the request once - never a loop. The user is
+ *  signed out only when the server rejects the refresh; if the service is merely unreachable the token is
+ *  kept and the request fails with a connection error. */
 async function apiFetch<T>(path: string, options: RequestInit = {}, allowRefresh = true): Promise<T> {
   const res = await rawFetch(path, options);
 
   if (res.status === 401 && allowRefresh) {
-    const refreshed = await refreshAccessToken();
-    if (refreshed) {
+    const result = await refreshSession();
+    if (result.outcome === 'ok') {
       return apiFetch<T>(path, options, false);
+    }
+    if (result.outcome === 'unavailable') {
+      throw new ApiError(i18n.t('errors.connect'));
     }
     setAccessToken(null);
   }
@@ -195,20 +217,13 @@ export function registerRequest(email: string, password: string, name: string): 
   );
 }
 
-/** Attempts to restore a session from the httpOnly refresh cookie (e.g. on page load). */
+/** Attempts to restore a session from the httpOnly refresh cookie (e.g. on page load). Null means the server
+ *  says there is no session; an unreachable service throws, so the caller keeps its sign-in hint. */
 export async function silentRefresh(): Promise<AuthResponseDto | null> {
-  const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: COOKIE_REQUEST_HEADERS,
-  });
-  if (!res.ok) return null;
-  try {
-    const json = (await res.json()) as ApiResponse<AuthResponseDto>;
-    return json.success ? json.data : null;
-  } catch {
-    return null;
-  }
+  const result = await refreshSession();
+  if (result.outcome === 'ok') return result.data;
+  if (result.outcome === 'rejected') return null;
+  throw new ApiError(i18n.t('errors.connect'));
 }
 
 export async function logoutRequest(): Promise<void> {
@@ -441,8 +456,11 @@ export async function downloadFinanceExport(dateFrom: string, dateTo: string): P
   const path = `/admin/finance/export?${new URLSearchParams({ dateFrom, dateTo })}`;
   let res = await rawFetch(path);
   if (res.status === 401) {
-    if (await refreshAccessToken()) {
+    const result = await refreshSession();
+    if (result.outcome === 'ok') {
       res = await rawFetch(path);
+    } else if (result.outcome === 'unavailable') {
+      throw new ApiError(i18n.t('errors.connect'));
     } else {
       setAccessToken(null);
     }
