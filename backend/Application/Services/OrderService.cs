@@ -243,12 +243,13 @@ public class OrderService : IOrderService
         return orders.OrderByDescending(o => o.CreatedAt).Select(ToDto).ToList();
     }
 
-    // Allowed forward transitions plus a cancellation escape hatch from either open state.
+    // Allowed forward transitions plus a cancellation escape hatch from every open state (a shipped parcel can still
+    // fail to arrive or be refused; its stock goes back on sale like any other cancellation).
     private static readonly Dictionary<OrderStatus, OrderStatus[]> AllowedTransitions = new()
     {
         [OrderStatus.Created] = [OrderStatus.Processing, OrderStatus.Cancelled],
         [OrderStatus.Processing] = [OrderStatus.Shipped, OrderStatus.Cancelled],
-        [OrderStatus.Shipped] = [OrderStatus.Delivered],
+        [OrderStatus.Shipped] = [OrderStatus.Delivered, OrderStatus.Cancelled],
         [OrderStatus.Delivered] = [],
         [OrderStatus.Cancelled] = []
     };
@@ -293,7 +294,7 @@ public class OrderService : IOrderService
         var previousStatus = order.Status;
 
         // The status flips with a compare-and-set (WHERE Status = previous), so of two racing requests exactly
-        // one performs the transition. A cancelled order never ships, so that one - and only that one - puts the
+        // one performs the transition. A cancelled order never ships or arrives, so that one - and only that one - puts the
         // reserved stock back on sale, in the same transaction; a repeated or racing cancel can't return it twice.
         var changed = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
