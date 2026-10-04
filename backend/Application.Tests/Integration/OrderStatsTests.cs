@@ -29,10 +29,10 @@ public class OrderStatsTests : IClassFixture<PostgresFixture>
         return (user.Id, product.Id);
     }
 
-    private async Task<int> AddOrderAsync(int userId, int productId, decimal total, OrderStatus status, DateTime createdAt)
+    private async Task<int> AddOrderAsync(int userId, int productId, decimal total, OrderStatus status, DateTime? createdAt = null)
     {
         await using var ctx = _db.CreateContext();
-        var order = new Order { UserId = userId, Status = status, CreatedAt = createdAt, TotalPrice = new Money(total), ContactName = "T", ContactPhone = "+7" };
+        var order = new Order { UserId = userId, Status = status, CreatedAt = createdAt ?? DateTime.UtcNow, TotalPrice = new Money(total), ContactName = "T", ContactPhone = "+7" };
         order.Items.Add(new OrderItem { ProductId = productId, Quantity = 1, Price = new Money(total) });
         ctx.Add(order);
         await ctx.SaveChangesAsync();
@@ -45,69 +45,85 @@ public class OrderStatsTests : IClassFixture<PostgresFixture>
         return await new OrderService(new UnitOfWork(ctx)).GetStatsAsync();
     }
 
-    [PostgresFact]
-    public async Task CancelledOrders_AreNotInTodaysCountOrRevenue_ButEveryOtherStatusIs()
+    private async Task<int> PlaceAsync(int userId, int productId, int quantity)
     {
-        var (userId, productId) = await SeedAsync();
-        var before = await StatsAsync();
-        var now = DateTime.UtcNow;
+        await using var ctx = _db.CreateContext();
+        var placed = await new OrderService(new UnitOfWork(ctx)).CreateOrderAsync(
+            userId, new(new() { new(productId, quantity, null) }, "T", "+7 700 000 0001", DeliveryMethod.Pickup, null, null));
+        Assert.True(placed.IsSuccess);
+        return placed.Value!.Id;
+    }
 
-        foreach (var status in new[] { OrderStatus.Created, OrderStatus.Processing, OrderStatus.Shipped, OrderStatus.Delivered })
+    private async Task MoveAsync(int orderId, params OrderStatus[] path)
+    {
+        foreach (var status in path)
         {
-            await AddOrderAsync(userId, productId, 10_000, status, now);
+            await using var ctx = _db.CreateContext();
+            Assert.True((await new OrderService(new UnitOfWork(ctx)).UpdateOrderStatusAsync(orderId, status)).IsSuccess);
         }
-
-        await AddOrderAsync(userId, productId, 172_000, OrderStatus.Cancelled, now); // the FS-6 case
-
-        var after = await StatsAsync();
-        Assert.Equal(4, after.OrdersToday - before.OrdersToday);
-        Assert.Equal(40_000m, after.RevenueToday - before.RevenueToday);
     }
 
     [PostgresFact]
-    public async Task CancellingAnOrder_TakesItOutOfTodaysFigures_AndPutsTheStockBack()
+    public async Task Today_IsDeliveredMoney_OpenOrCancelledBringNone()
     {
         var (userId, productId) = await SeedAsync();
         var before = await StatsAsync();
-        int orderId;
-        await using (var ctx = _db.CreateContext())
-        {
-            // A real order through the service: it writes the stock off.
-            var placed = await new OrderService(new UnitOfWork(ctx)).CreateOrderAsync(
-                userId, new(new() { new(productId, 3, null) }, "T", "+7 700 000 0001", DeliveryMethod.Pickup, null, null));
-            Assert.True(placed.IsSuccess);
-            orderId = placed.Value!.Id;
-        }
+
+        var created = await PlaceAsync(userId, productId, 1);
+        var processing = await PlaceAsync(userId, productId, 1);
+        var shipped = await PlaceAsync(userId, productId, 1);
+        var delivered = await PlaceAsync(userId, productId, 2);
+        var cancelledFromShipped = await PlaceAsync(userId, productId, 5);
+        await MoveAsync(processing, OrderStatus.Processing);
+        await MoveAsync(shipped, OrderStatus.Processing, OrderStatus.Shipped);
+        await MoveAsync(delivered, OrderStatus.Processing, OrderStatus.Shipped, OrderStatus.Delivered);
+        await MoveAsync(cancelledFromShipped, OrderStatus.Processing, OrderStatus.Shipped, OrderStatus.Cancelled);
+
+        var after = await StatsAsync();
+        Assert.Equal(1, after.OrdersToday - before.OrdersToday);       // only the delivered one
+        Assert.Equal(2_000m, after.RevenueToday - before.RevenueToday); // 2 x 1000
+        Assert.Equal(5, after.TotalOrders - before.TotalOrders);        // "Всего заказов" counts every order placed
+        Assert.NotEqual(0, created + processing + shipped);
+    }
+
+    [PostgresFact]
+    public async Task PlacedOrder_NotInToday_UntilDelivered_CancelRestoresStock()
+    {
+        var (userId, productId) = await SeedAsync();
+        var before = await StatsAsync();
+        var orderId = await PlaceAsync(userId, productId, 3);
 
         var placedStats = await StatsAsync();
-        Assert.Equal(1, placedStats.OrdersToday - before.OrdersToday);
-        Assert.Equal(3_000m, placedStats.RevenueToday - before.RevenueToday);
+        Assert.Equal(0, placedStats.OrdersToday - before.OrdersToday);
+        Assert.Equal(0m, placedStats.RevenueToday - before.RevenueToday);
         Assert.Equal(97, await StockAsync(productId));
 
-        await using (var ctx = _db.CreateContext())
-        {
-            Assert.True((await new OrderService(new UnitOfWork(ctx)).UpdateOrderStatusAsync(orderId, OrderStatus.Cancelled)).IsSuccess);
-        }
+        await MoveAsync(orderId, OrderStatus.Cancelled);
 
         var cancelledStats = await StatsAsync();
         Assert.Equal(0, cancelledStats.OrdersToday - before.OrdersToday);
         Assert.Equal(0m, cancelledStats.RevenueToday - before.RevenueToday);
-        Assert.Equal(1, cancelledStats.TotalOrders - before.TotalOrders); // "Всего заказов" still counts it: it was placed
+        Assert.Equal(1, cancelledStats.TotalOrders - before.TotalOrders);
         Assert.Equal(100, await StockAsync(productId)); // the goods are back on sale
     }
 
     [PostgresFact]
-    public async Task OrdersFromEarlierDays_AreNotInToday()
+    public async Task DeliveredToday_CountsToday_EarlierPaymentDoesNot()
     {
         var (userId, productId) = await SeedAsync();
+        var data = new FinanceTestData(_db);
         var before = await StatsAsync();
 
-        await AddOrderAsync(userId, productId, 50_000, OrderStatus.Delivered, DateTime.UtcNow.Date.AddDays(-1).AddHours(12));
+        var placedYesterday = await AddOrderAsync(userId, productId, 50_000, OrderStatus.Shipped, DateTime.UtcNow.AddDays(-1));
+        await MoveAsync(placedYesterday, OrderStatus.Delivered);
+
+        var earlier = await AddOrderAsync(userId, productId, 70_000, OrderStatus.Delivered, DateTime.UtcNow.AddDays(-3));
+        await data.AddPaymentAsync(earlier, PaymentType.Income, 70_000, DateTime.UtcNow.AddDays(-2));
 
         var after = await StatsAsync();
-        Assert.Equal(0, after.OrdersToday - before.OrdersToday);
-        Assert.Equal(0m, after.RevenueToday - before.RevenueToday);
-        Assert.Equal(1, after.TotalOrders - before.TotalOrders);
+        Assert.Equal(1, after.OrdersToday - before.OrdersToday);
+        Assert.Equal(50_000m, after.RevenueToday - before.RevenueToday);
+        Assert.Equal(2, after.TotalOrders - before.TotalOrders);
     }
 
     private async Task<int> StockAsync(int productId)
@@ -129,15 +145,16 @@ public class OrderStatsTests : IClassFixture<PostgresFixture>
     }
 
     [PostgresFact]
-    public async Task AnOrderAt0030Local_CountsForThatLocalDay_AndOneAt2330TheDayBefore_DoesNot()
+    public async Task Payment_AfterLocalMidnight_BelongsToNewLocalDay()
     {
         var (userId, productId) = await SeedAsync();
+        var data = new FinanceTestData(_db);
         // 00:30 on 15 May in Almaty = 19:30 on 14 May UTC: UTC's calendar would call it yesterday.
-        await AddOrderAsync(userId, productId, 1_000, OrderStatus.Created, new DateTime(2030, 5, 14, 19, 30, 0, DateTimeKind.Utc));
-        // 23:30 on 15 May in Almaty = 18:30 on 15 May UTC: the same local day, though UTC's day is still the 15th too.
-        await AddOrderAsync(userId, productId, 2_000, OrderStatus.Created, new DateTime(2030, 5, 15, 18, 30, 0, DateTimeKind.Utc));
+        await data.AddPaymentAsync(await AddOrderAsync(userId, productId, 1_000, OrderStatus.Delivered), PaymentType.Income, 1_000, new DateTime(2030, 5, 14, 19, 30, 0, DateTimeKind.Utc));
+        // 23:30 on 15 May in Almaty = 18:30 on 15 May UTC: the same local day.
+        await data.AddPaymentAsync(await AddOrderAsync(userId, productId, 2_000, OrderStatus.Delivered), PaymentType.Income, 2_000, new DateTime(2030, 5, 15, 18, 30, 0, DateTimeKind.Utc));
         // 23:30 on 14 May in Almaty = 18:30 on 14 May UTC: yesterday in both calendars.
-        await AddOrderAsync(userId, productId, 4_000, OrderStatus.Created, new DateTime(2030, 5, 14, 18, 30, 0, DateTimeKind.Utc));
+        await data.AddPaymentAsync(await AddOrderAsync(userId, productId, 4_000, OrderStatus.Delivered), PaymentType.Income, 4_000, new DateTime(2030, 5, 14, 18, 30, 0, DateTimeKind.Utc));
 
         var stats = await StatsAtFixedClockAsync();
 
