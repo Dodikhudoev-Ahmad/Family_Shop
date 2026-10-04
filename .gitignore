@@ -23,5 +23,6 @@ backend/Api/wwwroot/uploads/products/*
 .vscode/
 .idea/
 
-# Claude Code local state
-.claude/
+# Claude Code local state (команды в .claude/commands/ коммитятся)
+.claude/*
+!.claude/commands/
