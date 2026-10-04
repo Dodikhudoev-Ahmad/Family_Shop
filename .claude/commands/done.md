@@ -8,7 +8,8 @@ description: Закрыть шаг — сборка, тесты, PROGRESS.md, к
    - `cd backend && dotnet build FamilyShop.slnx` — должно быть 0 ошибок и **0 предупреждений**;
    - `cd frontend && npx tsc -b` и `npm run test`;
    - `cd mobile && npx tsc --noEmit` и `npx jest`;
-   - `cd backend && dotnet test FamilyShop.slnx --no-build`.
+   - `cd backend && dotnet test FamilyShop.slnx --no-build`;
+   - `bash .githooks/test-pre-commit.sh` — тест хука против утечек секретов (если шаг трогал `.githooks/`, обязателен; иначе тоже запускать, это секунды).
 2. Если что-то красное или есть предупреждения: **остановись**, доложи (какая команда, что вывела) и **не коммить**. Шаг не закрыт.
 3. Если всё зелёное:
    - отметь шаг в `PROGRESS.md` (`[x]`);
