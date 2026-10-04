@@ -286,7 +286,10 @@ export interface AdminOrderDto {
 }
 
 export interface OrderStatsDto {
+  /** Orders delivered today (the card "Доставлено сегодня"; the field kept its old name). */
   ordersToday: number;
+  /** Orders placed today, not cancelled (the card "Новых сегодня"); absent from older servers. */
+  newToday?: number;
   revenueToday: number;
   newOrdersCount: number;
   totalOrders: number;
@@ -376,12 +379,17 @@ export interface FinanceEntryDto {
   category: ExpenseCategory | null;
   comment: string | null;
   author: string | null;
+  /** A soft-deleted expense: kept for the record, counted nowhere. */
+  isDeleted: boolean;
+  deletedAt: string | null;
 }
 
 export interface FinanceJournalQuery {
   kind?: FinanceEntryKind;
   dateFrom?: string;
   dateTo?: string;
+  /** Also list deleted expenses (marked); off by default. */
+  includeDeleted?: boolean;
   page?: number;
   pageSize?: number;
 }
@@ -412,6 +420,7 @@ export function fetchFinanceJournal(query: FinanceJournalQuery = {}): Promise<Pa
   if (query.kind !== undefined) params.set('kind', query.kind);
   if (query.dateFrom) params.set('dateFrom', query.dateFrom);
   if (query.dateTo) params.set('dateTo', query.dateTo);
+  if (query.includeDeleted) params.set('includeDeleted', 'true');
   if (query.page !== undefined) params.set('page', String(query.page));
   if (query.pageSize !== undefined) params.set('pageSize', String(query.pageSize));
   const qs = params.toString();
@@ -420,6 +429,11 @@ export function fetchFinanceJournal(query: FinanceJournalQuery = {}): Promise<Pa
 
 export function createExpense(request: CreateExpenseRequest): Promise<FinanceEntryDto> {
   return apiFetch<FinanceEntryDto>('/admin/finance/expenses', { method: 'POST', body: JSON.stringify(request) });
+}
+
+/** Soft-deletes an expense (a repeat succeeds and changes nothing). Resolves with the expense, now marked deleted. */
+export function deleteExpense(id: number): Promise<FinanceEntryDto> {
+  return apiFetch<FinanceEntryDto>(`/admin/finance/expenses/${id}`, { method: 'DELETE' });
 }
 
 /** The Excel file for a period (shop calendar days). The file name is built here: a cross-origin page can't read Content-Disposition. */

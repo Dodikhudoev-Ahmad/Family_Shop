@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { AdminLayout } from '../../components/AdminLayout/AdminLayout';
+import { ConfirmDialog } from '../../components/ConfirmDialog/ConfirmDialog';
 import { useToast } from '../../context/ToastContext';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -9,6 +10,7 @@ import { formatMonthLabel, formatStoreDate, formatStoreDateTime, setStoreTimeZon
 import {
   ApiError,
   createExpense,
+  deleteExpense,
   downloadFinanceExport,
   fetchFinanceChart,
   fetchFinanceJournal,
@@ -59,6 +61,7 @@ export function AdminFinancePage() {
   const [kind, setKind] = useState<FinanceEntryKind | 'all'>('all');
   const [journalFrom, setJournalFrom] = useState('');
   const [journalTo, setJournalTo] = useState('');
+  const [showDeleted, setShowDeleted] = useState(false);
   const [page, setPage] = useState(1);
   const [entries, setEntries] = useState<FinanceEntryDto[] | null>(null);
   const [totalCount, setTotalCount] = useState(0);
@@ -66,6 +69,8 @@ export function AdminFinancePage() {
   const [journalError, setJournalError] = useState<string | null>(null);
 
   const [expenseOpen, setExpenseOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<FinanceEntryDto | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
   const summaryRequest = useRef(0);
@@ -108,7 +113,7 @@ export function AdminFinancePage() {
 
   useEffect(() => {
     setPage(1);
-  }, [kind, journalFrom, journalTo]);
+  }, [kind, journalFrom, journalTo, showDeleted]);
 
   useEffect(() => {
     if (journalRangeError) return;
@@ -119,6 +124,7 @@ export function AdminFinancePage() {
       kind: kind === 'all' ? undefined : kind,
       dateFrom: journalFrom || undefined,
       dateTo: journalTo || undefined,
+      includeDeleted: showDeleted,
       page,
       pageSize: PAGE_SIZE,
     })
@@ -134,7 +140,7 @@ export function AdminFinancePage() {
       .finally(() => {
         if (journalRequest.current === id) setJournalLoading(false);
       });
-  }, [kind, journalFrom, journalTo, journalRangeError, page, reloadTick]);
+  }, [kind, journalFrom, journalTo, showDeleted, journalRangeError, page, reloadTick]);
 
   const handleExport = async () => {
     if (!summary || isExporting) return;
@@ -163,8 +169,25 @@ export function AdminFinancePage() {
     setReloadTick((n) => n + 1);
   };
 
+  const confirmDelete = async () => {
+    if (!pendingDelete || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      await deleteExpense(pendingDelete.id);
+      setPendingDelete(null);
+      showToast('Расход удалён');
+      setReloadTick((n) => n + 1); // the summary, the chart and the journal all change
+    } catch (err) {
+      setPendingDelete(null);
+      showToast(err instanceof ApiError ? err.message : 'Не удалось удалить расход.', 'error');
+      setReloadTick((n) => n + 1);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-  const hasJournalFilters = kind !== 'all' || journalFrom !== '' || journalTo !== '';
+  const hasJournalFilters = kind !== 'all' || journalFrom !== '' || journalTo !== '' || showDeleted;
 
   return (
     <AdminLayout>
@@ -237,6 +260,10 @@ export function AdminFinancePage() {
               <input type="date" value={journalTo} onChange={(e) => setJournalTo(e.target.value)} aria-label="Журнал: до" />
             </div>
           </div>
+          <label className="fin__toggle">
+            <input type="checkbox" checked={showDeleted} onChange={(e) => setShowDeleted(e.target.checked)} />
+            <span>Показывать удалённые</span>
+          </label>
           {journalRangeError && <p className="admin-page-error">{journalRangeError}</p>}
 
           {journalError && <p className="admin-page-error">{journalError}</p>}
@@ -253,7 +280,7 @@ export function AdminFinancePage() {
           )}
           {!journalError && !journalLoading && entries !== null && entries.length > 0 && (
             <>
-              {isMobile ? <JournalCards entries={entries} /> : <JournalTable entries={entries} />}
+              {isMobile ? <JournalCards entries={entries} onDelete={setPendingDelete} /> : <JournalTable entries={entries} onDelete={setPendingDelete} />}
               <div className="admin-pagination">
                 <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                   Назад
@@ -271,6 +298,23 @@ export function AdminFinancePage() {
       </div>
 
       <ExpenseModal open={expenseOpen} onClose={() => setExpenseOpen(false)} onSaved={handleExpenseSaved} />
+
+      <div className="fin-dialog">
+        <ConfirmDialog
+          open={pendingDelete !== null}
+          title="Удалить расход?"
+          description={
+            pendingDelete
+              ? `${pendingDelete.category ? CATEGORY_LABEL[pendingDelete.category] : 'Расход'}, ${formatPrice(pendingDelete.amount)}. Он пропадёт из баланса, итогов, графика и Excel. Запись останется в журнале среди удалённых; если расход внесён по ошибке, внесите его заново.`
+              : ''
+          }
+          confirmLabel="Удалить"
+          cancelLabel="Не удалять"
+          isBusy={isDeleting}
+          onConfirm={confirmDelete}
+          onCancel={() => !isDeleting && setPendingDelete(null)}
+        />
+      </div>
     </AdminLayout>
   );
 }
@@ -379,17 +423,33 @@ function EntryDetails({ entry }: { entry: FinanceEntryDto }) {
         <div className="fin-entry__title">{entry.category ? CATEGORY_LABEL[entry.category] : 'Расход'}</div>
         {entry.comment && <div className="fin-entry__sub">{entry.comment}</div>}
         {entry.author && <div className="fin-entry__sub">{entry.author}</div>}
+        {entry.isDeleted && entry.deletedAt && <div className="fin-entry__sub">Удалён {formatStoreDateTime(entry.deletedAt)}</div>}
       </>
     );
   }
   return <div className="fin-entry__title">Заказ FS-{entry.orderId}</div>;
 }
 
-function KindBadge({ kind }: { kind: FinanceEntryKind }) {
-  return <span className={`fin-badge fin-badge--${kind.toLowerCase()}`}>{KIND_LABEL[kind]}</span>;
+function KindBadge({ entry }: { entry: FinanceEntryDto }) {
+  return (
+    <>
+      <span className={`fin-badge fin-badge--${entry.kind.toLowerCase()}`}>{KIND_LABEL[entry.kind]}</span>
+      {entry.isDeleted && <span className="fin-badge fin-badge--deleted">Удалён</span>}
+    </>
+  );
 }
 
-function JournalTable({ entries }: { entries: FinanceEntryDto[] }) {
+function DeleteButton({ entry, onDelete }: { entry: FinanceEntryDto; onDelete: (entry: FinanceEntryDto) => void }) {
+  // Only an expense that is still counted can be deleted; payments never can (a mistake there is a reversal).
+  if (entry.kind !== 'Expense' || entry.isDeleted) return null;
+  return (
+    <button type="button" className="fin__delete" onClick={() => onDelete(entry)} aria-label={`Удалить расход ${entry.id}`}>
+      Удалить
+    </button>
+  );
+}
+
+function JournalTable({ entries, onDelete }: { entries: FinanceEntryDto[]; onDelete: (entry: FinanceEntryDto) => void }) {
   return (
     <div className="admin-table-wrap">
       <table className="admin-table fin-table">
@@ -399,19 +459,23 @@ function JournalTable({ entries }: { entries: FinanceEntryDto[] }) {
             <th>Вид</th>
             <th>Описание</th>
             <th className="fin-table__amount">Сумма</th>
+            <th />
           </tr>
         </thead>
         <tbody>
           {entries.map((entry) => (
-            <tr key={`${entry.kind}-${entry.id}`}>
+            <tr key={`${entry.kind}-${entry.id}`} className={entry.isDeleted ? 'fin-row--deleted' : ''}>
               <td>{entryWhen(entry)}</td>
               <td>
-                <KindBadge kind={entry.kind} />
+                <KindBadge entry={entry} />
               </td>
               <td>
                 <EntryDetails entry={entry} />
               </td>
               <td className={`fin-table__amount fin-amount fin-amount--${entry.kind.toLowerCase()}`}>{signed(entry)}</td>
+              <td className="fin-table__actions">
+                <DeleteButton entry={entry} onDelete={onDelete} />
+              </td>
             </tr>
           ))}
         </tbody>
@@ -420,17 +484,20 @@ function JournalTable({ entries }: { entries: FinanceEntryDto[] }) {
   );
 }
 
-function JournalCards({ entries }: { entries: FinanceEntryDto[] }) {
+function JournalCards({ entries, onDelete }: { entries: FinanceEntryDto[]; onDelete: (entry: FinanceEntryDto) => void }) {
   return (
     <div className="admin-cards">
       {entries.map((entry) => (
-        <div className="fin-entry" key={`${entry.kind}-${entry.id}`}>
+        <div className={`fin-entry ${entry.isDeleted ? 'fin-row--deleted' : ''}`} key={`${entry.kind}-${entry.id}`}>
           <div className="fin-entry__top">
-            <KindBadge kind={entry.kind} />
+            <span className="fin-entry__badges">
+              <KindBadge entry={entry} />
+            </span>
             <span className={`fin-amount fin-amount--${entry.kind.toLowerCase()}`}>{signed(entry)}</span>
           </div>
           <EntryDetails entry={entry} />
           <div className="fin-entry__when">{entryWhen(entry)}</div>
+          <DeleteButton entry={entry} onDelete={onDelete} />
         </div>
       ))}
     </div>

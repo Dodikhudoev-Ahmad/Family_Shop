@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createExpense, downloadFinanceExport, fetchFinanceChart, fetchFinanceJournal, fetchFinanceSummary } from './api';
+import { createExpense, deleteExpense, downloadFinanceExport, fetchFinanceChart, fetchFinanceJournal, fetchFinanceSummary } from './api';
 import { setAccessToken } from './authToken';
 
 const ok = (data: unknown) => new Response(JSON.stringify({ success: true, data, errors: [] }), { status: 200 });
@@ -45,6 +45,27 @@ describe('finance API client', () => {
 
     expect(new URL(urlOf(0)).searchParams.toString()).toBe('kind=Reversal&dateFrom=2026-10-01&page=2&pageSize=10');
     expect(urlOf(1)).toMatch(/\/admin\/finance\/journal$/);
+  });
+
+  it('asks for deleted expenses only when told to', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(ok({ items: [], totalCount: 0, page: 1, pageSize: 10 })));
+
+    await fetchFinanceJournal({ includeDeleted: true });
+    await fetchFinanceJournal({ includeDeleted: false });
+
+    expect(new URL(urlOf(0)).searchParams.get('includeDeleted')).toBe('true');
+    expect(urlOf(1)).not.toContain('includeDeleted');
+  });
+
+  it('deletes an expense with DELETE on its own URL, no body', async () => {
+    fetchMock.mockResolvedValue(ok({ id: 7, isDeleted: true }));
+
+    const result = await deleteExpense(7);
+
+    expect(urlOf()).toMatch(/\/admin\/finance\/expenses\/7$/);
+    expect(initOf().method).toBe('DELETE');
+    expect(initOf().body).toBeUndefined();
+    expect(result).toMatchObject({ id: 7, isDeleted: true });
   });
 
   it('reads the chart', async () => {
