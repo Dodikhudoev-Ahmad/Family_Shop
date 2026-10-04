@@ -87,6 +87,6 @@ public class SeedShoesAndBagsTests
         var seeded = ShoesAndBagsFor(3, Gender.Kids).Select(p => p.Name).ToHashSet();
 
         Assert.Equal(5, retired.Length);
-        Assert.Empty(retired.Where(seeded.Contains));
+        Assert.DoesNotContain(retired, seeded.Contains);
     }
 }
