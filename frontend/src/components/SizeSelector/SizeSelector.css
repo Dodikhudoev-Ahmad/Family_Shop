@@ -32,9 +32,10 @@
 }
 
 .size-btn.is-selected {
-  background: var(--color-text);
-  border-color: var(--color-text);
-  color: var(--color-bg);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 600;
 }
 
 /* Sizes already sitting in the cart get a small badge with their quantity - visible whether or
