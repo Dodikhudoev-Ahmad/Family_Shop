@@ -7,7 +7,8 @@ public enum ExpenseCategory
     Other = 2
 }
 
-/// <summary>A manually entered shop expense. Positive whole tenge; created and read, never edited or deleted.</summary>
+/// <summary>A manually entered shop expense. Positive whole tenge; never edited. A mistake is removed with a soft delete
+/// (<see cref="IsDeleted"/>: the row stays for the record but counts nowhere) and entered again.</summary>
 public class Expense
 {
     public int Id { get; set; }
@@ -21,4 +22,12 @@ public class Expense
     public int CreatedByUserId { get; set; }
     public User? CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public bool IsDeleted { get; set; }
+
+    /// <summary>When it was deleted (UTC); set once, by the first delete.</summary>
+    public DateTime? DeletedAt { get; set; }
+
+    public int? DeletedByUserId { get; set; }
+    public User? DeletedBy { get; set; }
 }

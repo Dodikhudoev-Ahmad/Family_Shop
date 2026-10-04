@@ -155,4 +155,44 @@ public class FinanceMigrationTests : IClassFixture<PostgresFixture>
             ctx.Database.ExecuteSqlInterpolatedAsync($@"DELETE FROM ""Orders"" WHERE ""Id"" = {orderId}"));
         Assert.Equal("23503", ex.SqlState); // foreign_key_violation
     }
+
+    [PostgresFact]
+    public async Task SoftDeleteMigration_CanBeRunAgain_KeepsExistingExpensesNotDeleted_AndAddsTheColumns()
+    {
+        var data = await new FinanceTestData(_db).SeedAsync();
+        var expense = await data.AddExpenseAsync(500, DateTime.UtcNow);
+
+        await using (var ctx = _db.CreateContext())
+        {
+            var generator = ((IInfrastructure<IServiceProvider>)ctx).Instance.GetService(typeof(IMigrationsSqlGenerator)) as IMigrationsSqlGenerator;
+            foreach (var command in generator!.Generate(new AddExpenseSoftDelete().UpOperations))
+            {
+                await ctx.Database.ExecuteSqlRawAsync(command.CommandText);
+            }
+        }
+
+        await using var after = _db.CreateContext();
+        var row = await after.Expenses.AsNoTracking().SingleAsync(e => e.Id == expense);
+        Assert.False(row.IsDeleted);
+        Assert.Null(row.DeletedAt);
+        Assert.Null(row.DeletedByUserId);
+        Assert.Equal(500m, row.Amount);
+    }
+
+    [PostgresFact]
+    public async Task AnExpensesDeleter_CannotBeRemovedFromUnderIt()
+    {
+        var data = await new FinanceTestData(_db).SeedAsync();
+        var admin = await data.AddAdminAsync();
+        var expense = await data.AddExpenseAsync(500, DateTime.UtcNow);
+        await using (var ctx = _db.CreateContext())
+        {
+            await new UnitOfWork(ctx).Finance.TryDeleteExpenseAsync(expense, admin, DateTime.UtcNow);
+        }
+
+        await using var again = _db.CreateContext();
+        var ex = await Assert.ThrowsAsync<PostgresException>(() =>
+            again.Database.ExecuteSqlInterpolatedAsync($@"DELETE FROM ""Users"" WHERE ""Id"" = {admin}"));
+        Assert.Equal("23503", ex.SqlState);
+    }
 }

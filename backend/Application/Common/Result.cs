@@ -36,6 +36,9 @@ public class Result<T>
 
 public static class ResultErrorCodes
 {
+    /// <summary>The thing asked for does not exist - maps to 404.</summary>
+    public const string NotFound = "not_found";
+
     /// <summary>A report would exceed its row cap - maps to 400.</summary>
     public const string TooManyRows = "too_many_rows";
 

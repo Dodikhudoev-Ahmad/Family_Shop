@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Domain.Entities;
 using Domain.Interfaces;
@@ -286,5 +287,144 @@ public class FinanceServiceTests : IClassFixture<PostgresFixture>
 
         Assert.Equal(5, seen.Count);
         Assert.Equal(5, seen.Distinct().Count());
+    }
+
+    // ---- soft delete of expenses ----
+
+    private async Task<Application.Common.Result<FinanceEntryDto>> DeleteAsync(int adminId, int expenseId, DateTime? now = null)
+    {
+        await using var ctx = _db.CreateContext();
+        return await ServiceAt(ctx, now ?? DateTime.UtcNow).DeleteExpenseAsync(adminId, expenseId);
+    }
+
+    [PostgresFact]
+    public async Task ADeletedExpense_LeavesTheBalanceTheSummaryTheChartAndTheExport()
+    {
+        var data = await new FinanceTestData(_db).SeedAsync();
+        var now = Utc(2060, 5, 15, 7);
+        await IncomeAtAsync(data, 10_000, Utc(2060, 5, 10, 6));
+        var kept = await data.AddExpenseAsync(1_000, Utc(2060, 5, 9, 19), ExpenseCategory.Purchase);
+        var removed = await data.AddExpenseAsync(4_000, Utc(2060, 5, 9, 19), ExpenseCategory.Other, "ошибка");
+
+        var before = await SummaryAsync(now, FinancePeriod.Month);
+        Assert.Equal(5_000m, before.Expenses);
+        Assert.Equal(5_000m, before.Balance);
+
+        Assert.True((await DeleteAsync(data.AdminId, removed, now)).IsSuccess);
+
+        var after = await SummaryAsync(now, FinancePeriod.Month);
+        Assert.Equal(1_000m, after.Expenses);
+        Assert.Equal(1, after.ExpenseCount);
+        Assert.Equal(9_000m, after.Balance);
+
+        await using var ctx = _db.CreateContext();
+        var service = ServiceAt(ctx, now);
+        var chart = await service.GetChartAsync();
+        var may = chart.Months.Single(m => m.Month == "2060-05");
+        Assert.Equal((10_000m, 1_000m, 9_000m), (may.Income, may.Expenses, may.Balance));
+
+        var export = await service.GetExportAsync(new FinanceRangeDto(new DateTime(2060, 5, 1), new DateTime(2060, 5, 15)));
+        Assert.True(export.IsSuccess);
+        Assert.DoesNotContain(export.Value!.Entries, e => e.Id == removed && e.Kind == FinanceEntryKind.Expense);
+        Assert.Contains(export.Value.Entries, e => e.Id == kept && e.Kind == FinanceEntryKind.Expense);
+        Assert.Equal(9_000m, export.Value.Summary.Balance);
+    }
+
+    [PostgresFact]
+    public async Task TheJournal_HidesDeletedExpensesByDefault_AndShowsThemMarkedOnRequest()
+    {
+        var data = await new FinanceTestData(_db).SeedAsync();
+        var kept = await data.AddExpenseAsync(1_000, Utc(2061, 6, 1, 19));
+        var removed = await data.AddExpenseAsync(4_000, Utc(2061, 6, 1, 19), ExpenseCategory.Delivery, "не тот");
+        var deletedAt = Utc(2061, 6, 5, 8);
+        Assert.True((await DeleteAsync(data.AdminId, removed, deletedAt)).IsSuccess);
+
+        await using var ctx = _db.CreateContext();
+        var service = ServiceAt(ctx, Utc(2061, 7, 1));
+        var range = (From: new DateTime(2061, 6, 1), To: new DateTime(2061, 6, 30));
+
+        var hidden = await service.GetJournalAsync(new FinanceJournalFilterDto(null, range.From, range.To));
+        Assert.Equal(new[] { kept }, hidden.Items.Select(e => e.Id).ToArray());
+        Assert.False(hidden.Items.Single().IsDeleted);
+        Assert.Equal(1, hidden.TotalCount);
+
+        var shown = await service.GetJournalAsync(new FinanceJournalFilterDto(null, range.From, range.To, IncludeDeleted: true));
+        Assert.Equal(2, shown.TotalCount);
+        var gone = shown.Items.Single(e => e.Id == removed);
+        Assert.True(gone.IsDeleted);
+        Assert.Equal(deletedAt, gone.DeletedAt);
+        Assert.Equal("не тот", gone.Comment);
+        Assert.Equal(4_000m, gone.Amount);
+        Assert.False(shown.Items.Single(e => e.Id == kept).IsDeleted);
+
+        var onlyExpensesHidden = await service.GetJournalAsync(new FinanceJournalFilterDto(FinanceEntryKind.Expense, range.From, range.To));
+        Assert.Equal(1, onlyExpensesHidden.TotalCount);
+    }
+
+    [PostgresFact]
+    public async Task DeletingTwice_IsNotAnError_AndKeepsTheFirstDeletersNameAndTime()
+    {
+        var data = await new FinanceTestData(_db).SeedAsync();
+        var second = await data.AddAdminAsync();
+        var expense = await data.AddExpenseAsync(700, Utc(2062, 3, 1, 19));
+        var firstAt = Utc(2062, 3, 2, 8);
+
+        var first = await DeleteAsync(data.AdminId, expense, firstAt);
+        var again = await DeleteAsync(second, expense, firstAt.AddDays(3));
+        var third = await DeleteAsync(data.AdminId, expense, firstAt.AddDays(9));
+
+        Assert.True(first.IsSuccess && again.IsSuccess && third.IsSuccess);
+        Assert.All(new[] { first, again, third }, r => Assert.True(r.Value!.IsDeleted));
+        Assert.Equal(firstAt, again.Value!.DeletedAt);
+        Assert.Equal(firstAt, third.Value!.DeletedAt);
+
+        await using var ctx = _db.CreateContext();
+        var row = await ctx.Expenses.AsNoTracking().SingleAsync(e => e.Id == expense);
+        Assert.True(row.IsDeleted);
+        Assert.Equal(firstAt, row.DeletedAt);
+        Assert.Equal(data.AdminId, row.DeletedByUserId); // not overwritten by the later admin
+    }
+
+    [PostgresFact]
+    public async Task ParallelDeletes_AllSucceed_AndTheRowIsWrittenOnce()
+    {
+        var data = await new FinanceTestData(_db).SeedAsync();
+        var others = new[] { await data.AddAdminAsync("A"), await data.AddAdminAsync("B"), await data.AddAdminAsync("C") };
+        var expense = await data.AddExpenseAsync(900, Utc(2063, 3, 1, 19));
+
+        var results = await Task.WhenAll(Enumerable.Range(0, 12).Select(i => Task.Run(() => DeleteAsync(others[i % 3], expense))));
+
+        Assert.All(results, r => Assert.True(r.IsSuccess));
+        await using var ctx = _db.CreateContext();
+        var row = await ctx.Expenses.AsNoTracking().SingleAsync(e => e.Id == expense);
+        Assert.True(row.IsDeleted);
+        Assert.Contains(row.DeletedByUserId!.Value, others);
+        Assert.All(results, r => Assert.Equal(row.DeletedAt, r.Value!.DeletedAt)); // everyone sees the one winner's time
+    }
+
+    [PostgresFact]
+    public async Task DeletingAnExpenseThatDoesNotExist_IsNotFound_AndCreatesNothing()
+    {
+        var data = await new FinanceTestData(_db).SeedAsync();
+
+        var result = await DeleteAsync(data.AdminId, 2_000_000_000);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultErrorCodes.NotFound, result.ErrorCode);
+    }
+
+    [PostgresFact]
+    public async Task Deleting_NeverTouchesPaymentsOrOrders()
+    {
+        var data = await new FinanceTestData(_db).SeedAsync();
+        var order = await data.AddOrderAsync(5_000, OrderStatus.Delivered, Utc(2064, 3, 1));
+        await data.AddPaymentAsync(order, PaymentType.Income, 5_000, Utc(2064, 3, 1));
+        var expense = await data.AddExpenseAsync(100, Utc(2064, 3, 1, 19));
+
+        await DeleteAsync(data.AdminId, expense);
+
+        await using var ctx = _db.CreateContext();
+        Assert.Equal(1, await ctx.Payments.CountAsync(p => p.OrderId == order && p.Amount == 5_000));
+        Assert.Equal(OrderStatus.Delivered, (await ctx.Orders.AsNoTracking().SingleAsync(o => o.Id == order)).Status);
     }
 }

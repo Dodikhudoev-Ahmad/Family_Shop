@@ -26,7 +26,7 @@ public class FinanceRepository : IFinanceRepository
 
         var expenses = await _context.Expenses
             .AsNoTracking()
-            .Where(e => e.ExpenseDate >= fromUtc && e.ExpenseDate <= toUtc)
+            .Where(e => !e.IsDeleted && e.ExpenseDate >= fromUtc && e.ExpenseDate <= toUtc)
             .GroupBy(_ => 1)
             .Select(g => new { Sum = g.Sum(e => e.Amount), Count = g.Count() })
             .ToListAsync(cancellationToken);
@@ -50,7 +50,7 @@ public class FinanceRepository : IFinanceRepository
 
         var expenses = await _context.Expenses
             .AsNoTracking()
-            .Where(e => e.ExpenseDate >= fromUtc && e.ExpenseDate <= toUtc)
+            .Where(e => !e.IsDeleted && e.ExpenseDate >= fromUtc && e.ExpenseDate <= toUtc)
             .Select(e => new { e.Amount, At = e.ExpenseDate })
             .ToListAsync(cancellationToken);
 
@@ -69,6 +69,8 @@ public class FinanceRepository : IFinanceRepository
         public int? Category { get; set; }
         public string? Comment { get; set; }
         public string? Author { get; set; }
+        public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
     }
 
     private static FinanceEntry ToEntry(JournalRow r) => new(
@@ -78,10 +80,10 @@ public class FinanceRepository : IFinanceRepository
             (int)PaymentType.Reversal => FinanceEntryKind.Reversal,
             _ => FinanceEntryKind.Income
         },
-        r.Id, r.Date, r.Amount, r.OrderId, r.Category is { } c ? (ExpenseCategory)c : null, r.Comment, r.Author);
+        r.Id, r.Date, r.Amount, r.OrderId, r.Category is { } c ? (ExpenseCategory)c : null, r.Comment, r.Author, r.IsDeleted, r.DeletedAt);
 
     public async Task<(IReadOnlyList<FinanceEntry> Items, int TotalCount)> GetJournalAsync(
-        FinanceEntryKind? kind, DateTime? fromUtc, DateTime? toUtc, int page, int pageSize, CancellationToken cancellationToken = default)
+        FinanceEntryKind? kind, DateTime? fromUtc, DateTime? toUtc, bool includeDeleted, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         IQueryable<JournalRow> rows;
         var payments = _context.Payments.AsNoTracking()
@@ -89,14 +91,15 @@ public class FinanceRepository : IFinanceRepository
             .Select(p => new JournalRow
             {
                 KindCode = (int)p.Type, Id = p.Id, Date = p.CreatedAt, Amount = p.Amount,
-                OrderId = p.OrderId, Category = null, Comment = null, Author = null
+                OrderId = p.OrderId, Category = null, Comment = null, Author = null, IsDeleted = false, DeletedAt = null
             });
         var expenses = _context.Expenses.AsNoTracking()
-            .Where(e => (fromUtc == null || e.ExpenseDate >= fromUtc) && (toUtc == null || e.ExpenseDate <= toUtc))
+            .Where(e => (includeDeleted || !e.IsDeleted) && (fromUtc == null || e.ExpenseDate >= fromUtc) && (toUtc == null || e.ExpenseDate <= toUtc))
             .Select(e => new JournalRow
             {
                 KindCode = ExpenseCode, Id = e.Id, Date = e.ExpenseDate, Amount = e.Amount,
-                OrderId = null, Category = (int)e.Category, Comment = e.Comment, Author = e.CreatedBy!.Name
+                OrderId = null, Category = (int)e.Category, Comment = e.Comment, Author = e.CreatedBy!.Name,
+                IsDeleted = e.IsDeleted, DeletedAt = e.DeletedAt
             });
 
         rows = kind switch
@@ -131,9 +134,23 @@ public class FinanceRepository : IFinanceRepository
             .Select(e => new JournalRow
             {
                 KindCode = ExpenseCode, Id = e.Id, Date = e.ExpenseDate, Amount = e.Amount,
-                OrderId = null, Category = (int)e.Category, Comment = e.Comment, Author = e.CreatedBy!.Name
+                OrderId = null, Category = (int)e.Category, Comment = e.Comment, Author = e.CreatedBy!.Name,
+                IsDeleted = e.IsDeleted, DeletedAt = e.DeletedAt
             })
             .FirstOrDefaultAsync(cancellationToken);
         return row is null ? null : ToEntry(row);
+    }
+
+    public async Task<bool> TryDeleteExpenseAsync(int expenseId, int adminUserId, DateTime at, CancellationToken cancellationToken = default)
+    {
+        // The condition IsDeleted = false is what makes a repeat harmless: the second delete matches nothing, so it cannot
+        // overwrite who deleted the expense and when.
+        var affected = await _context.Expenses
+            .Where(e => e.Id == expenseId && !e.IsDeleted)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(e => e.IsDeleted, true)
+                .SetProperty(e => e.DeletedAt, at)
+                .SetProperty(e => e.DeletedByUserId, adminUserId), cancellationToken);
+        return affected > 0;
     }
 }

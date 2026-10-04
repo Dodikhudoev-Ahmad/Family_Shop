@@ -67,11 +67,12 @@ public class AdminFinanceController : ControllerBase
         [FromQuery] FinanceEntryKind? kind,
         [FromQuery] DateTime? dateFrom,
         [FromQuery] DateTime? dateTo,
+        [FromQuery] bool includeDeleted = false,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        var filter = new FinanceJournalFilterDto(kind, dateFrom, dateTo, page, pageSize);
+        var filter = new FinanceJournalFilterDto(kind, dateFrom, dateTo, page, pageSize, includeDeleted);
         var errors = await _journalValidator.ValidateOrNullAsync(filter, cancellationToken);
         if (errors is not null)
         {
@@ -89,6 +90,20 @@ public class AdminFinanceController : ControllerBase
         return result.IsSuccess
             ? Ok(ApiResponse<FinanceEntryDto>.Ok(result.Value!))
             : BadRequest(ApiResponse<FinanceEntryDto>.Fail(result.Errors));
+    }
+
+    /// <summary>Мягко удаляет расход (запись остаётся, но не входит в итоги). Повтор не ошибка и не меняет, кто и когда удалил.</summary>
+    [HttpDelete("expenses/{id:int}")]
+    public async Task<ActionResult<ApiResponse<FinanceEntryDto>>> DeleteExpense(int id, CancellationToken cancellationToken)
+    {
+        var result = await _finance.DeleteExpenseAsync(GetUserId(), id, cancellationToken);
+        if (result.IsSuccess)
+        {
+            return Ok(ApiResponse<FinanceEntryDto>.Ok(result.Value!));
+        }
+
+        var failure = ApiResponse<FinanceEntryDto>.Fail(result.Errors, result.ErrorCode, result.ErrorMeta);
+        return result.ErrorCode == ResultErrorCodes.NotFound ? NotFound(failure) : BadRequest(failure);
     }
 
     /// <summary>Excel (.xlsx): журнал и итоги за период (по умолчанию — текущий месяц), не более 20 000 строк.</summary>

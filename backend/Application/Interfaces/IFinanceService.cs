@@ -14,6 +14,10 @@ public interface IFinanceService
 
     Task<Result<FinanceEntryDto>> AddExpenseAsync(int adminUserId, CreateExpenseRequestDto request, CancellationToken cancellationToken = default);
 
+    /// <summary>Soft-deletes an expense (idempotent: a repeat succeeds and keeps the first DeletedAt/DeletedBy). Failure code
+    /// <c>not_found</c> when there is no such expense.</summary>
+    Task<Result<FinanceEntryDto>> DeleteExpenseAsync(int adminUserId, int expenseId, CancellationToken cancellationToken = default);
+
     /// <summary>Everything of the period for the Excel export; a failure (code <c>too_many_rows</c>) when it exceeds <see cref="FinanceService.MaxExportRows"/>.</summary>
     Task<Result<FinanceExportDto>> GetExportAsync(FinanceRangeDto range, CancellationToken cancellationToken = default);
 }

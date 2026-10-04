@@ -35,6 +35,13 @@ public class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
             .HasForeignKey(e => e.CreatedByUserId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Property(e => e.IsDeleted).HasDefaultValue(false);
+
+        builder.HasOne(e => e.DeletedBy)
+            .WithMany()
+            .HasForeignKey(e => e.DeletedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(e => e.ExpenseDate);
     }
 }
