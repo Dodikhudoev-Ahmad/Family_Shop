@@ -8,7 +8,7 @@
 
 - Фаза: 13 «Процесс разработки» [QA] (см. `PROGRESS.md`).
 - Последний коммит на момент записи: `663d31e`.
-- Следующий шаг: ждать «go» владельца; кандидаты — открытые задачи в `PROGRESS.md`.
+- Следующий шаг: п.1 (`PROGRESS.md`, «Открытые задачи»), после «go».
 - Сборка backend: 0 ошибок, **4 предупреждения** (`JwtSettingsValidator.cs` CS8602; в `Application.Tests`: `UploadsServingTests.cs` ASPDEPR004 и ASPDEPR008, `SeedShoesAndBagsTests.cs` xUnit2029). По правилу ALWAYS ниже это блокер для закрытия шага; исправление — отдельная задача [BE].
 - `dotnet test`: 402 passed, 0 failed, 0 skipped.
 - `vitest` (frontend): 177 passed в 30 файлах.
