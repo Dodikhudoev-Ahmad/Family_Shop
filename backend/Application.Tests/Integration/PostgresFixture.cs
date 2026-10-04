@@ -110,3 +110,12 @@ public sealed class PostgresFactAttribute : FactAttribute
         Skip = PostgresFixture.SkipReason;
     }
 }
+
+/// <summary>[Theory] that is skipped (not failed) on machines without a reachable PostgreSQL.</summary>
+public sealed class PostgresTheoryAttribute : TheoryAttribute
+{
+    public PostgresTheoryAttribute()
+    {
+        Skip = PostgresFixture.SkipReason;
+    }
+}
