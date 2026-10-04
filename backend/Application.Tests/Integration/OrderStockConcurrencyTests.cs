@@ -269,9 +269,60 @@ public class OrderStockConcurrencyTests : IClassFixture<PostgresFixture>
         var final = await ctx.Set<Order>().AsNoTracking().Where(o => o.Id == order.Id).Select(o => o.Status).SingleAsync();
         var stock = await StockAsync(productId);
 
-        // Shipped can't be cancelled afterwards, and a cancelled order can't ship: either order is consistent,
-        // a status/stock mismatch (cancelled but stock not returned, or shipped but stock returned) is not.
+        // Either order is consistent, a status/stock mismatch (cancelled but stock not returned, or shipped but
+        // stock returned) is not. Shipped orders can be cancelled now, so if the cancel request read the order after
+        // shipping both succeed - and then the final state is Cancelled with the stock back.
         Assert.Equal(final == OrderStatus.Cancelled ? 5 : 3, stock);
-        Assert.Equal(1, results.Count(r => r.IsSuccess));
+        Assert.Contains(final, new[] { OrderStatus.Cancelled, OrderStatus.Shipped });
+        Assert.Equal(final == OrderStatus.Cancelled && results.All(r => r.IsSuccess) ? 2 : 1, results.Count(r => r.IsSuccess));
+    }
+
+    [PostgresFact]
+    public async Task ShippedCancel_ReturnsStockOnce()
+    {
+        var userId = await NewUserAsync();
+        var productId = (await NewProductsAsync(5))[0];
+        var order = (await PlaceAsync(userId, Request(null, (productId, 2, "M"), (productId, 1, "L")))).Value!;
+        Assert.True((await SetStatusAsync(order.Id, OrderStatus.Processing)).IsSuccess);
+        Assert.True((await SetStatusAsync(order.Id, OrderStatus.Shipped)).IsSuccess);
+        Assert.Equal(2, await StockAsync(productId));
+
+        Assert.True((await SetStatusAsync(order.Id, OrderStatus.Cancelled)).IsSuccess);
+        Assert.Equal(5, await StockAsync(productId));
+
+        await SetStatusAsync(order.Id, OrderStatus.Cancelled); // repeat: a no-op
+        Assert.Equal(5, await StockAsync(productId));
+    }
+
+    [PostgresFact]
+    public async Task ShippedParallelCancel_ReturnsStockOnce()
+    {
+        var userId = await NewUserAsync();
+        var productId = (await NewProductsAsync(5))[0];
+        var order = (await PlaceAsync(userId, Request(null, (productId, 4, "M")))).Value!;
+        Assert.True((await SetStatusAsync(order.Id, OrderStatus.Processing)).IsSuccess);
+        Assert.True((await SetStatusAsync(order.Id, OrderStatus.Shipped)).IsSuccess);
+
+        var results = await RaceAsync(Enumerable.Range(0, 10)
+            .Select<int, Func<Task<Result<AdminOrderDto>>>>(_ => () => SetStatusAsync(order.Id, OrderStatus.Cancelled)));
+
+        Assert.Contains(results, r => r.IsSuccess);
+        Assert.All(results.Where(r => !r.IsSuccess), r => Assert.Equal(ResultErrorCodes.Conflict, r.ErrorCode));
+        Assert.Equal(5, await StockAsync(productId)); // 1 + 4, not 1 + 4 * n
+    }
+
+    [PostgresFact]
+    public async Task DeliveredCancel_IsRejected()
+    {
+        var userId = await NewUserAsync();
+        var productId = (await NewProductsAsync(5))[0];
+        var order = (await PlaceAsync(userId, Request(null, (productId, 2, "M")))).Value!;
+        foreach (var status in new[] { OrderStatus.Processing, OrderStatus.Shipped, OrderStatus.Delivered })
+        {
+            Assert.True((await SetStatusAsync(order.Id, status)).IsSuccess);
+        }
+
+        Assert.False((await SetStatusAsync(order.Id, OrderStatus.Cancelled)).IsSuccess);
+        Assert.Equal(3, await StockAsync(productId));
     }
 }
