@@ -1,0 +1,479 @@
+/* Shared admin blocks (tables, pagination, modal, empty state) come from AdminLayout.css. */
+
+.fin__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+
+.fin__header h1 {
+  font-size: 26px;
+}
+
+.fin__header p {
+  color: var(--color-text-secondary);
+  margin-top: var(--space-1);
+  font-size: 14px;
+}
+
+.fin__header-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.fin__btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
+}
+
+.fin__btn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.fin__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fin__btn--primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-white);
+}
+
+.fin__btn--primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+/* Tabs */
+
+.fin__tabs {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+
+.fin__tab {
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.fin__tab:hover {
+  background: var(--color-bg-secondary);
+}
+
+.fin__tab.is-active {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.fin__range {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+  color: var(--color-text-secondary);
+}
+
+.fin__range input {
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  font-size: 14px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-width: 0;
+}
+
+.fin__range input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.fin__hint {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  margin-bottom: var(--space-3);
+}
+
+.fin__period {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  margin-bottom: var(--space-2);
+}
+
+/* Summary cards */
+
+.fin-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+@keyframes fin-stat-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fin-stats__card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  opacity: 0;
+  animation: fin-stat-in var(--transition-slow) both;
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+.fin-stats__card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.fin-stats__label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.fin-stats__value {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.fin-stats__value.is-positive {
+  color: var(--color-success);
+}
+
+.fin-stats__value.is-negative {
+  color: var(--color-error);
+}
+
+.fin-stats__skeleton {
+  display: block;
+  height: 24px;
+  width: 90px;
+}
+
+.fin-stats__note {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  min-height: 16px;
+}
+
+/* Sections */
+
+.fin__section {
+  margin-bottom: var(--space-5);
+}
+
+.fin__section h2 {
+  font-size: 18px;
+  margin-bottom: var(--space-3);
+}
+
+/* Chart */
+
+.fin-chart__legend {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.fin-chart__key::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: baseline;
+}
+
+.fin-chart__key--income::before {
+  background: var(--color-accent);
+}
+
+.fin-chart__key--outflow::before {
+  background: var(--color-text-secondary);
+}
+
+/* An explicit scroll container: the 12 columns keep a readable width on a phone instead of squeezing. */
+.fin-chart__scroll {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+}
+
+.fin-chart {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-3);
+  display: grid;
+  grid-template-columns: repeat(12, minmax(36px, 1fr));
+  gap: 6px;
+  min-width: 520px;
+}
+
+.fin-chart__col {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  border-radius: var(--radius-sm);
+  outline-offset: 2px;
+}
+
+.fin-chart__bars {
+  height: 150px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fin-chart__bar {
+  flex: 1;
+  max-width: 14px;
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  transition: opacity var(--transition-fast);
+}
+
+.fin-chart__bar--income {
+  background: var(--color-accent);
+}
+
+.fin-chart__bar--outflow {
+  background: var(--color-text-secondary);
+  opacity: 0.7;
+}
+
+.fin-chart__col:hover .fin-chart__bar,
+.fin-chart__col:focus-visible .fin-chart__bar {
+  opacity: 1;
+}
+
+.fin-chart__label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.fin-chart__skeleton {
+  display: block;
+  height: 210px;
+  border-radius: var(--radius-lg);
+}
+
+/* Journal */
+
+.fin__journal-filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.fin-table__amount {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.fin-amount {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.fin-amount--income {
+  color: var(--color-success);
+}
+
+.fin-amount--reversal,
+.fin-amount--expense {
+  color: var(--color-error);
+}
+
+.fin-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.fin-badge--income {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-success) 30%, transparent);
+}
+
+.fin-badge--reversal {
+  color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-warning) 30%, transparent);
+}
+
+.fin-badge--expense {
+  color: var(--color-info);
+  background: color-mix(in srgb, var(--color-info) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-info) 30%, transparent);
+}
+
+.fin-entry {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  min-width: 0;
+}
+
+.fin-entry__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.fin-entry__title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.fin-entry__sub {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.fin-entry__when {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin-top: var(--space-2);
+}
+
+.fin__counter {
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  margin-left: 6px;
+}
+
+@media (max-width: 1024px) {
+  .fin-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .fin-table {
+    min-width: 560px;
+  }
+}
+
+@media (max-width: 480px) {
+  .fin__header h1 {
+    font-size: 22px;
+  }
+
+  .fin__header-actions {
+    width: 100%;
+  }
+
+  .fin__header-actions .fin__btn {
+    flex: 1;
+  }
+
+  .fin-stats {
+    gap: var(--space-2);
+  }
+
+  .fin-stats__card {
+    padding: var(--space-3);
+  }
+
+  .fin-stats__value {
+    font-size: 19px;
+  }
+
+  .fin__range {
+    width: 100%;
+  }
+
+  .fin__range input {
+    flex: 1;
+  }
+
+  .fin__range span {
+    display: none;
+  }
+
+  .admin-pagination {
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fin-stats__card {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* Touch targets: the shared pagination buttons are 34px tall. */
+.fin .admin-pagination button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* The shared card grid asks for 300px columns, which overflows a 320px screen by a few pixels. */
+.fin .admin-cards {
+  grid-template-columns: minmax(0, 1fr);
+}

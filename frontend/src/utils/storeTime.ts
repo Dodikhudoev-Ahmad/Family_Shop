@@ -31,3 +31,14 @@ export function formatStoreDateTime(iso: string): string {
     timeZone: storeTimeZone,
   });
 }
+
+/** Today's calendar day in the shop's zone as yyyy-MM-dd (what a date input and the finance API speak). */
+export function storeTodayIso(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: storeTimeZone }).format(now);
+}
+
+/** "окт. 2026" for a yyyy-MM month of the shop's calendar. The month is a calendar label, so no time zone shifts it. */
+export function formatMonthLabel(month: string): string {
+  const [year, m] = month.split('-').map(Number);
+  return new Date(Date.UTC(year, m - 1, 1)).toLocaleDateString('ru-RU', { month: 'short', year: '2-digit', timeZone: 'UTC' });
+}

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { formatStoreDate, formatStoreDateTime, setStoreTimeZone } from './storeTime';
+import { formatMonthLabel, formatStoreDate, formatStoreDateTime, setStoreTimeZone, storeTodayIso } from './storeTime';
 
 afterEach(() => setStoreTimeZone(undefined));
 
@@ -33,5 +33,24 @@ describe('shop time in the orders list', () => {
     setStoreTimeZone('Not/AZone');
 
     expect(() => formatStoreDate(lateEvening)).not.toThrow();
+  });
+});
+
+describe('the shop\'s calendar for the finance page', () => {
+  it('"today" is the shop\'s day: 00:30 in Almaty is already the next day, though UTC is not', () => {
+    setStoreTimeZone('Asia/Almaty');
+    expect(storeTodayIso(new Date('2026-10-03T19:30:00Z'))).toBe('2026-10-04');
+    expect(storeTodayIso(new Date('2026-10-03T18:59:59Z'))).toBe('2026-10-03');
+  });
+
+  it('follows the zone the server reports', () => {
+    setStoreTimeZone('Pacific/Honolulu'); // UTC-10
+    expect(storeTodayIso(new Date('2026-10-04T05:00:00Z'))).toBe('2026-10-03');
+  });
+
+  it('labels a month by its calendar name, whatever the browser zone', () => {
+    expect(formatMonthLabel('2026-10')).toMatch(/окт/i);
+    expect(formatMonthLabel('2026-01')).toMatch(/янв/i);
+    expect(formatMonthLabel('2026-01')).toContain('26');
   });
 });
