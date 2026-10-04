@@ -62,6 +62,8 @@ public class FinanceEndpointTests : IAsyncLifetime
         _finance.GetSummaryAsync(default!, default).ReturnsForAnyArgs(new FinanceSummaryDto(FinancePeriod.Month, "2026-10-01", "2026-10-04", 0, 0, 0, 0, 0, 0, "Asia/Almaty"));
         _finance.GetChartAsync(default).ReturnsForAnyArgs(new FinanceChartDto("Asia/Almaty", []));
         _finance.GetJournalAsync(default!, default).ReturnsForAnyArgs(empty);
+        _finance.DeleteExpenseAsync(default, default, default).ReturnsForAnyArgs(Result<FinanceEntryDto>.Success(
+            new FinanceEntryDto(FinanceEntryKind.Expense, 5, DateTime.UtcNow, 1_500, null, ExpenseCategory.Purchase, null, "Админ", true, DateTime.UtcNow)));
         _finance.AddExpenseAsync(default, default!, default).ReturnsForAnyArgs(Result<FinanceEntryDto>.Success(
             new FinanceEntryDto(FinanceEntryKind.Expense, 1, DateTime.UtcNow, 1_500, null, ExpenseCategory.Purchase, null, "Админ")));
 
@@ -108,7 +110,8 @@ public class FinanceEndpointTests : IAsyncLifetime
         [HttpMethod.Get.Method, "/api/v1/admin/finance/chart"],
         [HttpMethod.Get.Method, "/api/v1/admin/finance/journal"],
         [HttpMethod.Get.Method, "/api/v1/admin/finance/export"],
-        [HttpMethod.Post.Method, "/api/v1/admin/finance/expenses"]
+        [HttpMethod.Post.Method, "/api/v1/admin/finance/expenses"],
+        [HttpMethod.Delete.Method, "/api/v1/admin/finance/expenses/5"]
     ];
 
     private static object? ValidBody(string method) =>
@@ -136,6 +139,57 @@ public class FinanceEndpointTests : IAsyncLifetime
     {
         var response = await SendAsync(new HttpMethod(method), url, "Admin", ValidBody(method));
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Deleting_UsesTheAdminFromTheToken_AndReturnsTheDeletedExpense()
+    {
+        var response = await SendAsync(HttpMethod.Delete, "/api/v1/admin/finance/expenses/5", "Admin");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        await _finance.Received(1).DeleteExpenseAsync(42, 5, Arg.Any<CancellationToken>());
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"isDeleted\":true", body);
+    }
+
+    [Fact]
+    public async Task ACustomersDelete_ReachesNoService()
+    {
+        var response = await SendAsync(HttpMethod.Delete, "/api/v1/admin/finance/expenses/5", "Customer");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        await _finance.DidNotReceiveWithAnyArgs().DeleteExpenseAsync(default, default, default);
+    }
+
+    [Fact]
+    public async Task DeletingAnUnknownExpense_Is404()
+    {
+        _finance.DeleteExpenseAsync(default, default, default).ReturnsForAnyArgs(Result<FinanceEntryDto>.Failure("нет", ResultErrorCodes.NotFound));
+
+        var response = await SendAsync(HttpMethod.Delete, "/api/v1/admin/finance/expenses/999", "Admin");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("1.5")]
+    public async Task AnExpenseIdThatIsNotAnInteger_IsNeverDeleted(string id)
+    {
+        var response = await SendAsync(HttpMethod.Delete, $"/api/v1/admin/finance/expenses/{id}", "Admin");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        await _finance.DidNotReceiveWithAnyArgs().DeleteExpenseAsync(default, default, default);
+    }
+
+    [Fact]
+    public async Task TheJournalPassesTheShowDeletedSwitch_OffByDefault()
+    {
+        await SendAsync(HttpMethod.Get, "/api/v1/admin/finance/journal", "Admin");
+        await SendAsync(HttpMethod.Get, "/api/v1/admin/finance/journal?includeDeleted=true", "Admin");
+
+        await _finance.Received(1).GetJournalAsync(Arg.Is<FinanceJournalFilterDto>(f => !f.IncludeDeleted), Arg.Any<CancellationToken>());
+        await _finance.Received(1).GetJournalAsync(Arg.Is<FinanceJournalFilterDto>(f => f.IncludeDeleted), Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -23,7 +23,8 @@ public record FinanceJournalFilterDto(
     DateTime? DateFrom = null,
     DateTime? DateTo = null,
     int Page = 1,
-    int PageSize = 20);
+    int PageSize = 20,
+    bool IncludeDeleted = false);
 
 /// <summary>Income - reversals - expenses of a period. Dates are the shop's calendar days (yyyy-MM-dd); money is whole tenge.</summary>
 public record FinanceSummaryDto(
@@ -51,7 +52,9 @@ public record FinanceEntryDto(
     int? OrderId,
     [property: JsonConverter(typeof(JsonStringEnumConverter))] ExpenseCategory? Category,
     string? Comment,
-    string? Author);
+    string? Author,
+    bool IsDeleted = false,
+    DateTime? DeletedAt = null);
 
 public record CreateExpenseRequestDto(
     [property: JsonConverter(typeof(JsonStringEnumConverter))] ExpenseCategory Category,

@@ -104,7 +104,7 @@ public class FinanceExportTests
     private static (FinanceService Service, IFinanceRepository Finance) ServiceWith(int total)
     {
         var finance = Substitute.For<IFinanceRepository>();
-        finance.GetJournalAsync(default, default, default, default, default, default)
+        finance.GetJournalAsync(default, default, default, default, default, default, default)
             .ReturnsForAnyArgs(((IReadOnlyList<FinanceEntry>)[], total));
         finance.GetTotalsAsync(default, default, default).ReturnsForAnyArgs(new FinanceTotals(0, 0, 0, 0, 0, 0));
         var uow = Substitute.For<IUnitOfWork>();
@@ -141,6 +141,6 @@ public class FinanceExportTests
         Assert.Equal("2030-05-01", result.Value!.Summary.DateFrom);
         Assert.Equal("2030-05-15", result.Value.Summary.DateTo);
         // 1 May 00:00 local = 30 April 19:00 UTC; the end is the last instant of 15 May local.
-        await finance.Received().GetJournalAsync(null, Utc(2030, 4, 30, 19), new DateTime(2030, 5, 15, 18, 59, 59, 999, DateTimeKind.Utc).AddTicks(9999), 1, FinanceService.MaxExportRows, Arg.Any<CancellationToken>());
+        await finance.Received().GetJournalAsync(null, Utc(2030, 4, 30, 19), new DateTime(2030, 5, 15, 18, 59, 59, 999, DateTimeKind.Utc).AddTicks(9999), false, 1, FinanceService.MaxExportRows, Arg.Any<CancellationToken>());
     }
 }

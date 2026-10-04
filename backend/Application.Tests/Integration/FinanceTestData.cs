@@ -32,6 +32,16 @@ internal sealed class FinanceTestData
         return this;
     }
 
+    /// <summary>Another administrator (for "who deleted it" checks).</summary>
+    public async Task<int> AddAdminAsync(string name = "Второй админ")
+    {
+        await using var ctx = _db.CreateContext();
+        var admin = new User { Email = new Email($"a{Guid.NewGuid():N}@example.com"), Name = name, PasswordHash = "x", Role = UserRole.Admin };
+        ctx.Add(admin);
+        await ctx.SaveChangesAsync();
+        return admin.Id;
+    }
+
     public async Task<int> AddOrderAsync(decimal total, OrderStatus status, DateTime? createdAt = null)
     {
         await using var ctx = _db.CreateContext();

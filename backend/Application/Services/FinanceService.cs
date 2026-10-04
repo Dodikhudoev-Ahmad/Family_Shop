@@ -94,7 +94,7 @@ public class FinanceService : IFinanceService
     }
 
     private static FinanceEntryDto ToDto(FinanceEntry e) =>
-        new(e.Kind, e.Id, e.Date, e.Amount, e.OrderId, e.Category, e.Comment, e.Author);
+        new(e.Kind, e.Id, e.Date, e.Amount, e.OrderId, e.Category, e.Comment, e.Author, e.IsDeleted, e.DeletedAt);
 
     public async Task<PagedResult<FinanceEntryDto>> GetJournalAsync(FinanceJournalFilterDto filter, CancellationToken cancellationToken = default)
     {
@@ -102,6 +102,7 @@ public class FinanceService : IFinanceService
             filter.Kind,
             filter.DateFrom is { } from ? _clock.StartOfLocalDayUtc(from) : null,
             filter.DateTo is { } to ? _clock.EndOfLocalDayUtc(to) : null,
+            filter.IncludeDeleted,
             filter.Page, filter.PageSize, cancellationToken);
         return new PagedResult<FinanceEntryDto>(items.Select(ToDto).ToList(), total, filter.Page, filter.PageSize);
     }
@@ -128,6 +129,16 @@ public class FinanceService : IFinanceService
         return Result<FinanceEntryDto>.Success(ToDto(entry!));
     }
 
+    public async Task<Result<FinanceEntryDto>> DeleteExpenseAsync(int adminUserId, int expenseId, CancellationToken cancellationToken = default)
+    {
+        // Whether this call deleted it or an earlier one did is deliberately not told apart: the answer is the same expense, deleted.
+        await _unitOfWork.Finance.TryDeleteExpenseAsync(expenseId, adminUserId, _clock.UtcNow, cancellationToken);
+        var entry = await _unitOfWork.Finance.GetExpenseEntryAsync(expenseId, cancellationToken);
+        return entry is null
+            ? Result<FinanceEntryDto>.Failure("Расход не найден.", ResultErrorCodes.NotFound)
+            : Result<FinanceEntryDto>.Success(ToDto(entry));
+    }
+
     public async Task<Result<FinanceExportDto>> GetExportAsync(FinanceRangeDto range, CancellationToken cancellationToken = default)
     {
         var today = Today;
@@ -136,7 +147,7 @@ public class FinanceService : IFinanceService
         var (fromUtc, toUtc) = Bounds(from, to);
 
         // The count tells whether the period is over the cap; at most MaxExportRows rows are read either way.
-        var (items, total) = await _unitOfWork.Finance.GetJournalAsync(null, fromUtc, toUtc, 1, MaxExportRows, cancellationToken);
+        var (items, total) = await _unitOfWork.Finance.GetJournalAsync(null, fromUtc, toUtc, false, 1, MaxExportRows, cancellationToken);
         if (total > MaxExportRows)
         {
             return Result<FinanceExportDto>.Failure(
