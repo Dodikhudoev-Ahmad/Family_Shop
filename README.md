@@ -2,7 +2,7 @@
 
 Интернет-магазин для Казахстана/СНГ. Сайт: React + TypeScript + Vite (`frontend/`), API: ASP.NET Core + PostgreSQL (`backend/`), приложение: Expo (`mobile/`).
 
-Правила проекта: `claude.md`. Спецификация: `docs/`. Что сделано и что дальше: `PROGRESS.md`.
+Правила проекта: `CLAUDE.md`. Спецификация: `docs/`. Что сделано и что дальше: `PROGRESS.md`.
 
 ## Проверки перед коммитом
 

@@ -1,6 +1,6 @@
 # Деньги, выручка, время
 
-Источник: `Domain/ValueObjects/Money.cs`, `Application/Services/OrderService.cs`, `PromoCodePolicy.cs`, `Application/Common/StoreClock.cs`, `OrderRepository.GetStatsAsync`, `claude.md` (3.3).
+Источник: `Domain/ValueObjects/Money.cs`, `Application/Services/OrderService.cs`, `PromoCodePolicy.cs`, `Application/Common/StoreClock.cs`, `OrderRepository.GetStatsAsync`, `CLAUDE.md` (3.3).
 
 ## Валюта и тип
 

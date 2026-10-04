@@ -1,6 +1,6 @@
 # Статусы заказа и связанные процессы
 
-Источник: `backend/Domain/Entities/Order.cs`, `backend/Application/Services/OrderService.cs`, `claude.md` (3.2, 3.3).
+Источник: `backend/Domain/Entities/Order.cs`, `backend/Application/Services/OrderService.cs`, `CLAUDE.md` (3.2, 3.3).
 
 ## Статусы (`OrderStatus`)
 
