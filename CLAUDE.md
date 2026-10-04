@@ -6,11 +6,11 @@
 
 ## Current Status
 
-- Фаза: 14, шаг 2 «Shipped → Cancelled с возвратом остатка» [BE] и п. 2b «отмена в админке» [FE] выполнены (см. `PROGRESS.md`).
-- Последний коммит на момент записи: см. `git log` (шаг 2, Phase 14 Step 2 [BE]).
-- Следующий шаг: п.3 «Округление скидки до целых тенге» [BE] (`PROGRESS.md`), после «go». Сначала обновить `docs/Money.md`; способ округления уточнить.
+- Фаза: 14, шаг 3 «Округление скидки до целых тенге» [BE] выполнен (до него — шаги 2 и 2b; см. `PROGRESS.md`).
+- Последний коммит на момент записи: см. `git log` (Phase 14 Step 3 [BE]).
+- Следующий шаг: п.4 «Модуль «Финансы»» [FULL] (`PROGRESS.md`), после «go». Состав и правила сторно уточнить до кода.
 - Сборка backend: 0 ошибок, 0 предупреждений.
-- `dotnet test`: 405 passed, 0 failed, 0 skipped.
+- `dotnet test`: 411 passed, 0 failed, 0 skipped.
 - `vitest` (frontend): 182 passed в 31 файле.
 - `jest` (mobile): 271 passed, 4 skipped, 1 набор пропущен (30 из 31).
 - `tsc` frontend (`tsc -b`) и mobile (`tsc --noEmit`): чисто.
