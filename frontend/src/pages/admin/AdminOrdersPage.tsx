@@ -282,7 +282,8 @@ function StatsRow({ stats, error }: { stats: OrderStatsDto | null; error: boolea
   }
 
   const cards = [
-    { label: 'Заказов сегодня', value: stats ? String(stats.ordersToday) : null },
+    { label: 'Новых сегодня', value: stats ? String(stats.newToday ?? 0) : null },
+    { label: 'Доставлено сегодня', value: stats ? String(stats.ordersToday) : null },
     { label: 'Выручка сегодня', value: stats ? formatPrice(stats.revenueToday) : null },
     { label: 'Новых заказов', value: stats ? String(stats.newOrdersCount) : null },
     { label: 'Всего заказов', value: stats ? String(stats.totalOrders) : null },

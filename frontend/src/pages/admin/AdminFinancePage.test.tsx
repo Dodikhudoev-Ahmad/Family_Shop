@@ -9,6 +9,7 @@ const api = vi.hoisted(() => ({
   fetchFinanceChart: vi.fn(),
   fetchFinanceJournal: vi.fn(),
   createExpense: vi.fn(),
+  deleteExpense: vi.fn(),
   downloadFinanceExport: vi.fn(),
 }));
 const toast = vi.hoisted(() => ({ showToast: vi.fn() }));
@@ -30,7 +31,7 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 }));
 
 const entry = (over: Partial<FinanceEntryDto>): FinanceEntryDto => ({
-  kind: 'Income', id: 1, date: '2026-10-04T08:00:00Z', amount: 50_000, orderId: 12, category: null, comment: null, author: null, ...over,
+  kind: 'Income', id: 1, date: '2026-10-04T08:00:00Z', amount: 50_000, orderId: 12, category: null, comment: null, author: null, isDeleted: false, deletedAt: null, ...over,
 });
 
 const entries = [
@@ -53,6 +54,7 @@ beforeEach(() => {
   api.fetchFinanceChart.mockResolvedValue({ storeTimeZone: 'Asia/Almaty', months });
   api.fetchFinanceJournal.mockResolvedValue({ items: entries, totalCount: 3, page: 1, pageSize: 10 });
   api.createExpense.mockResolvedValue(entry({ kind: 'Expense', id: 9 }));
+  api.deleteExpense.mockResolvedValue(entry({ kind: 'Expense', id: 3, isDeleted: true, deletedAt: '2026-10-04T09:00:00Z' }));
   api.downloadFinanceExport.mockResolvedValue({ blob: new Blob(['x']), fileName: 'finance_2026-10-01_2026-10-04.xlsx' });
 });
 afterEach(() => {
@@ -214,6 +216,127 @@ describe('journal', () => {
     render(<AdminFinancePage />);
 
     expect(await screen.findByText('Сервер недоступен')).toBeTruthy();
+  });
+});
+
+describe('deleting an expense', () => {
+  const rowOf = (text: string) => screen.getByText(text).closest('tr') as HTMLElement;
+
+  it('offers deletion for expenses only - never for an income or a reversal', async () => {
+    render(<AdminFinancePage />);
+    await screen.findByText('Заказ FS-12');
+
+    expect(screen.getAllByRole('button', { name: /Удалить расход/ })).toHaveLength(1);
+    expect(within(rowOf('Заказ FS-12')).queryByRole('button', { name: /Удалить/ })).toBeNull();
+    expect(within(rowOf('Заказ FS-9')).queryByRole('button', { name: /Удалить/ })).toBeNull();
+    expect(within(rowOf('Доставка')).getByRole('button', { name: 'Удалить расход 3' })).toBeTruthy();
+  });
+
+  it('asks first, in the page (no confirm()), and sends nothing until confirmed', async () => {
+    const nativeConfirm = vi.spyOn(window, 'confirm');
+    render(<AdminFinancePage />);
+    await screen.findByText('Заказ FS-12');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить расход 3' }));
+
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByText('Удалить расход?')).toBeTruthy();
+    expect(dialog.textContent).toMatch(/Доставка/);
+    expect(dialog.textContent).toMatch(/3\s?000/);
+    expect(api.deleteExpense).not.toHaveBeenCalled();
+    expect(nativeConfirm).not.toHaveBeenCalled();
+    nativeConfirm.mockRestore();
+  });
+
+  it('backs out without a request', async () => {
+    render(<AdminFinancePage />);
+    await screen.findByText('Заказ FS-12');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить расход 3' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Не удалять' }));
+
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(api.deleteExpense).not.toHaveBeenCalled();
+  });
+
+  it('deletes after confirmation, thanks, and reloads the summary, the chart and the journal', async () => {
+    render(<AdminFinancePage />);
+    await screen.findByText('Заказ FS-12');
+    const summaryCalls = api.fetchFinanceSummary.mock.calls.length;
+    const chartCalls = api.fetchFinanceChart.mock.calls.length;
+    const journalCalls = api.fetchFinanceJournal.mock.calls.length;
+
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить расход 3' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Удалить' }));
+
+    await waitFor(() => expect(api.deleteExpense).toHaveBeenCalledWith(3));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    expect(toast.showToast).toHaveBeenCalledWith('Расход удалён');
+    await waitFor(() => expect(api.fetchFinanceSummary.mock.calls.length).toBeGreaterThan(summaryCalls));
+    expect(api.fetchFinanceChart.mock.calls.length).toBeGreaterThan(chartCalls);
+    expect(api.fetchFinanceJournal.mock.calls.length).toBeGreaterThan(journalCalls);
+  });
+
+  it('shows the server\'s reason and refreshes when the deletion fails', async () => {
+    api.deleteExpense.mockRejectedValue(new ApiError('Расход не найден.', { status: 404, code: 'not_found' }));
+    render(<AdminFinancePage />);
+    await screen.findByText('Заказ FS-12');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить расход 3' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Удалить' }));
+
+    await waitFor(() => expect(toast.showToast).toHaveBeenCalledWith('Расход не найден.', 'error'));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('offers the same on a phone, in the cards', async () => {
+    media.mobile = true;
+    render(<AdminFinancePage />);
+    await screen.findByText('Курьер до склада');
+
+    expect(screen.getAllByRole('button', { name: /Удалить расход/ })).toHaveLength(1);
+  });
+});
+
+describe('deleted expenses in the journal', () => {
+  const withDeleted = [
+    ...entries,
+    entry({ kind: 'Expense', id: 4, orderId: null, amount: 8_000, category: 'Other', comment: 'не тот', author: 'Админ', isDeleted: true, deletedAt: '2026-10-04T09:00:00Z' }),
+  ];
+
+  it('are hidden until asked for: the journal is requested without them, then with them', async () => {
+    render(<AdminFinancePage />);
+    await screen.findByText('Заказ FS-12');
+    expect(api.fetchFinanceJournal).toHaveBeenLastCalledWith(expect.objectContaining({ includeDeleted: false }));
+
+    api.fetchFinanceJournal.mockResolvedValue({ items: withDeleted, totalCount: 4, page: 1, pageSize: 10 });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Показывать удалённые' }));
+
+    await waitFor(() => expect(api.fetchFinanceJournal).toHaveBeenLastCalledWith(expect.objectContaining({ includeDeleted: true, page: 1 })));
+  });
+
+  it('are greyed, marked "Удалён", dated, and cannot be deleted again', async () => {
+    api.fetchFinanceJournal.mockResolvedValue({ items: withDeleted, totalCount: 4, page: 1, pageSize: 10 });
+    render(<AdminFinancePage />);
+
+    const row = (await screen.findByText('не тот')).closest('tr') as HTMLElement;
+    expect(row.className).toContain('fin-row--deleted');
+    expect(within(row).getByText('Удалён')).toBeTruthy();
+    expect(row.textContent).toMatch(/Удалён\s.*2026/);
+    expect(within(row).queryByRole('button', { name: /Удалить/ })).toBeNull();
+    expect(row.textContent).toMatch(/−\s*8/);
+    // the live expense next to it still can
+    expect(screen.getAllByRole('button', { name: /Удалить расход/ })).toHaveLength(1);
+  });
+
+  it('count as a journal filter: with the switch on and nothing found, the empty state mentions filters', async () => {
+    api.fetchFinanceJournal.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
+    render(<AdminFinancePage />);
+    await screen.findByText('Записей пока нет');
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Показывать удалённые' }));
+
+    expect(await screen.findByText('По этим фильтрам записей нет')).toBeTruthy();
   });
 });
 

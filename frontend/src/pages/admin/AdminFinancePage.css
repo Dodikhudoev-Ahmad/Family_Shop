@@ -477,3 +477,90 @@
 .fin .admin-cards {
   grid-template-columns: minmax(0, 1fr);
 }
+
+/* Deleting an expense (soft delete) and showing the deleted ones */
+
+.fin__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  margin-bottom: var(--space-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.fin__toggle input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.fin__delete {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-error);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.fin__delete:hover {
+  border-color: var(--color-error);
+  background: color-mix(in srgb, var(--color-error) 8%, transparent);
+}
+
+.fin__delete:focus-visible {
+  outline: 2px solid var(--color-error);
+  outline-offset: 2px;
+}
+
+.fin-table__actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.fin-entry .fin__delete {
+  margin-top: var(--space-3);
+  width: 100%;
+}
+
+.fin-entry__badges {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* A deleted expense: still in the record, visibly out of the figures. */
+.fin-row--deleted {
+  opacity: 0.55;
+}
+
+.fin-row--deleted .fin-amount {
+  text-decoration: line-through;
+  color: var(--color-text-secondary);
+}
+
+.fin-badge--deleted {
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border);
+  margin-left: 6px;
+}
+
+.fin-entry__badges .fin-badge--deleted {
+  margin-left: 0;
+}
+
+/* The shared confirmation dialog's buttons are 41px tall; touch targets here are 44px. */
+.fin-dialog .confirm-dialog__actions button {
+  min-height: 44px;
+}
