@@ -6,14 +6,14 @@
 
 ## Current Status
 
-- Фаза: 13 «Процесс разработки» [QA] (см. `PROGRESS.md`).
-- Последний коммит на момент записи: `663d31e`.
-- Следующий шаг: п.1 (`PROGRESS.md`, «Открытые задачи»), после «go».
-- Сборка backend: 0 ошибок, **4 предупреждения** (`JwtSettingsValidator.cs` CS8602; в `Application.Tests`: `UploadsServingTests.cs` ASPDEPR004 и ASPDEPR008, `SeedShoesAndBagsTests.cs` xUnit2029). По правилу ALWAYS ниже это блокер для закрытия шага; исправление — отдельная задача [BE].
+- Фаза: 14, шаг 1 «Чистка» [BE] выполнен (см. `PROGRESS.md`).
+- Последний коммит на момент записи: `a227fec`.
+- Следующий шаг: п.2 «Shipped → Cancelled с возвратом остатка» [BE] (`PROGRESS.md`), после «go». Сначала обновить `docs/StateMachines.md`.
+- Сборка backend: 0 ошибок, 0 предупреждений.
 - `dotnet test`: 402 passed, 0 failed, 0 skipped.
 - `vitest` (frontend): 177 passed в 30 файлах.
 - `jest` (mobile): 271 passed, 4 skipped, 1 набор пропущен (30 из 31).
-- `tsc` frontend (`tsc -b`): чисто. `tsc --noEmit` mobile: чисто.
+- `tsc` frontend (`tsc -b`) и mobile (`tsc --noEmit`): чисто.
 - Дата: 2026-10-04.
 
 ---
