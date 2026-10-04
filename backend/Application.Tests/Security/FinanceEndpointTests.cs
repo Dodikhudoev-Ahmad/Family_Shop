@@ -52,6 +52,7 @@ public class FinanceEndpointTests : IAsyncLifetime
     }
 
     private readonly IFinanceService _finance = Substitute.For<IFinanceService>();
+    private readonly IFinanceReportWriter _writer = Substitute.For<IFinanceReportWriter>();
     private WebApplication _app = null!;
     private HttpClient _client = null!;
 
@@ -64,6 +65,10 @@ public class FinanceEndpointTests : IAsyncLifetime
         _finance.AddExpenseAsync(default, default!, default).ReturnsForAnyArgs(Result<FinanceEntryDto>.Success(
             new FinanceEntryDto(FinanceEntryKind.Expense, 1, DateTime.UtcNow, 1_500, null, ExpenseCategory.Purchase, null, "Админ")));
 
+        var summary = new FinanceSummaryDto(FinancePeriod.Custom, "2026-10-01", "2026-10-04", 0, 0, 0, 0, 0, 0, "Asia/Almaty");
+        _finance.GetExportAsync(default!, default).ReturnsForAnyArgs(Result<FinanceExportDto>.Success(new FinanceExportDto("Asia/Almaty", summary, [])));
+        _writer.Write(default!).ReturnsForAnyArgs([0x50, 0x4B, 0x03, 0x04]);
+
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Logging.ClearProviders();
@@ -71,6 +76,7 @@ public class FinanceEndpointTests : IAsyncLifetime
         builder.Services.AddControllers(o => o.Filters.Add<ValidationFilter>()).AddApplicationPart(typeof(AdminFinanceController).Assembly);
         builder.Services.AddValidatorsFromAssemblyContaining<CreateExpenseRequestValidator>();
         builder.Services.AddSingleton(_finance);
+        builder.Services.AddSingleton(_writer);
         builder.Services.AddAuthentication(SchemeName).AddScheme<AuthenticationSchemeOptions, HeaderAuthHandler>(SchemeName, _ => { });
         builder.Services.AddAuthorization(o => o.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
         _app = builder.Build();
@@ -101,6 +107,7 @@ public class FinanceEndpointTests : IAsyncLifetime
         [HttpMethod.Get.Method, "/api/v1/admin/finance/summary"],
         [HttpMethod.Get.Method, "/api/v1/admin/finance/chart"],
         [HttpMethod.Get.Method, "/api/v1/admin/finance/journal"],
+        [HttpMethod.Get.Method, "/api/v1/admin/finance/export"],
         [HttpMethod.Post.Method, "/api/v1/admin/finance/expenses"]
     ];
 
@@ -129,6 +136,42 @@ public class FinanceEndpointTests : IAsyncLifetime
     {
         var response = await SendAsync(new HttpMethod(method), url, "Admin", ValidBody(method));
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task TheExport_IsAnXlsxDownload_NeverCached()
+    {
+        var response = await SendAsync(HttpMethod.Get, "/api/v1/admin/finance/export?dateFrom=2026-10-01&dateTo=2026-10-04", "Admin");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("finance_2026-10-01_2026-10-04.xlsx", response.Content.Headers.ContentDisposition?.FileName);
+        Assert.Contains("no-store", response.Headers.CacheControl?.ToString());
+        Assert.Equal(new byte[] { 0x50, 0x4B, 0x03, 0x04 }, await response.Content.ReadAsByteArrayAsync());
+    }
+
+    [Fact]
+    public async Task AnExportOverTheRowCap_Is400_WithItsCode()
+    {
+        _finance.GetExportAsync(default!, default).ReturnsForAnyArgs(Result<FinanceExportDto>.Failure("too many", ResultErrorCodes.TooManyRows));
+
+        var response = await SendAsync(HttpMethod.Get, "/api/v1/admin/finance/export", "Admin");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("too_many_rows", await response.Content.ReadAsStringAsync());
+        _writer.DidNotReceiveWithAnyArgs().Write(default!);
+    }
+
+    [Theory]
+    [InlineData("?dateFrom=2026-10-01")]                              // only one date
+    [InlineData("?dateFrom=2026-10-05&dateTo=2026-10-01")]            // reversed
+    [InlineData("?dateFrom=2020-01-01&dateTo=2026-01-01")]            // over 366 days
+    public async Task AnExportWithABadRange_Is400(string query)
+    {
+        var response = await SendAsync(HttpMethod.Get, "/api/v1/admin/finance/export" + query, "Admin");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await _finance.DidNotReceiveWithAnyArgs().GetExportAsync(default!, default);
     }
 
     [Fact]

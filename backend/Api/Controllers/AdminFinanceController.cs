@@ -20,17 +20,20 @@ public class AdminFinanceController : ControllerBase
     private readonly IValidator<FinanceSummaryQueryDto> _summaryValidator;
     private readonly IValidator<FinanceJournalFilterDto> _journalValidator;
     private readonly IValidator<FinanceRangeDto> _rangeValidator;
+    private readonly IFinanceReportWriter _reportWriter;
 
     public AdminFinanceController(
         IFinanceService finance,
         IValidator<FinanceSummaryQueryDto> summaryValidator,
         IValidator<FinanceJournalFilterDto> journalValidator,
-        IValidator<FinanceRangeDto> rangeValidator)
+        IValidator<FinanceRangeDto> rangeValidator,
+        IFinanceReportWriter reportWriter)
     {
         _finance = finance;
         _summaryValidator = summaryValidator;
         _journalValidator = journalValidator;
         _rangeValidator = rangeValidator;
+        _reportWriter = reportWriter;
     }
 
     /// <summary>Приход, сторно, расходы и баланс за сегодня / неделю / месяц / произвольный период (календарь магазина).</summary>
@@ -86,6 +89,34 @@ public class AdminFinanceController : ControllerBase
         return result.IsSuccess
             ? Ok(ApiResponse<FinanceEntryDto>.Ok(result.Value!))
             : BadRequest(ApiResponse<FinanceEntryDto>.Fail(result.Errors));
+    }
+
+    /// <summary>Excel (.xlsx): журнал и итоги за период (по умолчанию — текущий месяц), не более 20 000 строк.</summary>
+    [HttpGet("export")]
+    public async Task<IActionResult> Export(
+        [FromQuery] DateTime? dateFrom,
+        [FromQuery] DateTime? dateTo,
+        CancellationToken cancellationToken)
+    {
+        var range = new FinanceRangeDto(dateFrom, dateTo);
+        var errors = await _rangeValidator.ValidateOrNullAsync(range, cancellationToken);
+        if (errors is not null)
+        {
+            return BadRequest(ApiResponse<object>.Fail(errors));
+        }
+
+        var result = await _finance.GetExportAsync(range, cancellationToken);
+        if (!result.IsSuccess)
+        {
+            return BadRequest(ApiResponse<object>.Fail(result.Errors, result.ErrorCode, result.ErrorMeta));
+        }
+
+        var export = result.Value!;
+        Response.Headers.CacheControl = "no-store";
+        return File(
+            _reportWriter.Write(export),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            $"finance_{export.Summary.DateFrom}_{export.Summary.DateTo}.xlsx");
     }
 
     private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
