@@ -16,6 +16,8 @@ public class UnitOfWork : IUnitOfWork
     private IPromoCodeRepository? _promoCodes;
     private IPromoBannerRepository? _promoBanners;
     private IIdempotencyKeyRepository? _idempotencyKeys;
+    private IPaymentRepository? _payments;
+    private IFinanceRepository? _finance;
 
     public UnitOfWork(AppDbContext context)
     {
@@ -30,6 +32,8 @@ public class UnitOfWork : IUnitOfWork
     public IReviewRepository Reviews => _reviews ??= new ReviewRepository(_context);
     public IPromoCodeRepository PromoCodes => _promoCodes ??= new PromoCodeRepository(_context);
     public IIdempotencyKeyRepository IdempotencyKeys => _idempotencyKeys ??= new IdempotencyKeyRepository(_context);
+    public IPaymentRepository Payments => _payments ??= new PaymentRepository(_context);
+    public IFinanceRepository Finance => _finance ??= new FinanceRepository(_context);
     public IPromoBannerRepository PromoBanners => _promoBanners ??= new PromoBannerRepository(_context);
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>

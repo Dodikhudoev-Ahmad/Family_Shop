@@ -11,6 +11,8 @@ public interface IUnitOfWork
     IPromoCodeRepository PromoCodes { get; }
     IPromoBannerRepository PromoBanners { get; }
     IIdempotencyKeyRepository IdempotencyKeys { get; }
+    IPaymentRepository Payments { get; }
+    IFinanceRepository Finance { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
