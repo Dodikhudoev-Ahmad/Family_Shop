@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IPromoCodeService, PromoCodeService>();
         services.AddScoped<IPromoBannerService, PromoBannerService>();
+        services.AddScoped<IFinanceService, FinanceService>();
 
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
 
