@@ -16,6 +16,8 @@
 | PromoBanners | Id, Title, Subtitle, ButtonText, ButtonLink, ImageUrl, IsActive, SortOrder, Placement |
 | RefreshTokens | Id, UserId, TokenHash (SHA-256, уникальный), ExpiresAt, AbsoluteExpiresAt, CreatedAt, RevokedAt, RotatedAt, LastUsedAt, FamilyId, ClientType, DeviceIdHash, DeviceName |
 | IdempotencyKeys | Id, Key (≤100), UserId, RequestHash (SHA-256), ResponseStatus, ResponseBody, CreatedAt |
+| Payments | Id, OrderId (FK Orders), Type (0 Income / 1 Reversal), Amount decimal(18,2) > 0, CreatedAt (UTC; момент оплаты / сторно) |
+| Expenses | Id, Category (0 Purchase / 1 Delivery / 2 Other), Amount decimal(18,2) > 0, ExpenseDate (UTC-момент начала дня магазина), Comment (≤500, NULL), CreatedByUserId (FK Users), CreatedAt (UTC) |
 | DataProtectionKeys | ключи шифрования сессий (чтобы не слетали при деплое) |
 
 Деньги — `decimal(18,2)`. Все даты — UTC.
@@ -33,11 +35,13 @@
 | Reviews.ProductId, Reviews.UserId | Cascade |
 | RefreshTokens.UserId → Users | Cascade |
 | IdempotencyKeys.UserId → Users | Cascade |
+| Payments.OrderId → Orders | Restrict (платёж не пропадает вместе с заказом; заказы не удаляются) |
+| Expenses.CreatedByUserId → Users | Restrict (аккаунт анонимизируется, не удаляется) |
 
 ## Индексы
 
-- Уникальные: Users.Email; Categories.Slug; PromoCodes.Code; RefreshTokens.TokenHash; Reviews (ProductId, UserId); IdempotencyKeys (UserId, Key).
-- Обычные: Products.CategoryId; Products.Gender; Orders.UserId; RefreshTokens.UserId; RefreshTokens.FamilyId; IdempotencyKeys.CreatedAt; PromoBanners (Placement, IsActive, SortOrder).
+- Уникальные: Users.Email; Categories.Slug; PromoCodes.Code; RefreshTokens.TokenHash; Reviews (ProductId, UserId); IdempotencyKeys (UserId, Key); **Payments (OrderId, Type)** — второй `Income` и второе сторно по заказу невозможны.
+- Обычные: Products.CategoryId; Products.Gender; Orders.UserId; RefreshTokens.UserId; RefreshTokens.FamilyId; IdempotencyKeys.CreatedAt; Payments.CreatedAt; Expenses.ExpenseDate; PromoBanners (Placement, IsActive, SortOrder).
 
 ## Миграции (`Infrastructure/Persistence/Migrations/`)
 
@@ -49,6 +53,7 @@
 | AddUserDeletedAt | да |
 | AddProductAvailableSizes | да (`ADD COLUMN IF NOT EXISTS`) |
 | AddIdempotencyKeys | да (`CREATE ... IF NOT EXISTS`) |
+| AddFinance | да: `CREATE TABLE/INDEX IF NOT EXISTS`, `CHECK (Amount > 0)`; бэкфилл `Income` для заказов в `Delivered` — `INSERT ... ON CONFLICT (OrderId, Type) DO NOTHING`, повторный запуск ничего не добавляет. Существующие строки Orders/OrderItems/Reviews не затрагиваются. Откат схемы — только из бэкапа (`DROP TABLE` в `Down` — для локальной БД) |
 
 Правило: новые миграции только аддитивные и идемпотентные; записи с FK на Order/Review не пересоздавать (см. `.claude/commands/migration.md`).
 

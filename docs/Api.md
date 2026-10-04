@@ -47,12 +47,27 @@
 | `/admin/orders/stats` | GET (карточки, см. `Money.md`) |
 | `/admin/orders/{id}/status` | PATCH (переходы — `StateMachines.md`) |
 | `/admin/users/{userId}/revoke-sessions` | POST |
+| `/admin/finance/*` | см. «Финансы» ниже |
+
+### Финансы (только Admin, общий лимит; 401 без токена, 403 для покупателя)
+
+Деньги — целые тенге, суммы положительные, знак определяет тип записи. Даты периодов — календарные дни магазина (`yyyy-MM-dd`, пояс `Store:TimeZone`). Правила — `Money.md`, раздел «Финансы».
+
+| Метод и путь | Параметры | Ответ (`data`) |
+|---|---|---|
+| GET `/admin/finance/summary` | `period` = `today` \| `week` \| `month` \| `custom` (по умолчанию `month`); для `custom` обязательны `dateFrom`, `dateTo` (`dateFrom ≤ dateTo`, не больше 366 дней) | `period`, `dateFrom`, `dateTo`, `income`, `reversals`, `expenses`, `balance`, `incomeCount`, `expenseCount`, `storeTimeZone` |
+| GET `/admin/finance/chart` | — | `storeTimeZone`, `months[12]` от старого к новому, текущий последний: `month` (`yyyy-MM`), `income`, `reversals`, `expenses`, `balance` |
+| GET `/admin/finance/journal` | `kind` (`Income` \| `Reversal` \| `Expense`), `dateFrom`, `dateTo`, `page` (≥1), `pageSize` (1–100, по умолчанию 20) | `PagedResult` записей: `kind`, `id`, `date` (UTC), `amount`, `orderId` (для платежей), `category`, `comment`, `author` (для расходов); новые сверху |
+| POST `/admin/finance/expenses` | тело: `category` (`Purchase` \| `Delivery` \| `Other`), `amount` (целое > 0, ≤ 1 000 000 000), `date` (`yyyy-MM-dd`, не в будущем), `comment` (≤ 500, необязателен); автор — из токена | созданная запись журнала |
+| GET `/admin/finance/export` | `dateFrom`, `dateTo` (по умолчанию — текущий месяц; те же ограничения) | файл `.xlsx` (листы «Журнал», «Итоги»), не более 20 000 строк, иначе 400 |
+
+Платежи (`Income`, `Reversal`) через API не создаются и не меняются: их порождает только смена статуса заказа (`StateMachines.md`).
 
 ## Коды ошибок
 
 | HTTP | `code` | Когда |
 |---|---|---|
-| 400 | — | валидация, неверный формат `Idempotency-Key`, недопустимый переход статуса, промокод не подошёл, неверный пароль при удалении аккаунта |
+| 400 | — | валидация (в т.ч. сумма расхода, период финансов), неверный формат `Idempotency-Key`, недопустимый переход статуса, промокод не подошёл, неверный пароль при удалении аккаунта |
 | 401 | — | нет или просрочен access-токен |
 | 403 | — | не Admin на `/admin/*`; нет заголовка `X-Requested-With` / чужой Origin на cookie-эндпоинтах; удаление аккаунта админа |
 | 404 | — | нет ресурса (чужая сессия — тоже 404) |
