@@ -66,4 +66,7 @@ public record OrderStatsDto(
     decimal RevenueToday,
     int NewOrdersCount,
     int TotalOrders,
-    string? StoreTimeZone = null);
+    string? StoreTimeZone = null,
+    /// <summary>Orders placed today (the shop's day), not cancelled - the "Новых сегодня" card. <c>OrdersToday</c> is the
+    /// number of orders delivered today (the card "Доставлено сегодня").</summary>
+    int NewToday = 0);

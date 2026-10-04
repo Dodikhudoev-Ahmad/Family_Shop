@@ -88,7 +88,7 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         return (items, totalCount);
     }
 
-    public async Task<(int OrdersToday, decimal RevenueToday, int NewOrdersCount, int TotalOrders)> GetStatsAsync(
+    public async Task<(int OrdersToday, decimal RevenueToday, int NewOrdersCount, int TotalOrders, int NewToday)> GetStatsAsync(
         DateTime todayStartUtc,
         CancellationToken cancellationToken = default)
     {
@@ -109,7 +109,11 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         var income = todaysPayments.FirstOrDefault(p => p.Type == PaymentType.Income);
         var reversal = todaysPayments.FirstOrDefault(p => p.Type == PaymentType.Reversal);
 
-        return ((income?.Count ?? 0) - (reversal?.Count ?? 0), (income?.Sum ?? 0) - (reversal?.Sum ?? 0), newOrdersCount, totalOrders);
+        // "Новых сегодня": placed since the shop's midnight and not cancelled - read from the orders themselves, so an order
+        // that is still on its way (no money yet) is in it, and one cancelled the same day is not.
+        var newToday = await DbSet.CountAsync(o => o.CreatedAt >= today && o.Status != OrderStatus.Cancelled, cancellationToken);
+
+        return ((income?.Count ?? 0) - (reversal?.Count ?? 0), (income?.Sum ?? 0) - (reversal?.Sum ?? 0), newOrdersCount, totalOrders, newToday);
     }
 
     public Task<bool> HasItemsForProductAsync(int productId, CancellationToken cancellationToken = default)
