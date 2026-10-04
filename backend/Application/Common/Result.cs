@@ -36,6 +36,9 @@ public class Result<T>
 
 public static class ResultErrorCodes
 {
+    /// <summary>A report would exceed its row cap - maps to 400.</summary>
+    public const string TooManyRows = "too_many_rows";
+
     /// <summary>Not enough stock (or the stock was taken by a concurrent order) - maps to 409.</summary>
     public const string OutOfStock = "out_of_stock";
 
