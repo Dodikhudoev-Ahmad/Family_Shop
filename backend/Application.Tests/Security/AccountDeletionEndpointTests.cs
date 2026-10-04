@@ -105,17 +105,29 @@ public class AccountDeletionEndpointTests
         };
     }
 
-    private static ClaimsPrincipal Subject(string? id) =>
-        new(new ClaimsIdentity(id is null ? Array.Empty<Claim>() : new[] { new Claim(ClaimTypes.NameIdentifier, id) }, "test"));
+    private static readonly Guid Session = Guid.NewGuid();
+
+    private static ClaimsPrincipal Subject(string? id, string? sid = null) =>
+        new(new ClaimsIdentity(
+            new[] { id is null ? null : new Claim(ClaimTypes.NameIdentifier, id), sid is null ? null : new Claim("sid", sid) }
+                .OfType<Claim>(), "test"));
+
+    private static IUnitOfWork UnitOfWork(bool accountActive, bool sessionActive)
+    {
+        var users = Substitute.For<IUserRepository>();
+        users.IsActiveAsync(5, Arg.Any<CancellationToken>()).Returns(accountActive);
+        var tokens = Substitute.For<IRefreshTokenRepository>();
+        tokens.IsSessionActiveAsync(5, Session, Arg.Any<DateTime>(), Arg.Any<CancellationToken>()).Returns(sessionActive);
+        var uow = Substitute.For<IUnitOfWork>();
+        uow.Users.Returns(users);
+        uow.RefreshTokens.Returns(tokens);
+        return uow;
+    }
 
     [Fact]
     public async Task ATokenOfADeletedAccount_IsRejected()
     {
-        var users = Substitute.For<IUserRepository>();
-        users.IsActiveAsync(5, Arg.Any<CancellationToken>()).Returns(false);
-        var uow = Substitute.For<IUnitOfWork>();
-        uow.Users.Returns(users);
-        var context = ContextFor(Subject("5"), uow);
+        var context = ContextFor(Subject("5", Session.ToString()), UnitOfWork(accountActive: false, sessionActive: true));
 
         await ActiveAccountTokenValidator.ValidateAsync(context);
 
@@ -123,17 +135,37 @@ public class AccountDeletionEndpointTests
     }
 
     [Fact]
-    public async Task ATokenOfALiveAccount_PassesThrough()
+    public async Task ATokenOfALiveAccountAndSession_PassesThrough()
     {
-        var users = Substitute.For<IUserRepository>();
-        users.IsActiveAsync(5, Arg.Any<CancellationToken>()).Returns(true);
-        var uow = Substitute.For<IUnitOfWork>();
-        uow.Users.Returns(users);
-        var context = ContextFor(Subject("5"), uow);
+        var context = ContextFor(Subject("5", Session.ToString()), UnitOfWork(accountActive: true, sessionActive: true));
 
         await ActiveAccountTokenValidator.ValidateAsync(context);
 
         Assert.Null(context.Result);
+    }
+
+    [Fact]
+    public async Task ATokenOfARevokedSession_IsRejected()
+    {
+        var context = ContextFor(Subject("5", Session.ToString()), UnitOfWork(accountActive: true, sessionActive: false));
+
+        await ActiveAccountTokenValidator.ValidateAsync(context);
+
+        Assert.NotNull(context.Result?.Failure);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("not-a-guid")]
+    public async Task ATokenWithoutAValidSessionClaim_IsRejected_WithoutTouchingTheDatabase(string? sid)
+    {
+        var uow = Substitute.For<IUnitOfWork>();
+        var context = ContextFor(Subject("5", sid), uow);
+
+        await ActiveAccountTokenValidator.ValidateAsync(context);
+
+        Assert.NotNull(context.Result?.Failure);
+        Assert.Empty(uow.ReceivedCalls());
     }
 
     [Fact]

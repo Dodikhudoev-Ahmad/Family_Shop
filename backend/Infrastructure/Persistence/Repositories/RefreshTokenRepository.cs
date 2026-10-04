@@ -46,6 +46,12 @@ public class RefreshTokenRepository : RepositoryBase<RefreshToken>, IRefreshToke
             .ExecuteUpdateAsync(s => s.SetProperty(rt => rt.RevokedAt, now), cancellationToken);
     }
 
+    public Task<bool> IsSessionActiveAsync(int userId, Guid familyId, DateTime now, CancellationToken cancellationToken = default)
+    {
+        return DbSet.AnyAsync(rt => rt.FamilyId == familyId && rt.UserId == userId && rt.RevokedAt == null
+                                    && rt.RotatedAt == null && rt.ExpiresAt > now && rt.AbsoluteExpiresAt > now, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<RefreshToken>> GetActiveSessionsAsync(int userId, DateTime now, CancellationToken cancellationToken = default)
     {
         return await DbSet
