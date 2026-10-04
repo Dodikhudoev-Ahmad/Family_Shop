@@ -1,6 +1,6 @@
 # Деплой
 
-Источник: `claude.md` (1, 3.3, 3.4), `backend/Dockerfile`, `backend/Api/appsettings*.json`, `.github/workflows/`, `TODO.md`. Значений секретов здесь нет и быть не должно.
+Источник: `CLAUDE.md` (1, 3.3, 3.4), `backend/Dockerfile`, `backend/Api/appsettings*.json`, `.github/workflows/`, `TODO.md`. Значений секретов здесь нет и быть не должно.
 
 ## Сервисы (Railway)
 
@@ -33,7 +33,7 @@ Mobile: `EXPO_PUBLIC_API_URL` (по умолчанию `https://api.familyshop10
 
 ## Порядок выкатки
 
-1. Локально: `dotnet build`, `dotnet test`, `npm run test`, `tsc` — без ошибок (`claude.md`, раздел «Тестирование перед пушем»).
+1. Локально: `dotnet build`, `dotnet test`, `npm run test`, `tsc` — без ошибок (`CLAUDE.md`, раздел «Тестирование перед пушем»).
 2. Если есть миграция — бэкап БД (см. ниже).
 3. Явная команда владельца «go» на пуш. Пуш в `main` запускает автодеплой.
 4. Миграции применяются при старте backend. Проверить логи запуска.

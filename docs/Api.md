@@ -1,6 +1,6 @@
 # API
 
-Источник: `backend/Api/Controllers/`, `RateLimiting/`, `claude.md`. Префикс: `/api/v1`. Ответы обёрнуты в `ApiResponse<T>` (`success`, `data`, `errors`, при ошибке с кодом — `code`, `meta`).
+Источник: `backend/Api/Controllers/`, `RateLimiting/`, `CLAUDE.md`. Префикс: `/api/v1`. Ответы обёрнуты в `ApiResponse<T>` (`success`, `data`, `errors`, при ошибке с кодом — `code`, `meta`).
 Прод: `https://api.familyshop10.kz`. Старый адрес Railway работает параллельно.
 
 Доступ: Г = гость, П = покупатель (нужен токен), А = только Admin.

@@ -1,6 +1,6 @@
 # Роли и права
 
-Источник фактов: `backend/Domain/Entities/User.cs` (`UserRole`), контроллеры `backend/Api/Controllers/`, `backend/Api/Program.cs`, `claude.md` (3.4).
+Источник фактов: `backend/Domain/Entities/User.cs` (`UserRole`), контроллеры `backend/Api/Controllers/`, `backend/Api/Program.cs`, `CLAUDE.md` (3.4).
 
 ## Роли
 
