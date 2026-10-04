@@ -22,7 +22,7 @@ public static class JwtSettingsValidator
             throw new InvalidOperationException($"Jwt:SecretKey must be at least {MinimumKeyBytes} bytes long.");
         }
 
-        if (!isDevelopment && settings.SecretKey.Contains("CHANGE_ME", StringComparison.OrdinalIgnoreCase))
+        if (!isDevelopment && settings.SecretKey!.Contains("CHANGE_ME", StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(
                 "Jwt:SecretKey is still the placeholder from appsettings.json - set Jwt__SecretKey in the environment.");
