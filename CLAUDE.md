@@ -6,12 +6,12 @@
 
 ## Current Status
 
-- Фаза: 14, шаг 4b «Доработка «Финансов»» [FULL] выполнен (до него — шаги 2, 2b, 3, 4; см. `PROGRESS.md`).
-- Последний коммит на момент записи: см. `git log` (Phase 14 Step 4b).
-- Следующий шаг: п.5 «QuickViewModal: полный ряд размеров» [FE] (`PROGRESS.md`), после «go».
+- Фаза: 14, шаг 5 «QuickViewModal: полный ряд размеров» [FE] выполнен (до него — шаги 2, 2b, 3, 4, 4b; см. `PROGRESS.md`).
+- Последний коммит на момент записи: см. `git log` (Phase 14 Step 5).
+- Следующий шаг: п.6 «Замена фото «Блузка синяя для девочки»» [данные] (`PROGRESS.md`), после «go».
 - Сборка backend: 0 ошибок, 0 предупреждений.
 - `dotnet test`: 524 passed, 0 failed, 0 skipped.
-- `vitest` (frontend): 251 passed в 35 файлах.
+- `vitest` (frontend): 261 passed в 36 файлах.
 - `jest` (mobile): 271 passed, 4 skipped, 1 набор пропущен (30 из 31).
 - `tsc` frontend (`tsc -b`) и mobile (`tsc --noEmit`): чисто.
 - Дата: 2026-10-04.
