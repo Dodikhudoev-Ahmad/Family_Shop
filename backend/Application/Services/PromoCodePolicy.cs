@@ -36,7 +36,7 @@ public static class PromoCodePolicy
         }
 
         var discount = promoCode.DiscountType == PromoCodeDiscountType.Percentage
-            ? Math.Round(orderSubtotal * promoCode.DiscountValue / 100m, 2)
+            ? Math.Round(orderSubtotal * promoCode.DiscountValue / 100m, 0, MidpointRounding.AwayFromZero)
             : promoCode.DiscountValue;
 
         if (promoCode.DiscountType == PromoCodeDiscountType.Percentage && promoCode.MaxDiscountAmount.HasValue)

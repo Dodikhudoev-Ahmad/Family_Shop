@@ -90,6 +90,34 @@ public class PromoCodePolicyTests
         Assert.Equal(800, result.Value.FinalTotal);
     }
 
+    [Theory]
+    [InlineData(1005, 10, 101)]   // 100,5 -> 101 (.5 вверх, не к чётному)
+    [InlineData(1015, 10, 102)]   // 101,5 -> 102
+    [InlineData(1004, 10, 100)]   // 100,4 -> 100
+    [InlineData(1006, 10, 101)]   // 100,6 -> 101
+    [InlineData(333, 15, 50)]     // 49,95 -> 50
+    public void Evaluate_PercentageDiscount_RoundsToWholeTengeHalfUp(decimal subtotal, decimal percent, decimal expectedDiscount)
+    {
+        var code = MakeCode(type: PromoCodeDiscountType.Percentage, value: percent);
+
+        var result = PromoCodePolicy.Evaluate(code, subtotal, DateTime.UtcNow);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(expectedDiscount, result.Value!.DiscountAmount);
+        Assert.Equal(subtotal - expectedDiscount, result.Value.FinalTotal);
+    }
+
+    [Fact]
+    public void Evaluate_PercentageDiscount_CapIsAppliedAfterRounding()
+    {
+        var code = MakeCode(type: PromoCodeDiscountType.Percentage, value: 10, maxDiscountAmount: 100);
+
+        var result = PromoCodePolicy.Evaluate(code, 1005, DateTime.UtcNow);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(100, result.Value!.DiscountAmount);
+    }
+
     [Fact]
     public void Evaluate_PercentageDiscount_IsCappedByMaxDiscountAmount()
     {
