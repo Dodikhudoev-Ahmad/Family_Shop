@@ -15,8 +15,10 @@ PATTERNS=(
   'postgres(ql)?://[^:/@[:space:]]+:[^@[:space:]]+@'
   # Приватный ключ в формате PEM
   '-----BEGIN [A-Z ]*PRIVATE KEY-----'
-  # Длинная случайная строка: 40 и больше символов подряд (буквы, цифры, + = _ -; без слэша, чтобы пути к файлам не срабатывали)
-  '[A-Za-z0-9+=_-]{40,}'
+  # Ключ в формате sk-... (OpenAI, Anthropic и похожие): не внутри слова, чтобы task-/risk- не срабатывали
+  '(^|[^A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}'
+  # JWT: заголовок eyJ... (base64 от {"), затем ещё длинный фрагмент
+  'eyJ[A-Za-z0-9_-]{15,}'
 )
 
 # Слова-признаки явного плейсхолдера: такие строки пропускаем
@@ -24,6 +26,40 @@ ALLOW='(CHANGE_ME|example|placeholder|your[_-]?(key|password|secret)|<[a-z_ -]+>
 
 # Файлы, которые не проверяем: сам хук, lock-файлы, картинки, снимки, служебные файлы EF (там длинные хеши, это не секреты)
 SKIP='(^\.githooks/|package-lock\.json$|\.lock$|\.svg$|\.png$|\.jpe?g$|\.webp$|\.snap$|Designer\.cs$|ModelSnapshot\.cs$)'
+
+# Длинная случайная строка (40+ символов подряд из букв, цифр и + = _ -) проверяется отдельно: идентификаторы кода и
+# имена файлов на неё не похожи и пропускаются. Возвращает 0, если строка выглядит как идентификатор/имя, а не секрет.
+looks_like_name() {
+  local c="$1" len=${#1} digits upper lower
+  digits=$(echo -n "$c" | tr -cd '0-9' | wc -c | tr -d ' ')
+  upper=$(echo -n "$c" | tr -cd 'A-Z' | wc -c | tr -d ' ')
+  lower=$(echo -n "$c" | tr -cd 'a-z' | wc -c | tr -d ' ')
+  # Идентификатор C#/TS: начинается с буквы, только буквы, цифры и _, цифр немного
+  if [[ "$c" =~ ^[A-Za-z][A-Za-z0-9_]*$ && "$digits" -le 3 ]]; then
+    # КОНСТАНТА_ЗАГЛАВНЫМИ или слова в CamelCase (заглавных не больше четверти); случайная смесь регистров даёт ~40% заглавных
+    if [ "$lower" -eq 0 ] || [ $((upper * 4)) -le "$len" ]; then return 0; fi
+  fi
+  # Имя файла через дефисы: строчные буквы, цифры (дата в начале), минимум один дефис, цифр немного
+  if [[ "$c" =~ ^[a-z0-9][a-z0-9]*(-[a-z0-9]+)+$ && "$digits" -le 8 ]]; then return 0; fi
+  return 1
+}
+
+# Число добавленных строк (без плейсхолдеров), где есть 40+ символов подряд, не похожих на идентификатор или имя файла
+count_long_random() {
+  local n=0 line cand bad
+  while IFS= read -r line; do
+    line="${line#+}" # убираем плюс — маркер добавленной строки в diff
+    [ -z "$line" ] && continue
+    echo "$line" | grep -qiE -- "$ALLOW" && continue
+    bad=0
+    while IFS= read -r cand; do
+      [ -z "$cand" ] && continue
+      looks_like_name "$cand" || bad=1
+    done < <(echo "$line" | grep -oE '[A-Za-z0-9+=_-]{40,}')
+    n=$((n + bad))
+  done <<< "$1"
+  echo "$n"
+}
 
 # Счётчик найденных проблем
 FOUND=0
@@ -44,6 +80,12 @@ for FILE in $(git diff --cached --name-only --diff-filter=AM | grep -vE "$SKIP")
       FOUND=$((FOUND + 1))
     fi
   done
+  # Длинная случайная строка
+  N=$(count_long_random "$ADDED")
+  if [ "$N" -gt 0 ]; then
+    echo "СЕКРЕТ? $FILE: совпадений $N, шаблон: длинная случайная строка (40+ символов, не идентификатор)" >&2
+    FOUND=$((FOUND + 1))
+  fi
 done
 
 # Если что-то нашли, блокируем коммит
