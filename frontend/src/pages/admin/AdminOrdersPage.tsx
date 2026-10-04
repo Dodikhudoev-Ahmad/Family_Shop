@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import i18n from '../../i18n';
 import { isOrderConflict } from '../../lib/orderErrors';
 import { AdminLayout } from '../../components/AdminLayout/AdminLayout';
+import { ConfirmDialog } from '../../components/ConfirmDialog/ConfirmDialog';
 import { StatusBadge, ORDER_STATUS_INFO, ALLOWED_NEXT_STATUSES, orderStatusLabel } from '../../components/StatusBadge/StatusBadge';
 import { useToast } from '../../context/ToastContext';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
@@ -58,6 +59,7 @@ export function AdminOrdersPage() {
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [pendingId, setPendingId] = useState<number | null>(null);
+  const [pendingCancel, setPendingCancel] = useState<AdminOrderDto | null>(null);
 
   const requestIdRef = useRef(0);
   const [reloadTick, setReloadTick] = useState(0);
@@ -114,7 +116,7 @@ export function AdminOrdersPage() {
       });
   }, [statusFilter, dateFrom, dateTo, debouncedSearch, page, reloadTick]);
 
-  const handleStatusChange = (order: AdminOrderDto, newStatus: ApiOrderStatus) => {
+  const applyStatusChange = (order: AdminOrderDto, newStatus: ApiOrderStatus) => {
     const previousStatus = order.status;
     setPendingId(order.id);
     setOrders((prev) => prev && prev.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o)));
@@ -137,6 +139,22 @@ export function AdminOrdersPage() {
         showToast(err instanceof ApiError ? err.message : 'Не удалось изменить статус заказа.', 'error');
       })
       .finally(() => setPendingId(null));
+  };
+
+  // Cancelling puts the stock back on sale and can't be undone, so it asks first - in the page, not with confirm().
+  const handleStatusChange = (order: AdminOrderDto, newStatus: ApiOrderStatus) => {
+    if (newStatus === 4) {
+      setPendingCancel(order);
+      return;
+    }
+    applyStatusChange(order, newStatus);
+  };
+
+  const confirmCancel = () => {
+    if (!pendingCancel) return;
+    const order = pendingCancel;
+    setPendingCancel(null);
+    applyStatusChange(order, 4);
   };
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -244,6 +262,16 @@ export function AdminOrdersPage() {
       </div>
 
       <OrderDrawer order={expandedOrder} onClose={() => setExpandedId(null)} />
+
+      <ConfirmDialog
+        open={pendingCancel !== null}
+        title={`Отменить заказ FS-${pendingCancel?.id}?`}
+        description="Остаток вернётся на склад. Отмену нельзя откатить."
+        confirmLabel="Отменить заказ"
+        cancelLabel="Не отменять"
+        onConfirm={confirmCancel}
+        onCancel={() => setPendingCancel(null)}
+      />
     </AdminLayout>
   );
 }

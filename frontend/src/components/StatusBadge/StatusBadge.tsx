@@ -20,7 +20,7 @@ export function orderStatusLabel(status: ApiOrderStatus): string {
 export const ALLOWED_NEXT_STATUSES: Record<ApiOrderStatus, ApiOrderStatus[]> = {
   0: [1, 4],
   1: [2, 4],
-  2: [3],
+  2: [3, 4],
   3: [],
   4: [],
 };
