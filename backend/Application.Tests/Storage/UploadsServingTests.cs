@@ -57,6 +57,7 @@ public class UploadsServingTests : IDisposable
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Logging.ClearProviders();
+        builder.Configuration["AllowedHosts"] = "*";
         var app = builder.Build();
         app.UseUploads(root);
         await app.StartAsync();
