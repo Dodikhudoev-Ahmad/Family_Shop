@@ -80,6 +80,15 @@ public class FakeRefreshTokenRepository : IRefreshTokenRepository
         }
     }
 
+    public Task<bool> IsSessionActiveAsync(int userId, Guid familyId, DateTime now, CancellationToken cancellationToken = default)
+    {
+        lock (_gate)
+        {
+            return Task.FromResult(Tokens.Any(t => t.FamilyId == familyId && t.UserId == userId && t.RevokedAt is null
+                                                   && t.RotatedAt is null && t.ExpiresAt > now && t.AbsoluteExpiresAt > now));
+        }
+    }
+
     public Task<IReadOnlyList<RefreshToken>> GetActiveSessionsAsync(int userId, DateTime now, CancellationToken cancellationToken = default)
     {
         lock (_gate)

@@ -22,6 +22,10 @@ public interface IRefreshTokenRepository : IRepository<RefreshToken>
     /// belongs to somebody else matches nothing (no IDOR by guessing a session id).</summary>
     Task<int> RevokeFamilyForUserAsync(int userId, Guid familyId, DateTime now, CancellationToken cancellationToken = default);
 
+    /// <summary>True while the session family still has a live token (not revoked, not rotated away, not expired) that
+    /// belongs to this user. Backs the access-token check: a revoked session's access token stops working at once.</summary>
+    Task<bool> IsSessionActiveAsync(int userId, Guid familyId, DateTime now, CancellationToken cancellationToken = default);
+
     /// <summary>The user's live sessions - one row (the current token) per family, newest first.</summary>
     Task<IReadOnlyList<RefreshToken>> GetActiveSessionsAsync(int userId, DateTime now, CancellationToken cancellationToken = default);
 
