@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext';
 import { formatPrice } from '../../utils/formatPrice';
 import { isLowStock, isOutOfStock } from '../../utils/stock';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
+import { SizeSelector } from '../SizeSelector/SizeSelector';
 import { Button } from '../Button/Button';
 import { FadeImage } from '../FadeImage/FadeImage';
 import type { Product } from '../../types/product';
@@ -24,6 +25,7 @@ export function QuickViewModal() {
   const { showToast } = useToast();
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState(0);
+  const [unavailableSize, setUnavailableSize] = useState<string | null>(null);
 
   // The modal keeps rendering the last product while it plays its exit
   // animation, even after the context has already cleared `product` to null.
@@ -35,6 +37,7 @@ export function QuickViewModal() {
     if (product) {
       setDisplayProduct(product);
       setSelectedSize(null);
+      setUnavailableSize(null);
       setActiveImage(0);
       const raf = requestAnimationFrame(() => setVisible(true));
       return () => cancelAnimationFrame(raf);
@@ -61,6 +64,8 @@ export function QuickViewModal() {
   const hasGallery = images.length > 1;
   const outOfStock = isOutOfStock(displayProduct.stock);
   const lowStock = isLowStock(displayProduct.stock);
+  // The whole grid is shown, like on the product page; sizes missing from `sizes` are muted and can't be picked.
+  const gridSizes = displayProduct.gridSizes ?? displayProduct.sizes;
 
   const goToImage = (index: number) => setActiveImage(((index % images.length) + images.length) % images.length);
   const nextImage = () => goToImage(activeImage + 1);
@@ -83,7 +88,7 @@ export function QuickViewModal() {
 
   const handleAdd = () => {
     // Sizeless products (bags, appliances) have nothing to choose - only ask when there are sizes.
-    if (displayProduct.sizes.length > 0 && !selectedSize) {
+    if (gridSizes.length > 0 && !selectedSize) {
       showToast(t('common.chooseSize'), 'error');
       return;
     }
@@ -139,17 +144,23 @@ export function QuickViewModal() {
           {lowStock && <span className="quick-view__stock-warning">{t('common.left', { count: displayProduct.stock })}</span>}
           <p className="quick-view__desc">{displayProduct.description}</p>
 
-          <div className="quick-view__sizes">
-            {displayProduct.sizes.map((size) => (
-              <button
-                key={size}
-                className={`size-btn ${selectedSize === size ? 'is-selected' : ''}`}
-                onClick={() => setSelectedSize(size)}
-              >
-                {size}
-              </button>
-            ))}
-          </div>
+          {gridSizes.length > 0 && (
+            <div className="quick-view__sizes">
+              <SizeSelector
+                gridSizes={gridSizes}
+                sizes={displayProduct.sizes}
+                selected={selectedSize}
+                onSelect={(size) => {
+                  setUnavailableSize(null);
+                  setSelectedSize(size);
+                }}
+                onUnavailable={setUnavailableSize}
+              />
+              <p className="quick-view__size-note" role="status" aria-live="polite">
+                {unavailableSize ? t('product.sizeUnavailableNote', { size: unavailableSize }) : ''}
+              </p>
+            </div>
+          )}
 
           <div className="quick-view__actions">
             <Button variant="primary" size="lg" onClick={handleAdd} disabled={outOfStock}>
