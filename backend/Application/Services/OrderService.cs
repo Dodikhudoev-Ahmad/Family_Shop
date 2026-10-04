@@ -295,13 +295,17 @@ public class OrderService : IOrderService
 
         // The status flips with a compare-and-set (WHERE Status = previous), so of two racing requests exactly
         // one performs the transition. A cancelled order never ships or arrives, so that one - and only that one - puts the
-        // reserved stock back on sale, in the same transaction; a repeated or racing cancel can't return it twice.
+        // reserved stock back on sale, in the same transaction; a repeated or racing cancel can't return it twice. The
+        // same holds for the money ledger: only the winner records the income of a delivery.
         var changed = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
             if (!await _unitOfWork.Orders.TryChangeStatusAsync(order.Id, previousStatus, newStatus, ct))
             {
                 return false;
             }
+
+            await OrderLedger.RecordTransitionAsync(
+                _unitOfWork.Payments, order.Id, order.TotalPrice.Amount, previousStatus, newStatus, DateTime.UtcNow, ct);
 
             if (newStatus == OrderStatus.Cancelled)
             {

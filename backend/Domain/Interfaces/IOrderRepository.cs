@@ -25,7 +25,8 @@ public interface IOrderRepository : IRepository<Order>
         CancellationToken cancellationToken = default);
 
     /// <summary>Dashboard figures. <paramref name="todayStartUtc"/> is the UTC instant at which the shop's current day began
-    /// (the shop's time zone, not UTC's midnight): "today" is everything created from then on.</summary>
+    /// (the shop's time zone, not UTC's midnight). "Today" is read from the money ledger: incomes minus reversals made from
+    /// then on (orders delivered today and their money), not the orders placed today.</summary>
     Task<(int OrdersToday, decimal RevenueToday, int NewOrdersCount, int TotalOrders)> GetStatsAsync(
         DateTime todayStartUtc,
         CancellationToken cancellationToken = default);

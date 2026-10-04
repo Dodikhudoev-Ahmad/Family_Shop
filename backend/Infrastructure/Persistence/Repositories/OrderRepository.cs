@@ -96,15 +96,20 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
 
         var totalOrders = await DbSet.CountAsync(cancellationToken);
         var newOrdersCount = await DbSet.CountAsync(o => o.Status == OrderStatus.Created, cancellationToken);
-        // Today's orders and revenue count every order that is still alive - new, in progress, shipped and delivered (an order
-        // is paid on receipt, so waiting for "delivered" would show an empty dashboard all day) - and never a cancelled one:
-        // it brings no money, and its goods went back on sale. "Всего заказов" stays a count of every order ever placed.
-        var todaysTotals = await DbSet
-            .Where(o => o.CreatedAt >= today && o.Status != OrderStatus.Cancelled)
-            .Select(o => o.TotalPrice)
+        // "Today" is read from the money ledger, not from the orders: the money exists from the moment an order is delivered
+        // (cash on delivery), so today's figures are the day's incomes minus its reversals - an order placed yesterday and
+        // delivered today counts today, one placed today and not yet delivered does not, and a cancelled one never had any.
+        // "Всего заказов" stays a count of every order ever placed.
+        var todaysPayments = await Context.Set<Payment>()
+            .AsNoTracking()
+            .Where(p => p.CreatedAt >= today)
+            .GroupBy(p => p.Type)
+            .Select(g => new { Type = g.Key, Sum = g.Sum(p => p.Amount), Count = g.Count() })
             .ToListAsync(cancellationToken);
+        var income = todaysPayments.FirstOrDefault(p => p.Type == PaymentType.Income);
+        var reversal = todaysPayments.FirstOrDefault(p => p.Type == PaymentType.Reversal);
 
-        return (todaysTotals.Count, todaysTotals.Sum(m => m.Amount), newOrdersCount, totalOrders);
+        return ((income?.Count ?? 0) - (reversal?.Count ?? 0), (income?.Sum ?? 0) - (reversal?.Sum ?? 0), newOrdersCount, totalOrders);
     }
 
     public Task<bool> HasItemsForProductAsync(int productId, CancellationToken cancellationToken = default)
