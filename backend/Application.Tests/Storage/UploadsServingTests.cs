@@ -1,9 +1,9 @@
 using System.Net;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using Api.Common;
 using Infrastructure.Storage;
@@ -36,12 +36,31 @@ public class UploadsServingTests : IDisposable
     private static IConfiguration Config(string? path) =>
         new ConfigurationBuilder().AddInMemoryCollection(path is null ? [] : new Dictionary<string, string?> { ["Uploads:Path"] = path }).Build();
 
-    private async Task<TestServer> ServerAsync(string root)
+    // A real local server (Kestrel on a free loopback port), as in the other host tests: no obsolete WebHostBuilder/TestServer.
+    private sealed class UploadsHost : IAsyncDisposable
     {
-        var host = new WebHostBuilder()
-            .ConfigureServices(_ => { })
-            .Configure(app => app.UseUploads(root));
-        return new TestServer(host);
+        private readonly WebApplication _app;
+
+        public UploadsHost(WebApplication app) => _app = app;
+
+        public HttpClient CreateClient() => new() { BaseAddress = new Uri(_app.Urls.First()) };
+
+        public async ValueTask DisposeAsync()
+        {
+            await _app.StopAsync();
+            await _app.DisposeAsync();
+        }
+    }
+
+    private static async Task<UploadsHost> ServerAsync(string root)
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.Logging.ClearProviders();
+        var app = builder.Build();
+        app.UseUploads(root);
+        await app.StartAsync();
+        return new UploadsHost(app);
     }
 
     [Fact]
@@ -72,7 +91,7 @@ public class UploadsServingTests : IDisposable
         Assert.Equal(Png, await File.ReadAllBytesAsync(onDisk));
         Assert.False(Directory.Exists(Path.Combine(ContentRoot, "wwwroot"))); // nothing leaked to the old location
 
-        using var server = await ServerAsync(Volume);
+        await using var server = await ServerAsync(Volume);
         var response = await server.CreateClient().GetAsync(saved.Value);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -84,7 +103,7 @@ public class UploadsServingTests : IDisposable
     {
         Assert.False(Directory.Exists(Volume));
 
-        using var server = await ServerAsync(Volume);
+        await using var server = await ServerAsync(Volume);
 
         Assert.True(Directory.Exists(Path.Combine(Volume, "products")));
         Assert.Equal(HttpStatusCode.NotFound, (await server.CreateClient().GetAsync("/uploads/products/missing.png")).StatusCode);
@@ -99,7 +118,7 @@ public class UploadsServingTests : IDisposable
     [InlineData("/uploads/products/%252e%252e/%252e%252e/secret.txt")]
     public async Task PathTraversalCannotReachFilesOutsideTheUploadsDirectory(string url)
     {
-        using var server = await ServerAsync(Volume);
+        await using var server = await ServerAsync(Volume);
 
         var response = await server.CreateClient().GetAsync(url);
 
