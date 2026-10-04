@@ -1,0 +1,96 @@
+/* Size buttons shared by the product page and the quick view. */
+
+.size-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.size-btn {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-bg);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.size-btn:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .size-btn:hover {
+    transform: none;
+  }
+}
+
+.size-btn.is-selected {
+  background: var(--color-text);
+  border-color: var(--color-text);
+  color: var(--color-bg);
+}
+
+/* Sizes already sitting in the cart get a small badge with their quantity - visible whether or
+   not that size is the currently selected one. */
+.size-btn.has-in-cart {
+  border-color: var(--color-accent);
+}
+
+.size-btn__badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* A size the admin doesn't sell: shown, but muted and crossed out, and not selectable (aria-disabled keeps it focusable
+   so a screen reader announces it and pressing it explains why). Same box as every other size. */
+.size-btn.is-unavailable {
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border);
+  border-style: dashed;
+  cursor: not-allowed;
+  overflow: hidden;
+}
+
+.size-btn.is-unavailable::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top right,
+    transparent calc(50% - 0.75px),
+    var(--color-text-secondary) calc(50% - 0.75px),
+    var(--color-text-secondary) calc(50% + 0.75px),
+    transparent calc(50% + 0.75px)
+  );
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.size-btn.is-unavailable:hover {
+  border-color: var(--color-border);
+  transform: none;
+}
+
+.size-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

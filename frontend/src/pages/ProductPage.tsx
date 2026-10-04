@@ -15,6 +15,7 @@ import { isLowStock, isOutOfStock } from '../utils/stock';
 import { ProductCard } from '../components/ProductCard/ProductCard';
 import { Slider } from '../components/Slider/Slider';
 import { Accordion } from '../components/Accordion/Accordion';
+import { SizeSelector } from '../components/SizeSelector/SizeSelector';
 import { Button } from '../components/Button/Button';
 import { FadeImage } from '../components/FadeImage/FadeImage';
 import { StarRating } from '../components/StarRating/StarRating';
@@ -191,31 +192,22 @@ export function ProductPage() {
           {gridSizes.length > 0 && (
             <div className="product-page__block">
               <span className="product-page__block-title">{t('product.size')}</span>
-              <div className="product-page__sizes">
-                {gridSizes.map((size) => {
+              <SizeSelector
+                className="product-page__sizes"
+                gridSizes={gridSizes}
+                sizes={product.sizes}
+                selected={selectedSize}
+                onSelect={selectSize}
+                onUnavailable={showUnavailable}
+                renderBadge={(size) => {
                   const inCartQuantity = cartQuantityFor(size);
-                  const unavailable = !product.sizes.includes(size);
-                  // aria-disabled (not disabled) keeps an unavailable size focusable: a screen reader reads it as
-                  // unavailable, and pressing it explains why instead of doing nothing.
-                  return (
-                    <button
-                      key={size}
-                      type="button"
-                      className={`size-btn ${selectedSize === size ? 'is-selected' : ''} ${inCartQuantity > 0 ? 'has-in-cart' : ''} ${unavailable ? 'is-unavailable' : ''}`}
-                      aria-disabled={unavailable || undefined}
-                      aria-label={unavailable ? t('product.sizeUnavailableAria', { size }) : undefined}
-                      onClick={() => (unavailable ? showUnavailable(size) : selectSize(size))}
-                    >
-                      {size}
-                      {inCartQuantity > 0 && (
-                        <span className="size-btn__badge" aria-label={t('product.inCartAria', { count: inCartQuantity })}>
-                          {inCartQuantity}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                  return inCartQuantity > 0 ? (
+                    <span className="size-btn__badge" aria-label={t('product.inCartAria', { count: inCartQuantity })}>
+                      {inCartQuantity}
+                    </span>
+                  ) : null;
+                }}
+              />
               <p className="product-page__size-note" role="status" aria-live="polite">
                 {unavailableSize ? t('product.sizeUnavailableNote', { size: unavailableSize }) : ''}
               </p>
