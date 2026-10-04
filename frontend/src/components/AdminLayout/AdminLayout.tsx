@@ -8,6 +8,7 @@ import './AdminLayout.css';
 
 const NAV_ITEMS = [
   { to: '/admin/orders', label: 'Заказы', icon: OrdersIcon },
+  { to: '/admin/finance', label: 'Финансы', icon: FinanceIcon },
   { to: '/admin/products', label: 'Товары', icon: ProductsIcon },
   { to: '/admin/categories', label: 'Категории', icon: CategoriesIcon },
   { to: '/admin/promo-codes', label: 'Промокоды', icon: PromoCodesIcon },
@@ -115,6 +116,16 @@ function OrdersIcon() {
       <rect x="4" y="6" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
       <path d="M7 6V5a3 3 0 0 1 6 0v1" stroke="currentColor" strokeWidth="1.5" />
       <path d="M7 9.5h6M7 12.5h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function FinanceIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+      <rect x="2.5" y="5" width="15" height="10.5" rx="1.8" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="10" cy="10.25" r="2.3" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M5.2 8v4.5M14.8 8v4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }

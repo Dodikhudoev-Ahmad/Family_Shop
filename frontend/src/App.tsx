@@ -20,6 +20,7 @@ import { AdminProductsPage } from './pages/admin/AdminProductsPage';
 import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage';
 import { AdminPromoCodesPage } from './pages/admin/AdminPromoCodesPage';
 import { AdminPromoBannersPage } from './pages/admin/AdminPromoBannersPage';
+import { AdminFinancePage } from './pages/admin/AdminFinancePage';
 
 export default function App() {
   return (
@@ -65,6 +66,14 @@ export default function App() {
             element={
               <AdminRoute>
                 <AdminPromoBannersPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/finance"
+            element={
+              <AdminRoute>
+                <AdminFinancePage />
               </AdminRoute>
             }
           />

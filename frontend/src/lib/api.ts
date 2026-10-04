@@ -332,6 +332,113 @@ export function updateAdminOrderStatus(id: number, status: ApiOrderStatus): Prom
   });
 }
 
+// ---- Finance (admin only): money ledger, expenses, Excel export. Amounts are whole tenge. ----
+
+export type FinancePeriod = 'today' | 'week' | 'month' | 'custom';
+export type FinanceEntryKind = 'Income' | 'Reversal' | 'Expense';
+export type ExpenseCategory = 'Purchase' | 'Delivery' | 'Other';
+
+export interface FinanceSummaryDto {
+  period: string;
+  /** Shop calendar days, yyyy-MM-dd. */
+  dateFrom: string;
+  dateTo: string;
+  income: number;
+  reversals: number;
+  expenses: number;
+  balance: number;
+  incomeCount: number;
+  expenseCount: number;
+  storeTimeZone: string;
+}
+
+export interface FinanceMonthDto {
+  /** yyyy-MM in the shop's calendar. */
+  month: string;
+  income: number;
+  reversals: number;
+  expenses: number;
+  balance: number;
+}
+
+export interface FinanceChartDto {
+  storeTimeZone: string;
+  months: FinanceMonthDto[];
+}
+
+/** Amount is always positive; the kind gives the sign (an income adds, a reversal and an expense subtract). */
+export interface FinanceEntryDto {
+  kind: FinanceEntryKind;
+  id: number;
+  date: string;
+  amount: number;
+  orderId: number | null;
+  category: ExpenseCategory | null;
+  comment: string | null;
+  author: string | null;
+}
+
+export interface FinanceJournalQuery {
+  kind?: FinanceEntryKind;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface CreateExpenseRequest {
+  category: ExpenseCategory;
+  amount: number;
+  /** Shop calendar day, yyyy-MM-dd. */
+  date: string;
+  comment?: string;
+}
+
+export function fetchFinanceSummary(period: FinancePeriod, dateFrom?: string, dateTo?: string): Promise<FinanceSummaryDto> {
+  const params = new URLSearchParams({ period });
+  if (period === 'custom') {
+    if (dateFrom) params.set('dateFrom', dateFrom);
+    if (dateTo) params.set('dateTo', dateTo);
+  }
+  return apiFetch<FinanceSummaryDto>(`/admin/finance/summary?${params}`);
+}
+
+export function fetchFinanceChart(): Promise<FinanceChartDto> {
+  return apiFetch<FinanceChartDto>('/admin/finance/chart');
+}
+
+export function fetchFinanceJournal(query: FinanceJournalQuery = {}): Promise<PagedResult<FinanceEntryDto>> {
+  const params = new URLSearchParams();
+  if (query.kind !== undefined) params.set('kind', query.kind);
+  if (query.dateFrom) params.set('dateFrom', query.dateFrom);
+  if (query.dateTo) params.set('dateTo', query.dateTo);
+  if (query.page !== undefined) params.set('page', String(query.page));
+  if (query.pageSize !== undefined) params.set('pageSize', String(query.pageSize));
+  const qs = params.toString();
+  return apiFetch<PagedResult<FinanceEntryDto>>(`/admin/finance/journal${qs ? `?${qs}` : ''}`);
+}
+
+export function createExpense(request: CreateExpenseRequest): Promise<FinanceEntryDto> {
+  return apiFetch<FinanceEntryDto>('/admin/finance/expenses', { method: 'POST', body: JSON.stringify(request) });
+}
+
+/** The Excel file for a period (shop calendar days). The file name is built here: a cross-origin page can't read Content-Disposition. */
+export async function downloadFinanceExport(dateFrom: string, dateTo: string): Promise<{ blob: Blob; fileName: string }> {
+  const path = `/admin/finance/export?${new URLSearchParams({ dateFrom, dateTo })}`;
+  let res = await rawFetch(path);
+  if (res.status === 401) {
+    if (await refreshAccessToken()) {
+      res = await rawFetch(path);
+    } else {
+      setAccessToken(null);
+    }
+  }
+  if (!res.ok) {
+    return parseEnvelope<never>(res); // an error envelope (400 too many rows, 429, ...) throws an ApiError
+  }
+  return { blob: await res.blob(), fileName: `finance_${dateFrom}_${dateTo}.xlsx` };
+}
+
 /** 0=Newest, 1=HighestRating, 2=LowestRating - matches backend ReviewSortBy. */
 export type ReviewSortBy = 0 | 1 | 2;
 
