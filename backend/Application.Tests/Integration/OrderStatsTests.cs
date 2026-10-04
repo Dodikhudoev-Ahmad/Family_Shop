@@ -182,4 +182,80 @@ public class OrderStatsTests : IClassFixture<PostgresFixture>
         Assert.DoesNotContain(yesterday, ids);
         Assert.DoesNotContain(tomorrow, ids);
     }
+
+    // ---- "Новых сегодня": orders placed on the shop's day, not cancelled, read from Orders ----
+
+    private static StoreClock ClockOf(DateTime utcNow) => StoreClock.FromId("Asia/Almaty", () => utcNow);
+
+    private async Task<OrderStatsDto> StatsAtAsync(DateTime utcNow)
+    {
+        await using var ctx = _db.CreateContext();
+        return await new OrderService(new UnitOfWork(ctx), ClockOf(utcNow)).GetStatsAsync();
+    }
+
+    [PostgresFact]
+    public async Task NewToday_BeginsAtLocalMidnight_NotUtcsMidnight()
+    {
+        var (userId, productId) = await SeedAsync();
+        var now = new DateTime(2031, 5, 15, 7, 0, 0, DateTimeKind.Utc); // 12:00 on 15 May in Almaty; the day began at 14 May 19:00Z
+        await AddOrderAsync(userId, productId, 1_000, OrderStatus.Created, new DateTime(2031, 5, 14, 18, 59, 59, 999, DateTimeKind.Utc)); // 23:59:59.999 on the 14th: yesterday
+        await AddOrderAsync(userId, productId, 1_000, OrderStatus.Created, new DateTime(2031, 5, 14, 19, 0, 0, DateTimeKind.Utc));       // 00:00 on the 15th: today
+        await AddOrderAsync(userId, productId, 1_000, OrderStatus.Created, new DateTime(2031, 5, 14, 19, 30, 0, DateTimeKind.Utc));      // 00:30 on the 15th: today, though UTC says the 14th
+        await AddOrderAsync(userId, productId, 1_000, OrderStatus.Created, new DateTime(2031, 5, 15, 6, 0, 0, DateTimeKind.Utc));        // 11:00 on the 15th: today
+
+        var stats = await StatsAtAsync(now);
+
+        Assert.Equal(3, stats.NewToday);
+        Assert.Equal("Asia/Almaty", stats.StoreTimeZone);
+    }
+
+    [PostgresFact]
+    public async Task NewToday_CountsEveryStatusExceptCancelled()
+    {
+        var (userId, productId) = await SeedAsync();
+        var now = new DateTime(2032, 5, 15, 7, 0, 0, DateTimeKind.Utc);
+        var placed = new DateTime(2032, 5, 15, 3, 0, 0, DateTimeKind.Utc);
+        foreach (var status in new[] { OrderStatus.Created, OrderStatus.Processing, OrderStatus.Shipped, OrderStatus.Delivered })
+        {
+            await AddOrderAsync(userId, productId, 1_000, status, placed);
+        }
+
+        await AddOrderAsync(userId, productId, 172_000, OrderStatus.Cancelled, placed);
+
+        Assert.Equal(4, (await StatsAtAsync(now)).NewToday);
+    }
+
+    [PostgresFact]
+    public async Task NewToday_ComesFromTheOrders_AnUndeliveredOrderCountsAlthoughItHasNoPayment()
+    {
+        var (userId, productId) = await SeedAsync();
+        var before = await StatsAsync();
+
+        var orderId = await PlaceAsync(userId, productId, 1);
+
+        var placed = await StatsAsync();
+        Assert.Equal(1, placed.NewToday - before.NewToday);
+        Assert.Equal(0, placed.OrdersToday - before.OrdersToday);       // "Доставлено сегодня": nothing delivered yet
+        Assert.Equal(0m, placed.RevenueToday - before.RevenueToday);
+
+        await MoveAsync(orderId, OrderStatus.Cancelled);
+
+        var cancelled = await StatsAsync();
+        Assert.Equal(0, cancelled.NewToday - before.NewToday);          // cancelled the same day: out of "Новых сегодня"
+    }
+
+    [PostgresFact]
+    public async Task NewToday_AndDeliveredToday_AreIndependent_AnOldOrderDeliveredTodayIsOnlyInTheLatter()
+    {
+        var (userId, productId) = await SeedAsync();
+        var before = await StatsAsync();
+
+        var oldOrder = await AddOrderAsync(userId, productId, 9_000, OrderStatus.Shipped, DateTime.UtcNow.AddDays(-3));
+        await MoveAsync(oldOrder, OrderStatus.Delivered);
+
+        var after = await StatsAsync();
+        Assert.Equal(0, after.NewToday - before.NewToday);
+        Assert.Equal(1, after.OrdersToday - before.OrdersToday);
+        Assert.Equal(9_000m, after.RevenueToday - before.RevenueToday);
+    }
 }

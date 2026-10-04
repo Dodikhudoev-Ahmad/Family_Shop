@@ -336,9 +336,9 @@ public class OrderService : IOrderService
     public async Task<OrderStatsDto> GetStatsAsync(CancellationToken cancellationToken = default)
     {
         // "Today" begins at the shop's local midnight (Store:TimeZone), whatever UTC says; dates stay stored in UTC.
-        var (ordersToday, revenueToday, newOrdersCount, totalOrders) =
+        var (ordersToday, revenueToday, newOrdersCount, totalOrders, newToday) =
             await _unitOfWork.Orders.GetStatsAsync(_clock.StartOfTodayUtc(), cancellationToken);
-        return new OrderStatsDto(ordersToday, revenueToday, newOrdersCount, totalOrders, _clock.ZoneId);
+        return new OrderStatsDto(ordersToday, revenueToday, newOrdersCount, totalOrders, _clock.ZoneId, newToday);
     }
 
     private static AdminOrderDto ToAdminDto(Order order) => new(
