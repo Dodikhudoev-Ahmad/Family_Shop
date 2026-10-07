@@ -6,16 +6,17 @@
   .mobile-tabbar {
     display: flex;
     position: fixed;
-    left: var(--space-3);
-    right: var(--space-3);
-    bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
-    height: var(--tabbar-height);
-    border-radius: 22px;
-    background: color-mix(in srgb, var(--color-bg) 80%, transparent);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid color-mix(in srgb, var(--color-border) 65%, transparent);
-    box-shadow: var(--shadow-lg);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    box-sizing: border-box;
+    height: var(--tabbar-clearance);
+    padding: 0 var(--space-2) env(safe-area-inset-bottom, 0px);
+    border-radius: 20px 20px 0 0;
+    /* Solid on purpose: content under a translucent bar showed through it. */
+    background: var(--color-bg);
+    border-top: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
     z-index: 150;
   }
 
