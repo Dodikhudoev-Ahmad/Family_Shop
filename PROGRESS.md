@@ -44,7 +44,7 @@
    - [x] **9A. Исследование** [QA] (2026-10-07): `docs/Seo.md` — состояние, варианты превью для WhatsApp/Telegram/Яндекс (рекомендован бот-рендер через Caddy + backend), шаблоны мета, sitemap/robots, чек-лист.
    - [x] **9B1. Мета на сайте** [FE] (2026-10-07): `useSeo` ставит `robots` (`noindex,nofollow` на корзине, оформлении, кабинете, входе, избранном, админке, 404, несуществующих товаре и категории), абсолютный `og:image`, размеры og, цену товара; шаблоны title/description товара и категории (`utils/seoText.ts`); растровый `public/og-default.png` 1200×630; `VITE_SITE_URL` обязателен — production-сборка без него падает (`lib/siteUrl.ts`), заглушки `familyshop.example` нет; короткий `Disallow` в `robots.txt` (`/admin`, `/checkout`, `/account`). Backend и mobile не менялись. Отчёт — `docs/reports/2026-10-07-seo-b1.md`.
    - [x] **9B2. Sitemap и бот-страницы** [BE] (2026-10-07): `Product.UpdatedAt` (миграция `AddProductUpdatedAt`, идемпотентная, бэкфилл = `CreatedAt`, обновляется правкой админа); `GET /seo/product/{id}`, `GET /seo/category/{slug}` (HTML с мета и JSON-LD, значения экранируются, нет объекта — 404 + noindex), `GET /sitemap.xml` (главная, каталог, о нас, все категории, все товары, `lastmod`, кеш); настройки `Seo:SiteUrl`, `Seo:SitemapCacheSeconds`; на проде ничего не включено — эндпоинты пока никто не вызывает (до шага C). Frontend и mobile не менялись. Отчёт — `docs/reports/2026-10-07-seo-b2.md`.
-   - [ ] **9C. Раздача для ботов (Caddy)** [QA/инфра]: после выяснения, как Railway раздаёт фронт.
+   - [ ] **9C. Раздача для ботов (Caddy)** [QA/инфра]: `frontend/Caddyfile` подготовлен и проверен локально на Caddy 2.11.7 (не закоммичен, ждёт ревью и «go»); план, источники и риски — `docs/Seo.md`, раздел 10.
 
 ### Без приоритета
 
