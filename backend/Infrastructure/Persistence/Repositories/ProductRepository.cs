@@ -109,4 +109,25 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
             .Where(p => p.Id == id)
             .ExecuteUpdateAsync(setters => setters.SetProperty(p => p.Stock, p => p.Stock + quantity), cancellationToken);
     }
+
+    public async Task<(IReadOnlyList<ProductSitemapRow> Rows, int Total)> GetSitemapRowsAsync(int limit, CancellationToken cancellationToken = default)
+    {
+        var total = await DbSet.CountAsync(cancellationToken);
+        var rows = await DbSet.AsNoTracking()
+            .OrderByDescending(p => p.UpdatedAt).ThenBy(p => p.Id)
+            .Take(limit)
+            .Select(p => new ProductSitemapRow(p.Id, p.CategoryId, p.UpdatedAt))
+            .ToListAsync(cancellationToken);
+        return (rows, total);
+    }
+
+    public async Task<(int Count, decimal? MinPrice)> GetCategoryStatsAsync(int categoryId, CancellationToken cancellationToken = default)
+    {
+        var inCategory = DbSet.AsNoTracking().Where(p => p.CategoryId == categoryId);
+        var count = await inCategory.CountAsync(cancellationToken);
+        if (count == 0) return (0, null);
+
+        var cheapest = await inCategory.OrderBy(p => p.DiscountPrice ?? p.Price).Select(p => (p.DiscountPrice ?? p.Price)).FirstAsync(cancellationToken);
+        return (count, cheapest.Amount);
+    }
 }

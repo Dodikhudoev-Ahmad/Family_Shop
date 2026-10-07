@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<IPromoCodeService, PromoCodeService>();
         services.AddScoped<IPromoBannerService, PromoBannerService>();
         services.AddScoped<IFinanceService, FinanceService>();
+        services.AddScoped<ISeoService, SeoService>(); // needs a SeoSettings singleton, registered by the host (Seo:* configuration)
 
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
 

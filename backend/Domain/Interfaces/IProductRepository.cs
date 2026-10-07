@@ -10,6 +10,9 @@ public enum ProductSortOrder
     Popular
 }
 
+/// <summary>What the sitemap needs of a product: its address parts and when its card last changed.</summary>
+public sealed record ProductSitemapRow(int Id, int CategoryId, DateTime UpdatedAt);
+
 public interface IProductRepository : IRepository<Product>
 {
     Task<(IReadOnlyList<Product> Items, int TotalCount)> GetByFilterAsync(
@@ -36,4 +39,11 @@ public interface IProductRepository : IRepository<Product>
 
     /// <summary>Atomic <c>Stock = Stock + q</c> (returning cancelled stock). Bypasses the change tracker.</summary>
     Task IncrementStockAsync(int id, int quantity, CancellationToken cancellationToken = default);
+
+    /// <summary>At most <paramref name="limit"/> products, the most recently changed first, plus the total number of products.
+    /// Reads only three columns, without tracking.</summary>
+    Task<(IReadOnlyList<ProductSitemapRow> Rows, int Total)> GetSitemapRowsAsync(int limit, CancellationToken cancellationToken = default);
+
+    /// <summary>Number of products in the category and the lowest effective price (discount if any); the price is null when empty.</summary>
+    Task<(int Count, decimal? MinPrice)> GetCategoryStatsAsync(int categoryId, CancellationToken cancellationToken = default);
 }
