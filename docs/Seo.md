@@ -1,6 +1,6 @@
 # SEO и превью ссылок
 
-Статус: **решение (шаг A, p.9)**. Кода нет, это план. Шаги B и C ждут «go».
+Статус: шаг A (исследование) выполнен; **шаг B1 [FE] выполняется по решениям владельца (раздел 8)**. Шаги B2 и C ждут «go».
 Источник: `frontend/index.html`, `frontend/src/hooks/useSeo.ts`, `frontend/src/data/seo.ts`, `frontend/public/{robots.txt,sitemap.xml}`, `frontend/src/App.tsx`, `backend/Domain/Entities/{Product,Category}.cs`, `backend/Api/Controllers/ProductsController.cs`, `docs/Deploy.md`, `CLAUDE.md`.
 
 Домен: основной `https://www.familyshop10.kz` (canonical везде на www), корень редиректится на www у регистратора. API — `https://api.familyshop10.kz`.
@@ -96,16 +96,13 @@ JSON-LD товара (только в бот-HTML и, опционально, в
 User-agent: *
 Allow: /
 Disallow: /admin
-Disallow: /cart
 Disallow: /checkout
 Disallow: /account
-Disallow: /login
-Disallow: /favorites
-Disallow: /*?*sort=
-Disallow: /*?*search=
 
 Sitemap: https://www.familyshop10.kz/sitemap.xml
 ```
+
+`/cart`, `/login`, `/favorites` в `Disallow` не входят: их закрывает мета `noindex`, а бот увидит её только на разрешённой странице.
 
 Параметры фильтров не должны плодить дубли: canonical в `useSeo` и так без query. Старые Railway-адреса фронта (`*.up.railway.app`) должны отдавать `Disallow: /` или редиректить на www, чтобы не появились дубли сайта в выдаче (проверить; отдельный пункт чек-листа).
 
@@ -147,3 +144,11 @@ Sitemap: https://www.familyshop10.kz/sitemap.xml
 3. Добавить `Product.UpdatedAt` (миграция) ради `lastmod`? Рекомендация: да, отдельным подшагом.
 4. Есть ли готовое брендовое фото 1200×630 для `og:image`? Без него превью главной и категорий останутся пустыми.
 5. Нужен ли бот-рендер на kk/en в первой версии (рекомендация: нет, только ru)?
+
+## 8. Решения владельца для шага B1 [FE] (2026-10-07)
+
+- Закрытые страницы: мета `<meta name="robots" content="noindex,nofollow">` на `/cart`, `/checkout`, `/account` и `/account/orders/{id}` (в запросе владельца — «/profile»; в приложении такого маршрута нет, личный кабинет — `/account`), `/login`, `/favorites`, `/admin/*`, 404 и несуществующие товар/категория. Остальные страницы получают `index,follow`. Короткий `Disallow` в `robots.txt`: `/admin`, `/checkout`, `/account`.
+- Язык мета — только ru-шаблоны из раздела 3; ключи `seo.*` в kk/en заведены для полноты словарей (тест словарей требует одинаковый набор ключей).
+- Адрес сайта: `VITE_SITE_URL` (без `/` в конце) обязателен. Production-сборка без него, с нечитаемым значением или с прежней заглушкой `familyshop.example` **падает** с понятной ошибкой (`vite.config.ts`, функция `resolveSiteUrl` в `src/lib/siteUrl.ts`). В разработке и тестах запасной адрес — `http://localhost:5173`. Заглушки `familyshop.example` в коде больше нет. На Railway `VITE_SITE_URL=https://www.familyshop10.kz` нужно задать **до** пуша, иначе деплой фронта упадёт (так задумано).
+- `og:image` по умолчанию — растровый `public/og-default.png` 1200×630 (палитра и логотип бренда); у товара — первое фото. Прежний `logo-icon-badge.svg` остаётся в `public/` (старые ссылки), в мете не используется.
+- Статичный `sitemap.xml` пока остаётся (6 адресов), заменяется динамическим в шаге B2.
