@@ -21,6 +21,18 @@
 | POST `/orders` | П | 10/мин | заголовок `Idempotency-Key` |
 | GET `/orders` | П | общий | свои заказы |
 
+## SEO: sitemap и страницы для ботов (без префикса `/api/v1`)
+
+Нужны для превью ссылок и индексации, см. `docs/Seo.md`. Все — гость, лимит общий (100/мин на IP; Caddy-прокси должен кешировать ответы), ответы без `ApiResponse`, не JSON. Адрес сайта — настройка `Seo:SiteUrl` (по умолчанию `https://www.familyshop10.kz`, без `/` в конце, неверное значение — ошибка запуска), все ссылки абсолютные на этот адрес.
+
+| Метод и путь | Ответ | Примечание |
+|---|---|---|
+| GET `/seo/product/{id}` | `200 text/html` | минимальный HTML: `title`, `description`, `canonical`, `og:*`, `product:price:*`, JSON-LD `Product` с `offers` (KZT), `robots: index,follow`. Несуществующий id — **404** с `noindex` |
+| GET `/seo/category/{slug}` | `200 text/html` | `title`, `description` (число товаров и минимальная цена), `canonical`, `og:*`. Неизвестный slug — **404** с `noindex` |
+| GET `/sitemap.xml` | `200 application/xml` | главная, `/catalog`, `/about`, все категории, все товары; `lastmod` из `Product.UpdatedAt` (у категорий и главной — максимум по товарам); закрытых страниц нет; не более 50 000 адресов (при переполнении самые давно не менявшиеся товары отбрасываются, в лог — предупреждение); кеш в памяти `Seo:SitemapCacheSeconds` (по умолчанию 600) и `Cache-Control: public, max-age=3600` |
+
+Значения из БД в HTML экранируются (`< > & " '`), JSON-LD сериализуется с экранированием `< > & '` (нельзя закрыть `<script>`), `og:image` — только `http(s)`-адрес, иначе картинка по умолчанию. Тексты — шаблоны ru из `docs/Seo.md`, раздел 3.
+
 ## Авторизация (веб, refresh в httpOnly cookie)
 
 | Путь | Доступ | Лимит |
