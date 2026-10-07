@@ -129,6 +129,19 @@
   line-height: 1.3;
 }
 
+/* Each pill sits on the corner of its card that the cards in front do not cover. */
+.sale-banner__card--2 .sale-banner__pill {
+  top: 4px;
+  bottom: auto;
+}
+
+.sale-banner__card--3 .sale-banner__pill {
+  top: 4px;
+  bottom: auto;
+  left: auto;
+  right: 4px;
+}
+
 /* card--1 is the biggest discount: in front, in the middle. */
 .sale-banner__card--1 {
   --rot: 5deg;
@@ -199,6 +212,18 @@
   .sale-banner__collage {
     --card-w: 128px;
     --card-h: 164px;
+  }
+}
+
+@media (min-width: 1025px) {
+  .sale-banner {
+    min-height: 280px;
+    padding-right: 96px;
+  }
+
+  .sale-banner__collage {
+    --card-w: 168px;
+    --card-h: 216px;
   }
 }
 
