@@ -22,6 +22,10 @@ public class Product
     public Gender Gender { get; set; }
     public List<string> Images { get; set; } = new();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>When the card was last edited by an admin (UTC); equals <see cref="CreatedAt"/> until then. Feeds the sitemap's
+    /// <c>lastmod</c>. Stock write-offs, rating recomputation and the seeder do not touch it - it tracks content, not movement.</summary>
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public bool IsBestseller { get; set; }
 
     /// <summary>Тип изделия (рубашка, куртка, кроссовки...) для быстрых фильтров внутри категории.</summary>
