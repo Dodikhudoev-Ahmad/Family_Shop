@@ -1,9 +1,10 @@
 # NOTE: static file, not processed by Vite - points at the canonical domain (keep in sync with VITE_SITE_URL and sitemap.xml).
+# /cart, /login, /favorites are not listed on purpose: they carry <meta name="robots" content="noindex">,
+# which a crawler can only read on a page it is allowed to open (docs/Seo.md).
 User-agent: *
 Allow: /
-Disallow: /account
+Disallow: /admin
 Disallow: /checkout
-Disallow: /login
-Disallow: /favorites
+Disallow: /account
 
 Sitemap: https://www.familyshop10.kz/sitemap.xml
