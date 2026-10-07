@@ -1,17 +1,14 @@
-// TODO: production domain. Set VITE_SITE_URL in the deploy environment
-// (falls back to the familyshop.example placeholder if unset) - it drives
-// canonical/og:url here and the matching %VITE_SITE_URL% tags in index.html.
-// public/robots.txt and public/sitemap.xml are static files Vite doesn't
-// template, so they carry their own TODO markers and need updating by hand.
-export const SITE_URL = (import.meta.env.VITE_SITE_URL ?? 'https://familyshop.example').replace(/\/+$/, '');
+import { resolveSiteUrl } from '../lib/siteUrl';
+
+// VITE_SITE_URL drives canonical / og:url / og:image here and the matching %VITE_SITE_URL% tags in index.html.
+// A production build without it (or with the old placeholder) fails in vite.config.ts; see lib/siteUrl.ts.
+export const SITE_URL = resolveSiteUrl(import.meta.env.VITE_SITE_URL, import.meta.env.PROD);
 export const SITE_NAME = 'Family Shop';
 
-// TODO: no branded raster photo exists yet. public/logo-icon-badge.svg (hanger
-// mark + wordmark on the accent color, 1200x630) is a temporary stand-in -
-// swap for a real lifestyle/product photo before launch. Note most social
-// crawlers (Facebook/LinkedIn in particular) don't render SVG og:image at
-// all, so this placeholder may just show as a blank preview until replaced.
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/logo-icon-badge.svg`;
+/** Default og:image: a raster 1200x630 card (brand palette + logo) in public/. SVG is not rendered by messenger crawlers. */
+export const OG_IMAGE_WIDTH = 1200;
+export const OG_IMAGE_HEIGHT = 630;
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.png`;
 
 export function truncateDescription(text: string, max = 160): string {
   const clean = text.trim().replace(/\s+/g, ' ');
