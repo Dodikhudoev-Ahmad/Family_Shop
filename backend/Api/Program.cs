@@ -59,6 +59,9 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddScoped<CookieCsrfFilter>();
+// Crawler pages and sitemap: canonical origin and cache time from Seo:* (validated here, a bad value stops the start-up).
+builder.Services.AddSingleton(Api.Seo.SeoSettingsFactory.Resolve(builder.Configuration));
+builder.Services.AddMemoryCache();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
