@@ -8,7 +8,7 @@
 |---|---|
 | Users | Id, Email (уникальный, ≤256), PasswordHash, Name, Role (Customer/Admin), DeletedAt |
 | Categories | Id, Name, Slug (уникальный, ≤100), ParentCategoryId, HasSizes |
-| Products | Id, Name, Description, Price, DiscountPrice, Stock, CategoryId, Gender, Images (список), CreatedAt, IsBestseller, ProductType (≤50), AvailableSizes (`text[]`, NULL = вся сетка типа), AverageRating decimal(3,2), ReviewCount |
+| Products | Id, Name, Description, Price, DiscountPrice, Stock, CategoryId, Gender, Images (список), CreatedAt, **UpdatedAt** (UTC, NOT NULL, DEFAULT now(); обновляется при правке товара админом, нужен для `lastmod` в sitemap), IsBestseller, ProductType (≤50), AvailableSizes (`text[]`, NULL = вся сетка типа), AverageRating decimal(3,2), ReviewCount |
 | Orders | Id, UserId, Status, TotalPrice, DiscountAmount, CreatedAt (UTC), ContactName (≤200), ContactPhone (≤32), DeliveryMethod (Courier/Pickup), City (≤200), Address (≤500), PromoCodeId |
 | OrderItems | Id, OrderId, ProductId, Quantity, Price (цена на момент заказа), Size (≤16) |
 | Reviews | Id, ProductId, UserId, Rating, Comment (≤2000), CreatedAt |
@@ -54,6 +54,7 @@
 | AddUserDeletedAt | да |
 | AddProductAvailableSizes | да (`ADD COLUMN IF NOT EXISTS`) |
 | AddIdempotencyKeys | да (`CREATE ... IF NOT EXISTS`) |
+| AddProductUpdatedAt | да: `ADD COLUMN IF NOT EXISTS "UpdatedAt" timestamptz NULL`, затем `UPDATE ... SET "UpdatedAt" = "CreatedAt" WHERE "UpdatedAt" IS NULL` (трогает только строки без значения — правки, сделанные после первого запуска, повторный запуск не затирает), затем `SET DEFAULT now()` и `SET NOT NULL`. Default `now()` оставлен, чтобы код предыдущей версии (откат кода) мог вставлять товары без этой колонки. Order/OrderItem/Review и записи с FK на них не затрагиваются, товары не пересоздаются. Откат кода безопасен, откат схемы — только из бэкапа |
 | AddExpenseSoftDelete | да: `ADD COLUMN IF NOT EXISTS` (`IsDeleted boolean NOT NULL DEFAULT false`, `DeletedAt`, `DeletedByUserId`), внешний ключ и индекс — только если их ещё нет. Существующие расходы не пересоздаются, получают `IsDeleted = false`; Orders/OrderItems/Reviews не затрагиваются. Откат кода безопасен (старый код колонки игнорирует), откат схемы — из бэкапа |
 | AddFinance | да: `CREATE TABLE/INDEX IF NOT EXISTS`, `CHECK (Amount > 0)`; бэкфилл `Income` для заказов в `Delivered` — `INSERT ... ON CONFLICT (OrderId, Type) DO NOTHING`, повторный запуск ничего не добавляет. Существующие строки Orders/OrderItems/Reviews не затрагиваются. Откат схемы — только из бэкапа (`DROP TABLE` в `Down` — для локальной БД) |
 
