@@ -1,6 +1,5 @@
 import { NavLink } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
-import { useFavorites } from '../../context/FavoritesContext';
 import { useAuth } from '../../context/AuthContext';
 import { CountBadge } from '../CountBadge/CountBadge';
 import './MobileTabBar.css';
@@ -9,17 +8,23 @@ import { useTranslation } from 'react-i18next';
 export function MobileTabBar() {
   const { t } = useTranslation();
   const { totalItems, bump } = useCart();
-  const { favoriteIds, bump: favBump } = useFavorites();
   const { user } = useAuth();
 
   const profileTo = user ? (user.role === 'Admin' ? '/admin/orders' : '/account') : '/login';
 
   return (
     <nav className="mobile-tabbar" aria-label={t('nav.main')}>
+      <NavLink to="/" end className={({ isActive }) => `mobile-tabbar__item ${isActive ? 'is-active' : ''}`}>
+        <span className="mobile-tabbar__pill">
+          <HomeIcon />
+          <span>{t('nav.home')}</span>
+        </span>
+      </NavLink>
+
       <NavLink to="/catalog" className={({ isActive }) => `mobile-tabbar__item ${isActive ? 'is-active' : ''}`}>
         <span className="mobile-tabbar__pill">
           <CatalogIcon />
-          <span>{t('nav.catalog')}</span>
+          <span>{t('nav.categories')}</span>
         </span>
       </NavLink>
 
@@ -33,16 +38,6 @@ export function MobileTabBar() {
         </span>
       </NavLink>
 
-      <NavLink to="/favorites" className={({ isActive }) => `mobile-tabbar__item ${isActive ? 'is-active' : ''}`}>
-        <span className="mobile-tabbar__pill">
-          <span className="mobile-tabbar__icon-wrap">
-            <HeartIcon />
-            <CountBadge key={favBump} count={favoriteIds.length} className="mobile-tabbar__badge bounce" />
-          </span>
-          <span>{t('nav.favorites')}</span>
-        </span>
-      </NavLink>
-
       <NavLink to={profileTo} className={({ isActive }) => `mobile-tabbar__item ${isActive ? 'is-active' : ''}`}>
         <span className="mobile-tabbar__pill">
           <ProfileIcon />
@@ -50,6 +45,19 @@ export function MobileTabBar() {
         </span>
       </NavLink>
     </nav>
+  );
+}
+
+function HomeIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+      <path
+        d="M3 9.2 10 3l7 6.2V16a1 1 0 0 1-1 1h-3.5v-5h-5v5H4a1 1 0 0 1-1-1V9.2z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -80,19 +88,6 @@ function CartIcon() {
       />
       <circle cx="9.5" cy="17.3" r="1" fill="currentColor" />
       <circle cx="14.5" cy="17.3" r="1" fill="currentColor" />
-    </svg>
-  );
-}
-
-function HeartIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
-      <path
-        d="M10 17.5s-7-4.35-7-9.5A4 4 0 0 1 10 5.5 4 4 0 0 1 17 8c0 5.15-7 9.5-7 9.5z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
     </svg>
   );
 }

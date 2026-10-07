@@ -6,6 +6,7 @@ import { QuickViewModal } from '../QuickView/QuickViewModal';
 import { BackToTop } from '../BackToTop/BackToTop';
 import { CategoryStrip } from '../CategoryStrip/CategoryStrip';
 import { MobileTabBar } from '../MobileTabBar/MobileTabBar';
+import { useHomeVariant } from '../../lib/homeVariant';
 import { HeaderVisibilityProvider, useHeaderVisibility } from '../../context/HeaderVisibilityContext';
 
 // Pages where switching category should stay one tap away on mobile (no burger menu).
@@ -42,6 +43,8 @@ function HeaderStack({ showStrip }: { showStrip: boolean }) {
 
 export function Layout() {
   const { pathname } = useLocation();
+  // Publishes ?variant=a|b as data-variant on <html>: the header colours on every page come from it.
+  useHomeVariant();
   return (
     <HeaderVisibilityProvider>
       <div className="app-shell">

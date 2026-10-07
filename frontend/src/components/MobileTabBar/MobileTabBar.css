@@ -15,7 +15,7 @@
     backdrop-filter: blur(20px) saturate(160%);
     -webkit-backdrop-filter: blur(20px) saturate(160%);
     border: 1px solid color-mix(in srgb, var(--color-border) 65%, transparent);
-    box-shadow: 0 16px 32px -12px rgba(26, 26, 26, 0.32), 0 2px 10px rgba(26, 26, 26, 0.08);
+    box-shadow: var(--shadow-lg);
     z-index: 150;
   }
 

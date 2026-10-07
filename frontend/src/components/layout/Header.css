@@ -5,9 +5,19 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  /* One gradient for the whole stack (header + the category tabs under it on mobile), so there is
+     no seam between the two. All colours are tokens (docs/Design.md, styles/tokens.css). */
+  background: linear-gradient(135deg, var(--header-from), var(--header-to));
+  color: var(--header-fg);
   /* 0.3s specifically (not --transition-base's 250ms) - this is the one interaction on the
      site where the timing itself was specified. */
   transition: transform 0.3s ease;
+}
+
+@media (max-width: 1024px) {
+  .header-stack {
+    background: linear-gradient(180deg, var(--header-from), var(--header-to));
+  }
 }
 
 .header-stack--hidden {
@@ -21,8 +31,7 @@
 }
 
 .header {
-  background: var(--color-bg);
-  border-bottom: 1px solid var(--color-border);
+  background: transparent;
   height: var(--header-height);
   display: flex;
   align-items: center;
@@ -49,7 +58,7 @@
   font-size: 25px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--color-text);
+  color: var(--header-fg);
   transition: font-size var(--transition-base);
   flex-shrink: 0;
 }
@@ -59,7 +68,7 @@
 }
 
 .header__wordmark-accent {
-  color: #c17a54;
+  color: var(--header-accent);
 }
 
 .header--compact .header__logo {
@@ -76,7 +85,7 @@
   position: relative;
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-text);
+  color: var(--header-fg);
   padding: var(--space-2) 0;
 }
 
@@ -87,7 +96,7 @@
   bottom: 0;
   height: 1.5px;
   width: 100%;
-  background: var(--color-accent);
+  background: var(--header-tab-indicator);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform var(--transition-base);
@@ -133,7 +142,7 @@
   left: 0;
   right: 0;
   height: 100vh;
-  background: rgba(26, 26, 26, 0.35);
+  background: var(--color-scrim);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition-base);
@@ -246,31 +255,35 @@ a.mega-menu__col-title--link:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-md);
   background: transparent;
   border: none;
-  color: var(--color-text);
+  color: var(--header-fg);
   cursor: pointer;
   transition: background-color var(--transition-fast), transform var(--transition-fast), color var(--transition-fast);
 }
 
 .header__icon-btn:hover {
-  background: var(--color-bg-secondary);
-  color: var(--color-accent);
+  background: var(--header-hover-bg);
+  color: var(--header-fg);
+  transform: translateY(-1px);
 }
 
 .header__login-link {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--header-fg);
   padding: 0 var(--space-2);
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .header__login-link:hover {
-  color: var(--color-accent);
+  color: var(--header-accent);
 }
 
 .header__account {
@@ -284,11 +297,12 @@ a.mega-menu__col-title--link:hover {
   align-items: center;
   gap: var(--space-2);
   padding: 0 var(--space-2);
-  color: var(--color-text);
+  min-height: 44px;
+  color: var(--header-fg);
 }
 
 .header__account-link:hover {
-  color: var(--color-accent);
+  color: var(--header-accent);
 }
 
 .header__avatar {
@@ -298,8 +312,8 @@ a.mega-menu__col-title--link:hover {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--color-accent);
-  color: var(--color-white);
+  background: var(--header-badge-bg);
+  color: var(--header-badge-fg);
   font-size: 13px;
   font-weight: 700;
   flex-shrink: 0;
@@ -316,8 +330,36 @@ a.mega-menu__col-title--link:hover {
 
 .header__cart-count {
   position: absolute;
-  top: -2px;
-  right: -4px;
+  top: 2px;
+  right: 0;
+  background: var(--header-badge-bg);
+  color: var(--header-badge-fg);
+  box-shadow: none;
+}
+
+/* Language switcher trigger sits on the coloured bar. */
+.header .lang-menu__trigger {
+  height: 44px;
+  color: var(--header-fg);
+}
+
+.header .lang-menu__trigger:hover,
+.header .lang-menu__trigger[aria-expanded='true'] {
+  background: var(--header-hover-bg);
+  color: var(--header-fg);
+}
+
+/* Keyboard focus must stay visible on the gradient. */
+.header-stack a:focus-visible,
+.header-stack button:focus-visible {
+  outline: 2px solid var(--header-fg);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header__icon-btn:hover {
+    transform: none;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -349,12 +391,12 @@ a.mega-menu__col-title--link:hover {
     align-items: center;
     gap: 10px;
     width: 100%;
-    height: 36px;
+    height: var(--header-search-height);
     padding: 0 var(--space-3);
-    border: 1px solid var(--color-border);
+    border: 2px solid transparent;
     border-radius: 999px;
-    background: var(--color-bg-secondary);
-    color: var(--color-text-secondary);
+    background: var(--header-search-bg);
+    color: var(--header-search-fg);
     font: inherit;
     font-size: 14px;
     text-align: left;
@@ -364,8 +406,11 @@ a.mega-menu__col-title--link:hover {
 
   .header__search-bar:hover,
   .header__search-bar:active {
-    border-color: var(--color-accent);
-    color: var(--color-text);
+    border-color: var(--header-tab-indicator);
+  }
+
+  .header-stack .header__search-bar:focus-visible {
+    outline-color: var(--header-fg);
   }
 
   .header__search-bar svg {
@@ -405,7 +450,11 @@ a.mega-menu__col-title--link:hover {
   }
 
   .header__icon-btn {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .header .lang-menu__trigger {
+    min-width: 44px;
   }
 }

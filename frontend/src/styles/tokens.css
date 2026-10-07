@@ -56,6 +56,36 @@
   --color-banner-fallback-to: #5C3620;
   --color-banner-cta-hover-text: #8A5636;
 
+  /* Шапка, баннер акции и тёмная секция «Хиты» (docs/Design.md). Значения — для варианта A, светлая тема;
+     остальные комбинации «вариант × тема» переопределены ниже. Белый текст шапки проверяется тестом
+     styles/headerContrast.test.ts: ≥ 4,5:1 на обоих концах градиента. */
+  --header-from: #965230;
+  --header-to: #7A4A2E;
+  --header-fg: #FFFFFF;
+  --header-fg-muted: #F6E9E0;
+  --header-accent: #FFE3D2;
+  --header-hover-bg: rgba(255, 255, 255, 0.16);
+  --header-search-bg: #FFFFFF;
+  --header-search-fg: #5A5754;
+  --header-tab-indicator: #FFFFFF;
+  --header-badge-bg: #FFFFFF;
+  --header-badge-fg: #1A1A1A;
+  --promo-from: #965230;
+  --promo-to: #7A4A2E;
+  --promo-fg: #FFFFFF;
+  --promo-cta-bg: #FFFFFF;
+  --promo-cta-fg: #1A1A1A;
+  --hits-bg: var(--color-bg-secondary);
+  --hits-text: var(--color-text);
+  --hits-text-secondary: var(--color-text-secondary);
+  --hits-border: var(--color-border);
+  --color-scrim: rgba(26, 26, 26, 0.35);
+  --color-badge-new-bg: #2A2226;
+  --color-badge-new-fg: #F0EEEC;
+
+  /* Сколько карточек в ряд на телефоне (≤ 1024 px). Вернуть одну в ряд — поставить 1. */
+  --grid-cols-mobile: 2;
+
   /* Прочее */
   --header-height: 88px;
   --header-height-compact: 64px;
@@ -101,4 +131,38 @@
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.28);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.36);
   --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.48);
+}
+
+/* Шапка и баннер в тёмной теме — темнее, чтобы не слепить на тёмном фоне. */
+:root[data-theme='dark'] {
+  --header-from: #7A4A2E;
+  --header-to: #5C3620;
+  --promo-from: #7A4A2E;
+  --promo-to: #5C3620;
+  --header-badge-fg: #16151A;
+  --color-scrim: rgba(0, 0, 0, 0.5);
+  --color-badge-new-bg: #F0EEEC;
+  --color-badge-new-fg: #16151A;
+}
+
+/* Вариант B: графит и бордо, терракота — только акцент; секции «Хиты» тёмные. */
+:root[data-variant='b'] {
+  --header-from: #2A2226;
+  --header-to: #6B2D3A;
+  --header-accent: #FFD9C2;
+  --header-tab-indicator: #D08F68;
+  --promo-from: #6B2D3A;
+  --promo-to: #2A2226;
+  --hits-bg: #2A2226;
+  --hits-text: #F0EEEC;
+  --hits-text-secondary: #C9C4BE;
+  --hits-border: #4A4348;
+}
+
+:root[data-variant='b'][data-theme='dark'] {
+  --header-from: #221D20;
+  --header-to: #5A2633;
+  --promo-from: #5A2633;
+  --promo-to: #221D20;
+  --hits-bg: #221D20;
 }
