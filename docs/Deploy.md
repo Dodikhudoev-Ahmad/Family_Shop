@@ -25,6 +25,7 @@ Backend:
 - `Auth__RefreshCookieDomain` — по умолчанию `.familyshop10.kz` в `appsettings.Production.json`.
 - `Uploads__Path` — `/data/uploads` (при подключённом Volume).
 - `Uploads__PublicBaseUrl` — `https://api.familyshop10.kz`.
+- `Seo__SiteUrl` — необязательно, по умолчанию `https://www.familyshop10.kz` (canonical и адреса в sitemap и бот-страницах); `Seo__SitemapCacheSeconds` — кеш sitemap, по умолчанию 600.
 - `ForwardedHeaders__KnownNetworks__0` — необязательно, CIDR прокси Railway (см. `TODO.md`, п. 3).
 - `Pexels__ApiKey` — только в user-secrets при работе с фото, в прод не нужен.
 
