@@ -9,7 +9,8 @@ import { useRecentlyViewed } from '../context/RecentlyViewedContext';
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 import { RecentlyViewed } from '../components/RecentlyViewed/RecentlyViewed';
 import { useSeo } from '../hooks/useSeo';
-import { SITE_NAME, truncateDescription } from '../data/seo';
+import { SITE_NAME } from '../data/seo';
+import { productSeoText } from '../utils/seoText';
 import { formatPrice } from '../utils/formatPrice';
 import { isLowStock, isOutOfStock } from '../utils/stock';
 import { ProductCard } from '../components/ProductCard/ProductCard';
@@ -83,11 +84,15 @@ export function ProductPage() {
     };
   }, [id, known, isLoading, categoriesLoading, categories]);
 
+  const seoText = product ? productSeoText(t, product) : null;
   useSeo({
-    title: product ? `${product.name} — ${SITE_NAME}` : SITE_NAME,
-    description: product ? truncateDescription(product.description) : t('product.notFound'),
+    title: seoText?.title ?? (isLoading || isFetchingMissing ? SITE_NAME : t('seo.notFoundTitle', { site: SITE_NAME })),
+    description: seoText?.description ?? (isLoading || isFetchingMissing ? t('seo.defaultDescription') : t('product.notFound')),
     image: product?.images[0],
-    type: 'product',
+    type: product ? 'product' : 'website',
+    price: product ? (product.discountPrice ?? product.price) : undefined,
+    // A product that does not exist (the API does not know the id either) must not be indexed.
+    noindex: !product && !isLoading && !isFetchingMissing,
   });
 
   // Only a full page view counts as "viewed" - Quick View opens intentionally

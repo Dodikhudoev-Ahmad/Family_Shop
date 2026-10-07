@@ -98,3 +98,28 @@ describe('ProductPage - a product that is not in the catalogue loaded at start',
     await waitFor(() => expect(fetchProduct).not.toHaveBeenCalled());
   });
 });
+
+const seoMeta = (attr: string, key: string) => document.head.querySelector(`meta[${attr}="${key}"]`)?.getAttribute('content');
+
+describe('ProductPage - meta tags', () => {
+  it('a found product: title with price, own photo as og:image, product type, indexable', async () => {
+    fetchProduct.mockResolvedValue(foto({ images: ['https://api.familyshop10.kz/uploads/products/x.jpg'] }));
+    renderAt('/product/307');
+    await screen.findByRole('heading', { name: 'Foto MU' });
+    expect(document.title).toMatch(/^Foto MU — 5\s000\s₸ \| Family Shop$/);
+    expect(seoMeta('name', 'description')).toBe('Описание');
+    expect(seoMeta('property', 'og:type')).toBe('product');
+    expect(seoMeta('property', 'og:image')).toBe('https://api.familyshop10.kz/uploads/products/x.jpg');
+    expect(seoMeta('property', 'product:price:amount')).toBe('5000');
+    expect(seoMeta('name', 'robots')).toBe('index,follow');
+  });
+
+  it('a product that does not exist is noindex', async () => {
+    fetchProduct.mockRejectedValue(new Error('404'));
+    renderAt('/product/99999');
+    await screen.findByText('Товар не найден.');
+    expect(seoMeta('name', 'robots')).toBe('noindex,nofollow');
+    expect(document.title).toBe('Страница не найдена — Family Shop');
+    expect(seoMeta('property', 'og:type')).toBe('website');
+  });
+});

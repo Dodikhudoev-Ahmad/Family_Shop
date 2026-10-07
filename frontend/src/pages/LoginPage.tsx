@@ -6,6 +6,7 @@ import { ApiError } from '../lib/api';
 import './AccountPage.css';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
+import { useNoindexSeo } from '../hooks/useNoindexSeo';
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 const PASSWORD_MIN_LENGTH = 8;
@@ -19,6 +20,7 @@ function passwordComplexityError(password: string): string | null {
 
 export function LoginPage() {
   const { t } = useTranslation();
+  useNoindexSeo('loginTitle');
   const { user, isLoading, login, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

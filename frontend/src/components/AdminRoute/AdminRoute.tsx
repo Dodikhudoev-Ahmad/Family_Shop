@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useNoindexSeo } from '../../hooks/useNoindexSeo';
 import './AdminRoute.css';
 
 export function AdminRoute({ children }: { children: ReactNode }) {
+  useNoindexSeo('adminTitle');
   const { user, isLoading } = useAuth();
 
   if (isLoading) {

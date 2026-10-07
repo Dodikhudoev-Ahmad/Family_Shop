@@ -183,3 +183,26 @@ describe('CatalogPage: sort', () => {
     expect(shown()).toBe('Сортировка');
   });
 });
+
+const seoMeta = (attr: string, key: string) => document.head.querySelector(`meta[${attr}="${key}"]`)?.getAttribute('content');
+
+describe('CatalogPage: meta tags', () => {
+  it('a category gets its own title and description with count and lowest price, and is indexable', () => {
+    renderAt('/catalog/women');
+    expect(document.title).toBe('Женское — купить в Казахстане | Family Shop');
+    expect(seoMeta('name', 'description')).toMatch(/^Женское: 12 товаров в Family Shop\. Цены от 8\s000\s₸/);
+    expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toMatch(/\/catalog\/women$/);
+    expect(seoMeta('name', 'robots')).toBe('index,follow');
+  });
+
+  it('the whole catalog has the catalog title and is indexable', () => {
+    renderAt('/catalog');
+    expect(document.title).toBe('Каталог — Family Shop');
+    expect(seoMeta('name', 'robots')).toBe('index,follow');
+  });
+
+  it('a category that does not exist is noindex', () => {
+    renderAt('/catalog/no-such-category');
+    expect(seoMeta('name', 'robots')).toBe('noindex,nofollow');
+  });
+});

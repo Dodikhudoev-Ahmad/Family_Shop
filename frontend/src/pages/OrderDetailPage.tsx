@@ -6,9 +6,11 @@ import { ApiError, fetchOrders, type OrderDto } from '../lib/api';
 import { STATUS_INFO } from './AccountPage';
 import './AccountPage.css';
 import { useTranslation } from 'react-i18next';
+import { useNoindexSeo } from '../hooks/useNoindexSeo';
 
 export function OrderDetailPage() {
   const { t } = useTranslation();
+  useNoindexSeo('accountTitle');
   const { id } = useParams();
   const { user, isLoading } = useAuth();
   const [order, setOrder] = useState<OrderDto | null | undefined>(undefined);

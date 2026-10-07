@@ -10,9 +10,11 @@ import { formatPrice } from '../utils/formatPrice';
 import { ApiError, fetchOrders, type ApiOrderStatus, type OrderDto } from '../lib/api';
 import './AccountPage.css';
 import { useTranslation } from 'react-i18next';
+import { useNoindexSeo } from '../hooks/useNoindexSeo';
 
 export function AccountPage() {
   const { t } = useTranslation();
+  useNoindexSeo('accountTitle');
   const { user, isLoading, logout } = useAuth();
 
   if (isLoading) {
