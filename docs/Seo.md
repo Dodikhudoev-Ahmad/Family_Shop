@@ -159,3 +159,41 @@ Sitemap: https://www.familyshop10.kz/sitemap.xml
 - **B2b/B2c** — `GET /seo/product/{id}`, `GET /seo/category/{slug}`, `GET /sitemap.xml` (`docs/Api.md`). В sitemap, помимо главной, категорий и товаров, включены `/catalog` и `/about` (публичные индексируемые страницы).
 - Границы: все запросы ботов, проксированных через Caddy, придут на API с адреса сервиса фронтенда и попадут в **один** общий лимит 100/мин — кеш в Caddy (минуты) обязателен в шаге C. Бот-HTML только ru.
 - Шаг C (Caddy) и включение на проде — отдельное «go».
+
+## 10. Шаг C: Caddyfile для ботов (подготовлен, на ревью)
+
+Файл `frontend/Caddyfile` лежит в рабочем каталоге **не закоммиченным** (владелец смотрит на ревью); на прод ничего не отправлялось.
+
+### Как Railway раздаёт фронт (факты владельца и источники)
+- Фронт собирает Railpack (Node 24, Root Directory `/frontend`, без Custom Build/Start), раздаёт Caddy: в логах «using config from file», «automatic HTTPS is completely disabled», порт 8080, HTTP/2 и HTTP/3 выключены. Railpack подхватывает `frontend/Caddyfile`, если он есть, и он заменяет сгенерированный.
+- Сгенерированный шаблон (Node/Vite): <https://github.com/railwayapp/railpack/blob/main/core/providers/node/Caddyfile.template>. Текст прочитан с ветки `main`; версия, которую использует Railway сейчас, **не проверена**. В нём: глобально `admin off`, `persist_config off`, `auto_https off`, json-лог, `trusted_proxies static private_ranges 100.0.0.0/8`; сайт `:{$PORT:80}`; `respond /health 200`; заголовки `X-Content-Type-Options "nosniff"` и `-Server`; `root * ` с меткой DIST_DIR; `file_server { hide .git; hide .env* }`; `encode { gzip zstd }`; `try_files {path} {path}.html {path}/index.html` плюс `/index.html` при `IndexFallback`. Заголовков кеша нет.
+- Свой файл: документация <https://railpack.com/languages/node> и <https://railpack.com/languages/staticfile> («overwrite this file with your own Caddyfile at the root of your project»); код `core/providers/node/spa.go`: `ctx.TemplateFiles(["Caddyfile.template", "Caddyfile"], ...)`, `DIST_DIR = path.Join("/app", outputDir)`, запуск `caddy run --config /Caddyfile --adapter caddyfile`. Следствие: **свой Caddyfile тоже проходит Go-шаблон**: метка DIST_DIR в двойных фигурных скобках заменяется на `/app/dist`, любые другие двойные фигурные скобки в файле ломают сборку. Код и документация прочитаны через пересказ страниц, дословность не гарантирована.
+
+### Что делает файл
+Стандартные настройки шаблона сохранены (порт, `auto_https off`, `/health`, заголовки, gzip+zstd, `try_files` с SPA-fallback). Добавлено:
+1. **Кеш статики:** `/assets/*` — `public, max-age=31536000, immutable` (имена с хешем); всё остальное статическое (index.html, картинки, robots.txt) — `no-cache` (проверка по ETag, новый деплой подхватывается сразу). Модуль кеша ответов в Caddy не нужен и недоступен: Railpack запускает стандартный Caddy без `cache-handler`.
+2. **Бот-рендер:** `GET/HEAD` от User-Agent (без учёта регистра) `whatsapp|telegrambot|facebookexternalhit|twitterbot|yandexbot|googlebot|bingbot|slackbot|linkedinbot`: `/product/{число}` → `API/seo/product/{id}`, `/catalog/{slug}` → `API/seo/category/{slug}`. Путь на сайте — `/catalog/{slug}`, а не `/category/{slug}`, как в запросе (это адрес SPA; `/seo/category/` — адрес API). Остальные страницы ботам отдаются как SPA.
+3. **`/sitemap.xml`** любому клиенту — с API (ответ на вопрос 1: проксируем на домен фронта, `Sitemap:` в `robots.txt` остаётся на www). `robots.txt` — статика.
+4. API по умолчанию `https://api.familyshop10.kz`, переопределяется переменной `SEO_API_ORIGIN` (так файл проверен локально).
+
+### Порядок обработчиков и риски
+- Вместо неявного порядка директив Caddy — взаимоисключающие `handle`: бот-товар, бот-категория, sitemap, затем всё остальное (статика + SPA). Заголовки кеша стоят только внутри последнего `handle`, поэтому не перетирают `Cache-Control` ответов API.
+- `Host`: API принимает только свои хосты (`AllowedHosts`), поэтому `header_up Host {upstream_hostport}` обязателен; без него API ответит 400. Проверено эхо-сервером. Куки и `Authorization` в запрос к API не передаются. CORS не затронут (запросы серверные, не из браузера).
+- **Сбой API:** ответы 400/401/403/429/5xx → бот получает `index.html` со статусом 200 (общая мета, как до шага C), sitemap → статический `public/sitemap.xml` из сборки (6 адресов). Полный отказ (соединение не устанавливается, таймаут 3 с и 8 с) → страницы получают `index.html` с 200 (запрос к самому себе, иначе в обработчике ошибок остался бы 502), sitemap → 502 (поисковик повторит позже). **404 от API проходит как есть** (404 + noindex): это настоящее «нет товара». Так сделано вопреки пункту «404 → SPA»: иначе бот получал бы 200 для несуществующего товара.
+- **Лимит 100/мин:** все боты приходят на API с адреса сервиса фронта (на Railway — один исходящий адрес), то есть делят одну корзину. Кеша ответов в Caddy нет. Проверено: 130 запросов бота подряд — первые 100 получили мету, остальные (429 от API) безопасно получили SPA с 200. Для людей риска нет (в API ходят только боты и sitemap), но при активном обходе Googlebot превью будут часто деградировать до общей меты. Рекомендация для отдельного шага [BE] (решение владельца: «лимит общий» был его условием): отдельная политика для `/seo/*` и `/sitemap.xml` (например, 600/мин) или приватная сеть Railway между сервисами.
+- Обычные пользователи: не проксируются никогда (проверено: Safari-UA на `/product/292`, `/catalog/women`, `/` получает SPA, при сбое API тоже). Googlebot и bingbot получают бот-HTML вместо SPA («динамический рендеринг»): Google допускает при одинаковом содержимом, но считает его временным приёмом. Они исполняют JS и читают `useSeo`, поэтому, если бот-рендер для них не нужен, `googlebot` и `bingbot` можно убрать из регулярок.
+- Если Caddyfile невалиден или Caddy на Railway старее 2.11.7 (на ней проверено), сервис не стартует, сайт ляжет. Откат — удалить `frontend/Caddyfile` и передеплоить (вернётся шаблон Railpack). Использованные возможности (`handle_response`, `header_up -X`, `status 5xx`, выражения в `handle_errors`) есть с Caddy 2.4+.
+
+### Проверка без прода (2026-10-07)
+Официальный Caddy 2.11.7 (контрольная сумма совпала) скачан во временный каталог, не установлен; `caddy validate` — «Valid configuration»; метка DIST_DIR подставлена на абсолютный путь локального `dist/`. Проверено через `curl` с локальным API на `localhost:5290` (БД разработки) и тестовыми заглушками вместо upstream:
+- Браузерный UA: `/`, `/product/292`, `/catalog/women`, `/product/abc`, `/cart` → SPA, мета сайта. Боты (10 разных UA, включая `whatsapp/2.0` в нижнем регистре) на `/product/292` → мета товара, `Cache-Control: public, max-age=300`, `Vary: User-Agent`; `/catalog/women/?utm=1` → мета категории; несуществующие товар и категория → 404 + `noindex`; HEAD → 200; POST → 405.
+- `/sitemap.xml` → 313 адресов с API; `robots.txt` — статика; `/seo/product/292` в браузере не проксируется (SPA).
+- Кеш: `/assets/*.js` — `immutable`, gzip; `/`, `/product/5`, `og-default.png`, `robots.txt` — `no-cache`; `/health` — 200.
+- Сбой: upstream 500 и 429 → бот получает SPA с 200, sitemap — статический (6 адресов); порт закрыт → страницы SPA с 200 (за 1 мс), sitemap 502; обычный пользователь не затронут.
+- Эхо-сервер: `Host` — хост upstream, а не www; `Cookie` и `Authorization` убраны; `X-Forwarded-For` добавлен.
+
+### Не проверено
+Реальная подстановка метки DIST_DIR Railpack в **пользовательский** Caddyfile (по исходному коду должна работать); версия Caddy на Railway; `AllowedHosts` на проде с `api.familyshop10.kz` (локально `*`); реальный `X-Forwarded-For` в цепочке Railway; превью в самих WhatsApp и Telegram (нужен прод).
+
+### Что дальше
+Ревью файла → «go» на коммит и пуш; после деплоя — чек-листы разделов 6 и 9 (Telegram: сбросить кеш через @WebpageBot, в WhatsApp проверять новую ссылку).
