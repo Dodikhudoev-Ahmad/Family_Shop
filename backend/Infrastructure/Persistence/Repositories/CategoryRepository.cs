@@ -15,6 +15,11 @@ public class CategoryRepository : RepositoryBase<Category>, ICategoryRepository
         return DbSet.AnyAsync(c => c.ParentCategoryId == parentCategoryId, cancellationToken);
     }
 
+    public Task<Category?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
+    {
+        return DbSet.AsNoTracking().FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
+    }
+
     public Task<bool> AnyBySlugAsync(string slug, int? excludeId, CancellationToken cancellationToken = default)
     {
         return DbSet.AnyAsync(c => c.Slug == slug && c.Id != excludeId, cancellationToken);
