@@ -10,9 +10,11 @@ import { FadeImage } from '../components/FadeImage/FadeImage';
 import { PromoBanner } from '../components/PromoBanner/PromoBanner';
 import './CartPage.css';
 import { useTranslation } from 'react-i18next';
+import { useNoindexSeo } from '../hooks/useNoindexSeo';
 
 export function CartPage() {
   const { t } = useTranslation();
+  useNoindexSeo('cartTitle');
   const { lines, updateQuantity, removeItem, remainingStock, refreshStock, totalPrice, promo, finalTotal } = useCart();
 
   // Bring the saved cart up to date with the catalogue when it is opened: stock, and sizes the admin has withdrawn.

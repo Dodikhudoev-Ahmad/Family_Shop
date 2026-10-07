@@ -13,6 +13,7 @@ import type { DeliveryDetails, DeliveryMethod } from '../types/order';
 import './CheckoutPage.css';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
+import { useNoindexSeo } from '../hooks/useNoindexSeo';
 
 type Step = 1 | 2;
 
@@ -92,6 +93,7 @@ function addressError(value: string): string | null {
 
 export function CheckoutPage() {
   const { t } = useTranslation();
+  useNoindexSeo('checkoutTitle');
   const { lines, totalPrice, finalTotal, promo, clearCart, refreshStock } = useCart();
   const { user, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();

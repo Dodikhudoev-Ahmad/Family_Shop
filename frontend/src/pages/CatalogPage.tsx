@@ -9,6 +9,7 @@ import { FilterPanelSkeleton } from '../components/Filters/FilterPanelSkeleton';
 import { TypeChips } from '../components/TypeChips/TypeChips';
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 import { useSeo } from '../hooks/useSeo';
+import { categorySeoText } from '../utils/seoText';
 import { SITE_NAME } from '../data/seo';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 import { fetchProductsPage } from '../lib/api';
@@ -43,17 +44,22 @@ export function CatalogPage() {
   const { categoryName } = useLabels();
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
-  const { categories } = useCategories();
+  const { categories, isLoading: categoriesLoading } = useCategories();
   const { products: allProducts, isLoading: isCatalogLoading, error: catalogError } = useProducts();
   const activeCategory = categories.find((c) => c.slug === slug) ?? null;
 
+  const seoText = activeCategory
+    ? categorySeoText(
+        t,
+        categoryName(activeCategory),
+        allProducts.filter((p) => p.categoryId === activeCategory.id),
+      )
+    : null;
   useSeo({
-    title: activeCategory
-      ? t('seo.categoryTitle', { name: categoryName(activeCategory), site: SITE_NAME })
-      : t('seo.catalogTitle', { site: SITE_NAME }),
-    description: activeCategory
-      ? t('seo.categoryDescription', { name: categoryName(activeCategory), site: SITE_NAME })
-      : t('seo.catalogDescription', { site: SITE_NAME }),
+    title: seoText?.title ?? t('seo.catalogTitle', { site: SITE_NAME }),
+    description: seoText?.description ?? t('seo.catalogDescription', { site: SITE_NAME }),
+    // An address of a category that does not exist (once the categories are known) is not a page to index.
+    noindex: slug !== undefined && !activeCategory && !categoriesLoading,
   });
 
   // The category lives in the URL and nowhere else: chips, mega menu, burger, the strip, links

@@ -70,3 +70,18 @@ describe('AdminRoute', () => {
     expect(screen.getByText('Admin content')).toBeInTheDocument();
   });
 });
+
+describe('AdminRoute: search engines', () => {
+  it('marks the admin area noindex', () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      user: { id: 1, email: 'a@b.com', name: 'A', role: 'Admin' },
+      isLoading: false,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+    });
+    renderAdminRoute();
+    expect(document.head.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe('noindex,nofollow');
+    expect(document.title).toBe('Админка — Family Shop');
+  });
+});

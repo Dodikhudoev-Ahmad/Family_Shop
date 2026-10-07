@@ -8,6 +8,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog/ConfirmDialog';
 import type { Product } from '../types/product';
 import './FavoritesPage.css';
 import { useTranslation } from 'react-i18next';
+import { useNoindexSeo } from '../hooks/useNoindexSeo';
 
 const REMOVE_DELAY = 300;
 
@@ -61,6 +62,7 @@ function useFadingIds(currentIds: string[]) {
 
 export function FavoritesPage() {
   const { t } = useTranslation();
+  useNoindexSeo('favoritesTitle');
   const { favoriteIds, toggleFavorite } = useFavorites();
   const { products } = useProducts();
   const { visibleIds, removingIds, isRemoving } = useFadingIds(favoriteIds);
