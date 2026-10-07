@@ -28,7 +28,7 @@ Backend:
 - `ForwardedHeaders__KnownNetworks__0` — необязательно, CIDR прокси Railway (см. `TODO.md`, п. 3).
 - `Pexels__ApiKey` — только в user-secrets при работе с фото, в прод не нужен.
 
-Frontend (на этапе сборки): `VITE_API_URL` (запасное `VITE_API_BASE_URL`), `VITE_SITE_URL` (без завершающего `/`), `VITE_CONTACT_*`, `VITE_SOCIAL_*` (пустая = блок контактов скрыт).
+Frontend (на этапе сборки): `VITE_API_URL` (запасное `VITE_API_BASE_URL`), `VITE_SITE_URL` (**обязательна**: `https://www.familyshop10.kz` без завершающего `/`; production-сборка без неё или с заглушкой `familyshop.example` падает с понятной ошибкой, поэтому задать на Railway до пуша), `VITE_CONTACT_*`, `VITE_SOCIAL_*` (пустая = блок контактов скрыт).
 Mobile: `EXPO_PUBLIC_API_URL` (по умолчанию `https://api.familyshop10.kz/api/v1`).
 
 ## Порядок выкатки
