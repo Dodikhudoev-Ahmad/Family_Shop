@@ -88,3 +88,26 @@ describe('mobile bottom bar does not cover content', () => {
     expect(src('components/BackToTop/BackToTop.css')).toContain('var(--tabbar-clearance)');
   });
 });
+
+// The header stays sticky only while no ancestor makes its own scroll container / containing block (docs/Design.md, section 2).
+describe('sticky header', () => {
+  it('html and body clip horizontal overflow instead of hiding it', () => {
+    const css = src('styles/global.css');
+    for (const rule of css.match(/(^|\n)(html|body)\s*{[^}]*}/g) ?? []) {
+      expect(rule).not.toMatch(/overflow(-x|-y)?:\s*(hidden|auto|scroll)/);
+    }
+  });
+
+  it('.header-stack is sticky to the top and above the content', () => {
+    const rule = src('components/layout/Header.css').match(/\.header-stack\s*{[^}]*}/)![0];
+    expect(rule).toMatch(/position:\s*sticky/);
+    expect(rule).toMatch(/top:\s*0/);
+    expect(rule).toMatch(/z-index:\s*100/);
+  });
+
+  it('the app shell around it has no overflow, transform or contain', () => {
+    const css = src('index.css');
+    const shell = css.match(/\.app-shell\s*{[^}]*}/g)?.join('') ?? '';
+    expect(shell).not.toMatch(/overflow|transform|contain:/);
+  });
+});
