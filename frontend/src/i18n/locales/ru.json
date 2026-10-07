@@ -209,7 +209,7 @@
     "recentlyViewed": "Вы недавно смотрели",
     "sale": {
       "title": "Сезонная распродажа",
-      "upTo": "Скидки до −{{percent}}%"
+      "upTo": "до −{{percent}}%"
     },
     "chips": {
       "label": "Быстрые фильтры",

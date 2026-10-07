@@ -42,6 +42,14 @@ describe.each(COMBOS)('contrast, variant %s, %s theme', (variant, theme) => {
     expect(contrast(hex('--promo-fg'), hex(end))).toBeGreaterThanOrEqual(4.5);
   });
 
+  it.each(['--promo-from', '--promo-to'])('sale banner "до −N%" accent (--promo-accent) on %s is at least 4.5:1', (end) => {
+    expect(contrast(hex('--promo-accent'), hex(end))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('sale banner discount pill text on the collage card is at least 4.5:1', () => {
+    expect(contrast(hex('--color-on-accent'), hex('--color-accent'))).toBeGreaterThanOrEqual(4.5);
+  });
+
   it('sale banner button text is at least 4.5:1', () => {
     expect(contrast(hex('--promo-cta-fg'), hex('--promo-cta-bg'))).toBeGreaterThanOrEqual(4.5);
   });

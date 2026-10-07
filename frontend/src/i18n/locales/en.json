@@ -207,7 +207,7 @@
     "recentlyViewed": "Recently viewed",
     "sale": {
       "title": "Seasonal sale",
-      "upTo": "Up to −{{percent}}% off"
+      "upTo": "Up to −{{percent}}%"
     },
     "chips": {
       "label": "Quick filters",

@@ -62,7 +62,7 @@ describe('home page: sale banner', () => {
   it('shows the biggest real discount and a "Смотреть" button to the discounted catalog', () => {
     renderHome();
     expect(screen.getByText('Сезонная распродажа')).toBeInTheDocument();
-    expect(screen.getByText('Скидки до −50%')).toBeInTheDocument();
+    expect(screen.getByText('до −50%')).toBeInTheDocument();
     const banner = screen.getByRole('region', { name: 'Сезонная распродажа' });
     expect(within(banner).getByRole('link', { name: /Смотреть/ })).toHaveAttribute('href', '/catalog?discount=true');
   });

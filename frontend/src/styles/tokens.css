@@ -75,6 +75,9 @@
   --promo-fg: #FFFFFF;
   --promo-cta-bg: #FFFFFF;
   --promo-cta-fg: #1A1A1A;
+  --promo-accent: #FFE3D2;
+  --promo-decor: #FFFFFF;
+  --promo-card-border: #FFFFFF;
   --hits-bg: var(--color-bg-secondary);
   --hits-text: var(--color-text);
   --hits-text-secondary: var(--color-text-secondary);
