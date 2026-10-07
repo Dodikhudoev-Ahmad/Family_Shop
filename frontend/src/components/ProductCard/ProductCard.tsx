@@ -8,6 +8,7 @@ import { FadeImage } from '../FadeImage/FadeImage';
 import { StarRating } from '../StarRating/StarRating';
 import { formatPrice } from '../../utils/formatPrice';
 import { isLowStock, isOutOfStock } from '../../utils/stock';
+import { discountPercentOf, isNewProduct } from '../../utils/productFlags';
 import './ProductCard.css';
 import { useTranslation } from 'react-i18next';
 
@@ -28,9 +29,8 @@ export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCa
   // Gender only means something for apparel-style categories (women/men/kids, shoes and bags included) -
   // showing "Мужское"/"Женское" on a microwave or a dumbbell would be confusing.
   const showGenderLabel = categories.find((c) => c.id === product.categoryId)?.hasSizes ?? true;
-  const discountPercent = product.discountPrice
-    ? Math.round((1 - product.discountPrice / product.price) * 100)
-    : null;
+  const discountPercent = discountPercentOf(product);
+  const isNew = isNewProduct(product);
   const outOfStock = isOutOfStock(product.stock);
   const lowStock = isLowStock(product.stock);
 
@@ -51,7 +51,7 @@ export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCa
           <FadeImage src={product.images[1]} alt="" className="product-card__media-alt" loading="lazy" />
         )}
 
-        {(outOfStock || discountPercent || product.isBestseller) && (
+        {(outOfStock || discountPercent || isNew || product.isBestseller) && (
           // Stacked top-left so a discounted bestseller shows both badges without overlap; the
           // action buttons own the top-right corner.
           <div className="product-card__badges">
@@ -60,6 +60,7 @@ export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCa
             ) : (
               <>
                 {discountPercent && <span className="product-card__badge">−{discountPercent}%</span>}
+                {isNew && <span className="product-card__badge product-card__badge--new">{t('card.new')}</span>}
                 {product.isBestseller && (
                   <span className="product-card__badge product-card__badge--hit">{t('card.hit')}</span>
                 )}

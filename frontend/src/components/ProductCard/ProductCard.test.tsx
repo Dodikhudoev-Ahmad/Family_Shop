@@ -59,3 +59,30 @@ describe('ProductCard badges', () => {
     expect(screen.queryByText('Хит продаж')).not.toBeInTheDocument();
   });
 });
+
+describe('ProductCard "Новинка" badge', () => {
+  const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString();
+
+  it('shows for a product added recently', () => {
+    renderCard(product({ createdAt: daysAgo(3) }));
+    expect(screen.getByText('Новинка')).toBeInTheDocument();
+  });
+
+  it('is absent for an old product', () => {
+    renderCard(product({ createdAt: daysAgo(90) }));
+    expect(screen.queryByText('Новинка')).not.toBeInTheDocument();
+  });
+
+  it('stacks with the discount and hit badges in one container', () => {
+    renderCard(product({ createdAt: daysAgo(1), isBestseller: true, discountPrice: 8000 }));
+    const badges = screen.getByText('Новинка').parentElement;
+    expect(badges).toHaveClass('product-card__badges');
+    expect(badges).toContainElement(screen.getByText('−20%'));
+    expect(badges).toContainElement(screen.getByText('Хит продаж'));
+  });
+
+  it('is replaced by "Нет в наличии" for a product that is out of stock', () => {
+    renderCard(product({ createdAt: daysAgo(1), stock: 0 }));
+    expect(screen.queryByText('Новинка')).not.toBeInTheDocument();
+  });
+});

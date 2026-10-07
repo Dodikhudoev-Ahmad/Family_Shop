@@ -1,0 +1,34 @@
+.home-band {
+  padding: var(--space-6) 0;
+  background: var(--color-bg);
+}
+
+.home-band[data-tone='alt'] {
+  background: var(--color-bg-secondary);
+}
+
+/* Placeholders must stay visible on a band that has the same colour as they do. */
+.home-band[data-tone='alt'] .skeleton {
+  background: var(--color-border);
+}
+
+/* Dark band: the section re-points the text/background/border tokens, so every card inside it
+   (names, prices, ratings) is readable without per-component overrides. */
+.home-band[data-tone='dark'] {
+  --color-bg: var(--hits-bg);
+  --color-text: var(--hits-text);
+  --color-text-secondary: var(--hits-text-secondary);
+  --color-border: var(--hits-border);
+  background: var(--hits-bg);
+  color: var(--hits-text);
+}
+
+.home-band[data-tone='dark'] .skeleton {
+  background: var(--hits-border);
+}
+
+@media (max-width: 1024px) {
+  .home-band {
+    padding: var(--space-5) 0;
+  }
+}
