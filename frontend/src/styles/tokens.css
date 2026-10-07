@@ -93,6 +93,8 @@
   --header-search-height: 44px;
   --sticky-top: var(--header-height-compact);
   --tabbar-height: 68px;
+  /* Место под нижнюю панель на телефоне: её высота плюс «подбородок» с home indicator. */
+  --tabbar-clearance: calc(var(--tabbar-height) + env(safe-area-inset-bottom, 0px));
   --shadow-sm: 0 2px 8px rgba(26, 26, 26, 0.06);
   --shadow-md: 0 8px 24px rgba(26, 26, 26, 0.10);
   --shadow-lg: 0 16px 48px rgba(26, 26, 26, 0.16);

@@ -49,3 +49,42 @@ describe('accent surfaces never carry white text', () => {
     }
   );
 });
+
+// The bottom bar is solid and the page reserves exactly its height (plus the safe area) at the bottom.
+describe('mobile bottom bar does not cover content', () => {
+  const bar = src('components/MobileTabBar/MobileTabBar.css');
+  // The last rule for the selector: the phone one inside the media query follows the desktop `display: none`.
+  const rule = (css: string, selector: string) => {
+    const escaped = selector.replace(/\./g, '\\.');
+    return [...css.matchAll(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, 'g'))].pop()?.[1] ?? '';
+  };
+
+  it('has an opaque background from a token (no translucency, no backdrop blur)', () => {
+    const body = rule(bar, '.mobile-tabbar');
+    expect(body).toMatch(/background:\s*var\(--color-bg\)\s*;/);
+    expect(bar).not.toMatch(/color-mix\([^)]*transparent/);
+    expect(bar).not.toContain('backdrop-filter');
+  });
+
+  it('is docked to the bottom edge and grows by the safe area', () => {
+    const body = rule(bar, '.mobile-tabbar');
+    expect(body).toMatch(/bottom:\s*0;/);
+    expect(body).toMatch(/env\(safe-area-inset-bottom/);
+  });
+
+  it('--tabbar-clearance is the bar height plus the safe area', () => {
+    expect(src('styles/tokens.css')).toMatch(
+      /--tabbar-clearance:\s*calc\(var\(--tabbar-height\)\s*\+\s*env\(safe-area-inset-bottom,\s*0px\)\);/
+    );
+  });
+
+  it('the app shell and the bottom-heavy pages pad by the clearance on phones', () => {
+    const index = src('index.css');
+    expect(index).toMatch(/\.app-shell\s*\{[^}]*padding-bottom:\s*var\(--tabbar-clearance\)/);
+    expect(index).toMatch(/\.checkout\s*\{[^}]*padding-bottom:\s*calc\(var\(--space-8\)\s*\+\s*var\(--tabbar-clearance\)\)/);
+  });
+
+  it('the back-to-top button sits above the bar', () => {
+    expect(src('components/BackToTop/BackToTop.css')).toContain('var(--tabbar-clearance)');
+  });
+});

@@ -14,12 +14,11 @@
   flex: 1;
 }
 
-/* Reserves space for the floating mobile tab bar (height + the gap above and
-   below it that lets it "hover" over the content) so it never covers the
-   tail end of the page (footer content, last catalog row, etc). */
+/* Reserves space for the docked mobile tab bar (its height + the safe area, one token)
+   so it never covers the tail end of the page (footer content, last catalog row, etc). */
 @media (max-width: 768px) {
   .app-shell {
-    padding-bottom: calc(var(--tabbar-height) + var(--space-3) * 2 + env(safe-area-inset-bottom, 0px));
+    padding-bottom: var(--tabbar-clearance);
   }
 
   /* Belt-and-suspenders on top of the app-shell padding above: each page's
@@ -32,6 +31,6 @@
   .account,
   .product-page,
   .checkout {
-    padding-bottom: calc(var(--space-8) + var(--tabbar-height) + var(--space-3) * 2 + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--space-8) + var(--tabbar-clearance));
   }
 }
