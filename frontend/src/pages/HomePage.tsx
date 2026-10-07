@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { heroImages } from '../data/heroImages';
 import { useProducts } from '../context/ProductsContext';
@@ -8,7 +9,12 @@ import { Reveal } from '../components/Reveal';
 import { FadeImage } from '../components/FadeImage/FadeImage';
 import { PromoBanner } from '../components/PromoBanner/PromoBanner';
 import { RecentlyViewed } from '../components/RecentlyViewed/RecentlyViewed';
+import { HomeBand, alternatingTone, type BandTone } from '../components/HomeBand/HomeBand';
+import { SaleBanner } from '../components/SaleBanner/SaleBanner';
+import { QuickChips } from '../components/QuickChips/QuickChips';
 import { useSeo } from '../hooks/useSeo';
+import { useHomeVariant } from '../lib/homeVariant';
+import { pickProducts, type QuickFilter } from '../utils/productFlags';
 import { SITE_NAME } from '../data/seo';
 import { API_BASE_URL } from '../lib/config';
 import './HomePage.css';
@@ -24,13 +30,23 @@ export function HomePage() {
   const { t } = useTranslation();
   useSeo({ title: t('seo.defaultTitle', { site: SITE_NAME }), description: t('seo.defaultDescription') });
   const { products, isLoading, error } = useProducts();
+  const variant = useHomeVariant();
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('new');
 
-  const newest = [...products].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 8);
+  const picks = pickProducts(products, quickFilter);
   const bestWomen = products.filter((p) => p.gender === 'female' && p.isBestseller);
   const bestMen = products.filter((p) => p.gender === 'male' && p.isBestseller);
 
+  // Bands alternate plain/alt down the page; in variant B the "Хиты" bands are dark instead.
+  const hitsTone = (index: number): BandTone => (variant === 'b' ? 'dark' : alternatingTone(index));
+  const showWomen = !isLoading && bestWomen.length > 0;
+  const showMen = !isLoading && bestMen.length > 0;
+  const womenIndex = 1;
+  const menIndex = womenIndex + (showWomen ? 1 : 0);
+  const recentIndex = menIndex + (showMen ? 1 : 0);
+
   return (
-    <div className="home">
+    <div className="home" data-variant={variant}>
       <section className="hero container">
         {heroTiles.map((tile) => (
           <Link key={tile.key} to={`/catalog/${tile.slug}`} className="hero__tile">
@@ -47,6 +63,8 @@ export function HomePage() {
         ))}
       </section>
 
+      <SaleBanner products={products} isLoading={isLoading} />
+
       <PromoBanner placement="Home" />
 
       {error && (
@@ -55,9 +73,10 @@ export function HomePage() {
         </p>
       )}
 
-      <section className="home-section container">
+      <HomeBand tone={alternatingTone(0)} className="home-band--picks">
+        <QuickChips value={quickFilter} onChange={setQuickFilter} />
         <Reveal>
-          <h3 className="home-section__title">{t('home.newArrivals')}</h3>
+          <h3 className="home-section__title">{t(`home.picks.${quickFilter}`)}</h3>
         </Reveal>
         <Reveal>
           {isLoading ? (
@@ -66,18 +85,20 @@ export function HomePage() {
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
+          ) : picks.length === 0 ? (
+            <p className="home__empty">{t('home.chips.empty')}</p>
           ) : (
-            <Slider>
-              {newest.map((p) => (
+            <Slider key={quickFilter}>
+              {picks.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
             </Slider>
           )}
         </Reveal>
-      </section>
+      </HomeBand>
 
-      {!isLoading && bestWomen.length > 0 && (
-        <section className="home-section container">
+      {showWomen && (
+        <HomeBand tone={hitsTone(womenIndex)}>
           <Reveal>
             <h3 className="home-section__title">{t('home.hits', { category: t('categories.women') })}</h3>
           </Reveal>
@@ -88,11 +109,11 @@ export function HomePage() {
               ))}
             </Slider>
           </Reveal>
-        </section>
+        </HomeBand>
       )}
 
-      {!isLoading && bestMen.length > 0 && (
-        <section className="home-section container">
+      {showMen && (
+        <HomeBand tone={hitsTone(menIndex)}>
           <Reveal>
             <h3 className="home-section__title">{t('home.hits', { category: t('categories.men') })}</h3>
           </Reveal>
@@ -103,10 +124,10 @@ export function HomePage() {
               ))}
             </Slider>
           </Reveal>
-        </section>
+        </HomeBand>
       )}
 
-      <RecentlyViewed />
+      <RecentlyViewed tone={alternatingTone(recentIndex)} />
     </div>
   );
 }

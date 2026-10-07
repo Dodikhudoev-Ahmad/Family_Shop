@@ -70,7 +70,7 @@
 @media (max-width: 1024px) {
   .slider__track {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(var(--grid-cols-mobile), minmax(0, 1fr));
     gap: var(--space-5) var(--space-4);
     overflow-x: visible;
     scroll-snap-type: none;

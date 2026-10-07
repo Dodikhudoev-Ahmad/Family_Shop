@@ -89,7 +89,7 @@
 
 @media (max-width: 1024px) {
   .catalog__grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(var(--grid-cols-mobile), minmax(0, 1fr));
   }
 }
 
@@ -166,7 +166,7 @@
 
 @media (max-width: 480px) {
   .catalog__grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(var(--grid-cols-mobile), minmax(0, 1fr));
     gap: var(--space-4) var(--space-2);
   }
 }

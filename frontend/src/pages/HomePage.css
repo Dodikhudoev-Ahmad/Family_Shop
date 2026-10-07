@@ -87,9 +87,16 @@
   margin-top: var(--space-5);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
-  background: rgba(193, 84, 75, 0.1);
+  background: color-mix(in srgb, var(--color-error) 10%, transparent);
   color: var(--color-error);
   font-size: 14px;
+}
+
+.home__empty {
+  margin: 0;
+  padding: var(--space-5) 0;
+  color: var(--color-text-secondary);
+  font-size: 15px;
 }
 
 .home__skeleton-row {
@@ -118,7 +125,7 @@
      briefly show a horizontal-scroll row right before the real grid. */
   .home__skeleton-row {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(var(--grid-cols-mobile), minmax(0, 1fr));
     gap: var(--space-5) var(--space-4);
   }
 
