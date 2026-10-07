@@ -31,6 +31,23 @@ export function maxDiscountPercent(products: Pick<Product, 'price' | 'discountPr
   return max > 0 ? max : null;
 }
 
+/** How many product photos the sale banner collage shows. */
+export const COLLAGE_LIMIT = 3;
+
+/**
+ * Products for the sale banner collage: discounted ones that have a photo, biggest discount first
+ * (equal discounts keep the catalog order), at most COLLAGE_LIMIT. The first one is the product
+ * behind the banner's "до −N%".
+ */
+export function saleCollage<T extends Pick<Product, 'price' | 'discountPrice' | 'images'>>(products: T[]): T[] {
+  return products
+    .map((product, index) => ({ product, index, percent: discountPercentOf(product) }))
+    .filter((entry) => entry.percent !== null && Boolean(entry.product.images[0]))
+    .sort((a, b) => (b.percent as number) - (a.percent as number) || a.index - b.index)
+    .slice(0, COLLAGE_LIMIT)
+    .map((entry) => entry.product);
+}
+
 export type QuickFilter = 'sale' | 'new' | 'hits';
 
 export const QUICK_FILTERS: readonly QuickFilter[] = ['sale', 'new', 'hits'];
