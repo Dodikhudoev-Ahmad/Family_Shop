@@ -30,6 +30,11 @@ const COMPACT_START = 100;
 // without needing a large, laggy-feeling threshold for genuine up/down scrolls.
 const DIRECTION_DEADZONE = 32;
 
+// At or below this width (phones and tablets) the header stays on screen at all times; the tuck-away
+// on scroll-down is a desktop behaviour (docs/Design.md, section 2). Same breakpoint as the header's CSS.
+const ALWAYS_VISIBLE_QUERY = '(max-width: 1024px)';
+const canTuckAway = () => typeof window.matchMedia !== 'function' || !window.matchMedia(ALWAYS_VISIBLE_QUERY).matches;
+
 export function HeaderVisibilityProvider({ children }: { children: ReactNode }) {
   const [isCompact, setIsCompact] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
@@ -56,7 +61,7 @@ export function HeaderVisibilityProvider({ children }: { children: ReactNode }) 
       const y = window.scrollY;
       setIsCompact(y > COMPACT_START);
 
-      if (openOverlays.current.size > 0 || y <= HIDE_START) {
+      if (openOverlays.current.size > 0 || y <= HIDE_START || !canTuckAway()) {
         setIsHidden(false);
         anchorY = y;
         return;

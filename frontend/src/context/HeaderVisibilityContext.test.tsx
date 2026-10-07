@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HeaderVisibilityProvider, useHeaderVisibility } from './HeaderVisibilityContext';
 
 function setScrollY(y: number) {
@@ -84,5 +84,27 @@ describe('HeaderVisibilityContext', () => {
     act(() => setScrollY(350));
 
     await waitFor(() => expect(result.current.isHidden).toBe(true));
+  });
+});
+
+// docs/Design.md, section 2: on phones and tablets the header never tucks away (owner decision, p. 8c).
+describe('HeaderVisibilityContext on a narrow screen', () => {
+  beforeEach(() => {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({ matches: query.includes('max-width: 1024px'), media: query })) as unknown as typeof window.matchMedia;
+    setScrollY(0);
+  });
+  afterEach(() => {
+    // @ts-expect-error - jsdom has no matchMedia; restore that
+    delete window.matchMedia;
+  });
+
+  it('stays visible however far the page scrolls down, bottom included', async () => {
+    const { result } = renderHook(() => useHeaderVisibility(), { wrapper: HeaderVisibilityProvider });
+
+    act(() => setScrollY(50));
+    act(() => setScrollY(400));
+    act(() => setScrollY(5000));
+    await waitFor(() => expect(result.current.isCompact).toBe(true)); // the scroll was seen...
+    expect(result.current.isHidden).toBe(false); // ...and the header still stayed
   });
 });
