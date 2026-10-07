@@ -56,6 +56,8 @@
     "rights": "© {{year}} Family Shop. All rights reserved."
   },
   "nav": {
+    "home": "Home",
+    "categories": "Categories",
     "main": "Main navigation",
     "catalog": "Catalog",
     "cart": "Cart",
@@ -179,6 +181,7 @@
     "productNotFound": "Product not found."
   },
   "card": {
+    "new": "New",
     "hit": "Bestseller",
     "quickView": "Quick view"
   },
@@ -201,7 +204,23 @@
     "loadError": "Couldn't load products: {{error}}. Make sure the backend is running at {{url}}.",
     "newArrivals": "New this week",
     "hits": "Bestsellers · {{category}}",
-    "recentlyViewed": "Recently viewed"
+    "recentlyViewed": "Recently viewed",
+    "sale": {
+      "title": "Seasonal sale",
+      "upTo": "Up to −{{percent}}% off"
+    },
+    "chips": {
+      "label": "Quick filters",
+      "sale": "Sale",
+      "new": "New",
+      "hits": "Bestsellers",
+      "empty": "Nothing here yet"
+    },
+    "picks": {
+      "sale": "On sale",
+      "new": "New this week",
+      "hits": "Bestsellers"
+    }
   },
   "product": {
     "size": "Size",

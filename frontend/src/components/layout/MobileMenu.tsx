@@ -36,6 +36,9 @@ export function MobileMenu({ isOpen, onClose, onRequestLogout }: MobileMenuProps
               {categoryName(c)}
             </Link>
           ))}
+          <Link to="/favorites" className="mobile-menu__link" onClick={onClose}>
+            {t('nav.favorites')}
+          </Link>
           <Link to="/about" className="mobile-menu__link" onClick={onClose}>
             {t('header.about')}
           </Link>
