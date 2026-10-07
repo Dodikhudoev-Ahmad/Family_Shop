@@ -62,6 +62,7 @@ public class ProductService : IProductService
             return Result<ProductDto>.Failure(sizes.Errors);
         }
 
+        var now = DateTime.UtcNow;
         var product = new Product
         {
             Name = dto.Name.Trim(),
@@ -75,7 +76,8 @@ public class ProductService : IProductService
             IsBestseller = dto.IsBestseller,
             ProductType = type,
             AvailableSizes = sizes.Value,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = now,
+            UpdatedAt = now
         };
 
         await _unitOfWork.Products.AddAsync(product, cancellationToken);
@@ -116,6 +118,7 @@ public class ProductService : IProductService
         product.IsBestseller = dto.IsBestseller;
         product.ProductType = type;
         product.AvailableSizes = sizes.Value;
+        product.UpdatedAt = DateTime.UtcNow;
 
         _unitOfWork.Products.Update(product);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
