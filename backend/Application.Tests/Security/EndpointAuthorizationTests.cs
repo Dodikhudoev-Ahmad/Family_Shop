@@ -68,9 +68,23 @@ public class EndpointAuthorizationTests
             "PromoBannersController.GetActive",
             "PromoCodesController.Validate",
             "ReviewsController.GetReviews", "ReviewsController.GetSummary",
+            "SeoController.Category", "SeoController.Product", "SeoController.Sitemap",
         }.OrderBy(x => x).ToList();
 
         Assert.Equal(expected, anonymous);
+    }
+
+    [Fact]
+    public void TheCrawlerEndpoints_AreReadOnlyGets_AtTheDocumentedPaths()
+    {
+        var routes = typeof(Api.Controllers.SeoController).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Select(m => (m.Name, Attributes: m.GetCustomAttributes().OfType<Microsoft.AspNetCore.Mvc.Routing.HttpMethodAttribute>().ToList()))
+            .ToList();
+
+        Assert.All(routes, r => Assert.Equal(["GET"], r.Attributes.Single().HttpMethods));
+        Assert.Equal(
+            ["seo/category/{slug}", "seo/product/{id:int}", "sitemap.xml"],
+            routes.Select(r => r.Attributes.Single().Template!).OrderBy(x => x).ToArray());
     }
 
     [Theory]
