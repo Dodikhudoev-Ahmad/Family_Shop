@@ -22,9 +22,17 @@ public static class RateLimitPolicies
 
 public static class RateLimitingExtensions
 {
+    /// <summary>Per-IP budget per minute for <c>/seo/*</c> and <c>/sitemap.xml</c>.</summary>
+    public const int SeoPermitLimit = 600;
+
+    /// <summary><c>/seo/...</c> (segment match, so <c>/seofoo</c> does not count) or exactly <c>/sitemap.xml</c>.</summary>
+    internal static bool IsSeoPath(PathString path) =>
+        path.StartsWithSegments("/seo", StringComparison.OrdinalIgnoreCase)
+        || path.Equals("/sitemap.xml", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>
     /// Per-IP fixed-window limits: strict ones for credential endpoints (see <see cref="RateLimitPolicies"/>)
-    /// and a global 100/min for everything else. Endpoints with no named policy - e.g. the signed-in
+    /// a separate 600/min for crawler paths (/seo/*, /sitemap.xml) and a global 100/min for everything else. Endpoints with no named policy - e.g. the signed-in
     /// session-management calls - are governed by the global limit only.
     /// </summary>
     public static IServiceCollection AddFamilyShopRateLimiting(this IServiceCollection services)
@@ -105,15 +113,30 @@ public static class RateLimitingExtensions
                         QueueLimit = 0
                     }));
 
+            // Crawler endpoints (/seo/*, /sitemap.xml) get their own, much larger budget in a separate partition:
+            // social-network preview bots (WhatsApp, Telegram, Facebook...) often share one IP, and the general
+            // 100/min would cut them off. These requests do not count against the general budget.
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-                RateLimitPartition.GetFixedWindowLimiter(
-                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                    _ => new FixedWindowRateLimiterOptions
-                    {
-                        PermitLimit = 100,
-                        Window = TimeSpan.FromMinutes(1),
-                        QueueLimit = 0
-                    }));
+            {
+                var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                return IsSeoPath(context.Request.Path)
+                    ? RateLimitPartition.GetFixedWindowLimiter(
+                        "seo:" + ip,
+                        _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = SeoPermitLimit,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0
+                        })
+                    : RateLimitPartition.GetFixedWindowLimiter(
+                        ip,
+                        _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 100,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0
+                        });
+            });
         });
 
         return services;
