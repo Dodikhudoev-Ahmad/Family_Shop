@@ -1,0 +1,170 @@
+# Caddyfile сайта (Railway, Railpack). Railpack берёт этот файл вместо сгенерированного и прогоняет его
+# через Go-шаблон: метка DIST_DIR в двойных фигурных скобках (см. root ниже) заменяется на /app/dist.
+# Других двойных фигурных скобок в файле быть не должно.
+# Глобальные настройки и /health — как в стандартном шаблоне Railpack (core/providers/node/Caddyfile.template).
+# Что добавлено к стандарту: кеш статики, бот-рендер превью (WhatsApp, Telegram, ...) и sitemap с API. Подробно — docs/Seo.md, шаг C.
+#
+# Переменные окружения (необязательные):
+#   PORT             порт, назначает Railway (по умолчанию 80, на Railway 8080)
+#   SEO_API_ORIGIN   откуда брать страницы для ботов и sitemap (по умолчанию https://api.familyshop10.kz)
+
+{
+	admin off
+	persist_config off
+	auto_https off
+
+	log {
+		format json
+	}
+
+	servers {
+		trusted_proxies static private_ranges 100.0.0.0/8 # trust railway's proxy
+	}
+}
+
+:{$PORT:80} {
+	log {
+		format json
+	}
+
+	# Боты, которым нужна мета ссылки без исполнения JavaScript (превью в мессенджерах, поисковики).
+	# Обычные браузеры сюда не попадают и получают сайт как раньше.
+	@seoProduct {
+		method GET HEAD
+		header_regexp bot User-Agent (?i)(whatsapp|telegrambot|facebookexternalhit|twitterbot|yandexbot|slackbot|linkedinbot)
+		path_regexp product ^/product/([0-9]+)/?$
+	}
+	@seoCategory {
+		method GET HEAD
+		header_regexp bot User-Agent (?i)(whatsapp|telegrambot|facebookexternalhit|twitterbot|yandexbot|slackbot|linkedinbot)
+		path_regexp category ^/catalog/([A-Za-z0-9_-]+)/?$
+	}
+
+	# Security headers
+	header {
+		# Prevent some browsers from MIME-sniffing a response away from the declared Content-Type
+		X-Content-Type-Options "nosniff"
+		# Remove Server header
+		-Server
+	}
+
+	# Compression with more formats
+	encode {
+		gzip
+		zstd
+	}
+
+	# Проверка живости для Railway, ответ как в шаблоне Railpack: 200 с пустым телом. Отдельный handle и первым: handle'ы идут
+	# в порядке записи, а голый respond Caddy ставит после них, и catch-all handle ниже перехватил бы /health (в шаблоне
+	# Railpack handle нет, поэтому там respond работает).
+	handle /health {
+		respond 200
+	}
+
+	handle @seoProduct {
+		rewrite * /seo/product/{re.product.1}
+		reverse_proxy {$SEO_API_ORIGIN:https://api.familyshop10.kz} {
+			# API принимает только свои Host (AllowedHosts), а не www.familyshop10.kz
+			header_up Host {upstream_hostport}
+			header_up -Cookie
+			header_up -Authorization
+			header_down +Vary User-Agent
+			transport http {
+				dial_timeout 3s
+				response_header_timeout 8s
+			}
+			# Ответы API, при которых бот получает обычный index.html (общая мета сайта) вместо ошибки: сбой API (5xx),
+			# отказ по Host/лимиту/доступу (400, 401, 403, 429). 404 идёт как есть: это настоящее «нет такого» с noindex.
+			@apiFailed status 400 401 403 429 5xx
+			handle_response @apiFailed {
+				file_server {
+					root {{.DIST_DIR}}
+					index index.html
+				}
+				rewrite * /index.html
+			}
+		}
+	}
+
+	handle @seoCategory {
+		rewrite * /seo/category/{re.category.1}
+		reverse_proxy {$SEO_API_ORIGIN:https://api.familyshop10.kz} {
+			header_up Host {upstream_hostport}
+			header_up -Cookie
+			header_up -Authorization
+			header_down +Vary User-Agent
+			transport http {
+				dial_timeout 3s
+				response_header_timeout 8s
+			}
+			# Ответы API, при которых бот получает обычный index.html (общая мета сайта) вместо ошибки: сбой API (5xx),
+			# отказ по Host/лимиту/доступу (400, 401, 403, 429). 404 идёт как есть: это настоящее «нет такого» с noindex.
+			@apiFailed status 400 401 403 429 5xx
+			handle_response @apiFailed {
+				file_server {
+					root {{.DIST_DIR}}
+					index index.html
+				}
+				rewrite * /index.html
+			}
+		}
+	}
+
+	# sitemap.xml с API (товары, категории, lastmod). Если API не отвечает — отдаётся статический public/sitemap.xml из сборки.
+	# robots.txt в этот блок не входит: он остаётся статикой.
+	handle /sitemap.xml {
+		reverse_proxy {$SEO_API_ORIGIN:https://api.familyshop10.kz} {
+			header_up Host {upstream_hostport}
+			header_up -Cookie
+			header_up -Authorization
+			transport http {
+				dial_timeout 3s
+				response_header_timeout 8s
+			}
+			# API ответил ошибкой (5xx, 400, 401, 403, 429): вместо неё отдаётся статический sitemap.xml из сборки.
+			@apiFailed status 400 401 403 429 5xx
+			handle_response @apiFailed {
+				file_server {
+					root {{.DIST_DIR}}
+				}
+			}
+		}
+	}
+
+	# Всё остальное: статика сборки и SPA (как в стандартном шаблоне) + кеш.
+	handle {
+		# serve from the 'dist' folder (Vite builds into the 'dist' folder)
+		root * {{.DIST_DIR}}
+
+		# Файлы /assets/* имеют хеш в имени и не меняются; всё остальное (index.html, картинки, robots.txt) проверяется заново.
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@notAssets not path /assets/*
+		header @notAssets Cache-Control "no-cache"
+
+		# Handle static files
+		file_server {
+			hide .git
+			hide .env*
+		}
+
+		# match against direct against HTML file matches, folder-level index.html, and fallback to root index.html (SPA)
+		try_files {path} {path}.html {path}/index.html /index.html
+	}
+
+	# API не отвечает совсем (соединение отклонено, таймаут): Caddy сам отвечает 502/503/504. Для бот-страниц это не должно
+	# стать ошибкой: бот получает обычный index.html (общая мета) и статус 200 — как до включения бот-рендера. Статус 200
+	# достигается запросом к самому себе: file_server в обработчике ошибок оставил бы 502.
+	# sitemap.xml сюда не входит: при полном отказе API поисковик получает 502 и повторит запрос позже (это верная семантика).
+	# В обработчике ошибок путь — исходный адрес запроса (не /seo/...).
+	handle_errors {
+		@pageDown {
+			expression {http.error.status_code} in [502, 503, 504]
+			not path /sitemap.xml
+		}
+		handle @pageDown {
+			rewrite * /index.html
+			reverse_proxy localhost:{$PORT:80}
+		}
+	}
+}
