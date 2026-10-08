@@ -97,6 +97,11 @@ public class RateLimitPolicyTests
         Map("/mobile-login", typeof(MobileAuthController), "Login", post: true);
         Map("/sessions", typeof(AuthController), "GetSessions", post: false);
         Map("/logout-all", typeof(AuthController), "LogoutAll", post: true);
+        app.MapGet("/seo/product/{id}", (int id) => Results.Ok());
+        app.MapGet("/seo/category/{slug}", (string slug) => Results.Ok());
+        app.MapGet("/sitemap.xml", () => Results.Ok());
+        app.MapGet("/sitemap.xml.bak", () => Results.Ok());
+        app.MapGet("/api/v1/products", () => Results.Ok());
     });
 
     private static async Task<List<HttpStatusCode>> Hit(HttpClient client, string path, int times, bool post = true)
@@ -166,5 +171,49 @@ public class RateLimitPolicyTests
         var refresh = await Hit(host.Client, "/refresh", 21);
         Assert.All(refresh.Take(20), status => Assert.Equal(HttpStatusCode.OK, status));
         Assert.Equal(HttpStatusCode.TooManyRequests, refresh[20]);
+    }
+
+    [Fact]
+    public async Task SeoPaths_AllowSixHundredPerMinute_AndSharedBetweenSeoRoutes()
+    {
+        await using var host = StartHost();
+
+        var product = await Hit(host.Client, "/seo/product/1", 400, post: false);
+        var category = await Hit(host.Client, "/seo/category/women", 200, post: false);
+        Assert.All(product.Concat(category), status => Assert.Equal(HttpStatusCode.OK, status));
+
+        // 600 used: the next one is cut, on any crawler path
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await Hit(host.Client, "/sitemap.xml", 1, post: false))[0]);
+    }
+
+    [Fact]
+    public async Task SeoTraffic_DoesNotEatTheGeneralBudget_AndTheGeneralOneStaysAt100()
+    {
+        await using var host = StartHost();
+        Assert.All(await Hit(host.Client, "/seo/product/1", 150, post: false), status => Assert.Equal(HttpStatusCode.OK, status));
+
+        var general = await Hit(host.Client, "/api/v1/products", 101, post: false);
+        Assert.All(general.Take(100), status => Assert.Equal(HttpStatusCode.OK, status));
+        Assert.Equal(HttpStatusCode.TooManyRequests, general[100]);
+    }
+
+    [Fact]
+    public async Task SitemapLookalikePath_FallsUnderTheGeneralLimit()
+    {
+        await using var host = StartHost();
+
+        var results = await Hit(host.Client, "/sitemap.xml.bak", 101, post: false);
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, results[100]);
+    }
+
+    [Fact]
+    public async Task ExhaustingSeoBudget_DoesNotAffectLoginOrGeneralApi()
+    {
+        await using var host = StartHost();
+        await Hit(host.Client, "/seo/product/1", 601, post: false);
+
+        Assert.All(await Hit(host.Client, "/login", 10), status => Assert.Equal(HttpStatusCode.OK, status));
+        Assert.Equal(HttpStatusCode.OK, (await Hit(host.Client, "/api/v1/products", 1, post: false))[0]);
     }
 }
