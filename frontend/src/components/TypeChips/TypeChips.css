@@ -48,8 +48,8 @@
   }
 
   .type-chips__chip.is-active {
-    background: var(--color-accent);
-    border-color: var(--color-accent);
+    background: var(--accent-strong);
+    border-color: var(--accent-strong);
     color: var(--color-white);
   }
 }

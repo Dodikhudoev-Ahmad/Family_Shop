@@ -34,7 +34,7 @@
   border: 1px solid var(--color-accent);
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--color-accent);
+  color: var(--accent-text);
   font-family: var(--font-body);
   font-size: 0.85rem;
   font-weight: 600;
@@ -43,7 +43,7 @@
 }
 
 .promo-code__apply:hover:not(:disabled) {
-  background: var(--color-accent);
+  background: var(--accent-strong);
   color: var(--color-white);
 }
 

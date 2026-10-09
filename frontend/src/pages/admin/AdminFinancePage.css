@@ -49,14 +49,14 @@
 }
 
 .fin__btn--primary {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
   color: var(--color-white);
 }
 
 .fin__btn--primary:hover:not(:disabled) {
-  background: var(--color-accent-hover);
-  border-color: var(--color-accent-hover);
+  background: var(--accent-strong-hover);
+  border-color: var(--accent-strong-hover);
 }
 
 /* Tabs */
