@@ -147,6 +147,9 @@ var app = builder.Build();
 // Must stay the very first middleware: everything after it (HTTPS redirect, rate limiting, auth, logs) sees the real client IP and scheme.
 app.UseForwardedHeaders();
 
+// Behind Cloudflare the forwarded address is a Cloudflare node; take the visitor's own from the header Cloudflare adds, but only for requests that really came from Cloudflare.
+app.UseCloudflareClientIp(builder.Configuration);
+
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Apply pending EF Core migrations and seed initial data on every startup, in every
