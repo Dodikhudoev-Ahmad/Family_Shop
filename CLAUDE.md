@@ -10,8 +10,8 @@
 - Последний коммит на момент записи: см. `git log` (Phase 14 Step 9B2).
 - Следующий шаг: п.9 шаг C (Caddy для ботов, `docs/Seo.md`; сначала выяснить, как Railway раздаёт фронт) или п.6 «Замена фото «Блузка синяя для девочки»» [данные] (`PROGRESS.md`), после «go».
 - Сборка backend: 0 ошибок, 0 предупреждений.
-- `dotnet test`: 599 passed, 0 failed, 0 skipped.
-- `vitest` (frontend): 500 passed в 53 файлах.
+- `dotnet test`: 632 passed, 0 failed, 0 skipped.
+- `vitest` (frontend): 520 passed в 56 файлах.
 - `jest` (mobile): 271 passed, 4 skipped, 1 набор пропущен (30 из 31).
 - `tsc` frontend (`tsc -b`) и mobile (`tsc --noEmit`): чисто.
 - Дата: 2026-10-07.

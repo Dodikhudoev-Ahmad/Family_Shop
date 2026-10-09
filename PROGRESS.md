@@ -51,6 +51,12 @@
 - [ ] Публикация приложения (App Store / Google Play) [FULL]. TODO: уточнить объём и сроки.
 - [ ] Остаток по размерам [FULL]. Сейчас один остаток на товар.
 - [ ] Редирект корня familyshop10.kz на www [QA]. По `CLAUDE.md` настроен у регистратора; проверить на проде.
-- [ ] Проверка `X-Forwarded-For` на Railway [QA]. `TODO.md`, п. 3.
+- [ ] Проверка `X-Forwarded-For` и `CF-Connecting-IP` на Railway/Cloudflare [QA]. `TODO.md`, п. 3; `docs/Deploy.md`, «IP клиента за Cloudflare». Код и тесты готовы (шаг 10), проверка на проде — после деплоя.
 - [ ] Разбор расхождений ТЗ и кода [QA]. `docs/DRIFT.md`, раздел C.
 - [ ] Медленный прогон `dotnet test` [QA]. Один прогон занял 15 мин 45 с вместо ~5 с (405 passed), причина не установлена; при повторе разобраться (сон машины, Postgres, зависшая гонка).
+
+### Выполнено 2026-10-09 (вне порядка, по решению владельца)
+
+- [x] **9 B3** [FULL] JSON-LD: Organization/WebSite, Product, BreadcrumbList; общий формат `JsonLd.cs` ↔ `jsonLd.ts`, эталон `docs/fixtures/jsonld/`.
+- [x] **10** [BE] Реальный IP клиента за Cloudflare (`CloudflareClientIp`).
+- [x] **11** [FE] Контраст кнопок с белым текстом (`--accent-strong`).
