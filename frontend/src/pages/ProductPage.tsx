@@ -8,8 +8,10 @@ import type { Product } from '../types/product';
 import { useRecentlyViewed } from '../context/RecentlyViewedContext';
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 import { RecentlyViewed } from '../components/RecentlyViewed/RecentlyViewed';
-import { useSeo } from '../hooks/useSeo';
-import { SITE_NAME } from '../data/seo';
+import { absoluteImage, useSeo } from '../hooks/useSeo';
+import { useJsonLd } from '../hooks/useJsonLd';
+import { breadcrumbLd, productLd } from '../utils/jsonLd';
+import { SITE_NAME, SITE_URL } from '../data/seo';
 import { productSeoText } from '../utils/seoText';
 import { formatPrice } from '../utils/formatPrice';
 import { isLowStock, isOutOfStock } from '../utils/stock';
@@ -94,6 +96,33 @@ export function ProductPage() {
     // A product that does not exist (the API does not know the id either) must not be indexed.
     noindex: !product && !isLoading && !isFetchingMissing,
   });
+
+  // Structured data for Google (the bots that do not run JS get the same objects from the API: backend/Api/Seo/JsonLd.cs).
+  const ldCategory = product ? categories.find((c) => c.id === product.categoryId) : undefined;
+  const ldUrl = product ? `${SITE_URL}/product/${product.id}` : '';
+  useJsonLd(
+    product && seoText
+      ? [
+          productLd({
+            id: product.id,
+            name: product.name,
+            description: seoText.description,
+            price: product.discountPrice ?? product.price,
+            stock: product.stock,
+            images: product.images.map(absoluteImage),
+            fallbackImage: absoluteImage(undefined),
+            url: ldUrl,
+            rating: product.averageRating,
+            reviewCount: product.reviewCount,
+          }),
+          breadcrumbLd([
+            { name: t('common.home'), url: `${SITE_URL}/` },
+            ...(ldCategory ? [{ name: categoryName(ldCategory), url: `${SITE_URL}/catalog/${ldCategory.slug}` }] : []),
+            { name: product.name, url: ldUrl },
+          ]),
+        ]
+      : [],
+  );
 
   // Only a full page view counts as "viewed" - Quick View opens intentionally
   // don't call this, since a hover/tap-to-peek is a weaker signal of interest.

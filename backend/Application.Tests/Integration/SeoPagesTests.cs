@@ -107,7 +107,7 @@ public class SeoPagesTests : IClassFixture<PostgresFixture>
         var html = Body(await controller.Product(id, default));
 
         Assert.DoesNotContain("<script>alert(1)</script>", html);
-        Assert.Equal(1, html.Split("<script").Length - 1); // only the JSON-LD block
+        Assert.Equal(2, html.Split("<script").Length - 1); // only the two JSON-LD blocks (Product, BreadcrumbList)
         Assert.Contains("&lt;script&gt;alert(1)&lt;/script&gt;", html);
         var ld = JsonDocument.Parse(Between(html, "<script type=\"application/ld+json\">", "</script>")).RootElement;
         Assert.Equal(Evil, ld.GetProperty("name").GetString());

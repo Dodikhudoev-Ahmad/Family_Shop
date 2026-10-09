@@ -14,7 +14,7 @@ interface SeoInput {
 }
 
 /** og:image must be an absolute address: a relative one is taken from the site domain. */
-function absoluteImage(image: string | undefined): string {
+export function absoluteImage(image: string | undefined): string {
   if (!image) return DEFAULT_OG_IMAGE;
   return image.startsWith('/') ? `${SITE_URL}${image}` : image;
 }
