@@ -32,24 +32,24 @@
 }
 
 .btn--primary {
-  background: var(--color-accent);
+  background: var(--accent-strong);
   color: var(--color-white);
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: var(--color-accent-hover);
+  background: var(--accent-strong-hover);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
 .btn--secondary {
   background: transparent;
-  color: var(--color-accent);
-  border-color: var(--color-accent);
+  color: var(--accent-text);
+  border-color: var(--accent-text);
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background: var(--color-accent);
+  background: var(--accent-strong);
   color: var(--color-white);
   transform: translateY(-2px);
 }

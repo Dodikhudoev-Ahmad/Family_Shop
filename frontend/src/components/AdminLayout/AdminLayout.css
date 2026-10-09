@@ -87,7 +87,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--color-accent);
+  background: var(--accent-strong);
   color: var(--color-white);
   display: flex;
   align-items: center;
