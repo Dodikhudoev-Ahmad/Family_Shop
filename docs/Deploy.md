@@ -60,3 +60,12 @@ Mobile: `EXPO_PUBLIC_API_URL` (по умолчанию `https://api.familyshop10
 ## Открытые инфраструктурные вопросы
 
 Проверить на Railway: подмена `X-Forwarded-For` и лимиты (`TODO.md`, п. 3); заголовки безопасности на хосте фронтенда; редирект корня `familyshop10.kz` на `www`.
+
+## IP клиента за Cloudflare
+
+Цепочка: клиент → Cloudflare → Railway (edge) → API. `UseForwardedHeaders` берёт последнюю запись `X-Forwarded-For` (`ForwardLimit = 1`) — это адрес, подключившийся к edge Railway, то есть узел Cloudflare. Чтобы лимиты и логи видели посетителя, `UseCloudflareClientIp` (сразу после `UseForwardedHeaders`) подставляет адрес из `CF-Connecting-IP`, но только если подключился узел из опубликованных диапазонов Cloudflare (https://www.cloudflare.com/ips-v4, `/ips-v6`; список зашит в `Api/Security/CloudflareClientIp.cs`, дополнения — `Cloudflare__ExtraRanges=CIDR,CIDR`, выключить — `Cloudflare__Enabled=false`).
+
+- Запрос в обход Cloudflare (`*.up.railway.app`): адрес не из диапазонов Cloudflare → `CF-Connecting-IP` игнорируется, подмена не обходит лимит.
+- Остаточный риск: тот, кто шлёт запросы изнутри сети Cloudflare прямо на origin Railway (например, через свой Worker), может задать заголовок. Закрывается Authenticated Origin Pulls или секретным заголовком, который Cloudflare добавляет Transform Rule-ом, а API проверяет (по решению владельца).
+- Проверка после деплоя: два запроса `auth` с разных сетей считаются отдельно; `curl -H 'CF-Connecting-IP: 1.2.3.4' https://<railway-адрес>/...` лимит не обходит.
+- Диапазоны Cloudflare меняются редко; при обновлении списка сверить с двумя адресами выше и поправить `BuiltInRanges`.
