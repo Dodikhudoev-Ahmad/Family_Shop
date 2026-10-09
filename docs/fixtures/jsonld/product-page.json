@@ -1,0 +1,51 @@
+{
+  "input": {
+    "siteUrl": "https://www.familyshop10.kz",
+    "productId": 7,
+    "name": "Платье летнее",
+    "description": "Лёгкое платье из хлопка",
+    "price": 12500,
+    "stock": 3,
+    "images": [
+      "https://api.familyshop10.kz/uploads/products/a.jpg",
+      "https://api.familyshop10.kz/uploads/products/b.jpg"
+    ],
+    "rating": 4.5,
+    "reviewCount": 12,
+    "categoryName": "Женское",
+    "categorySlug": "women"
+  },
+  "expected": {
+    "product": {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": "Платье летнее",
+      "description": "Лёгкое платье из хлопка",
+      "sku": "7",
+      "brand": { "@type": "Brand", "name": "Family Shop" },
+      "url": "https://www.familyshop10.kz/product/7",
+      "image": [
+        "https://api.familyshop10.kz/uploads/products/a.jpg",
+        "https://api.familyshop10.kz/uploads/products/b.jpg"
+      ],
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.familyshop10.kz/product/7",
+        "price": "12500",
+        "priceCurrency": "KZT",
+        "availability": "https://schema.org/InStock",
+        "itemCondition": "https://schema.org/NewCondition"
+      },
+      "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.5", "reviewCount": 12 }
+    },
+    "breadcrumbs": {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Главная", "item": "https://www.familyshop10.kz/" },
+        { "@type": "ListItem", "position": 2, "name": "Женское", "item": "https://www.familyshop10.kz/catalog/women" },
+        { "@type": "ListItem", "position": 3, "name": "Платье летнее", "item": "https://www.familyshop10.kz/product/7" }
+      ]
+    }
+  }
+}

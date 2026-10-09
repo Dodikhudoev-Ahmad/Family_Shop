@@ -198,3 +198,19 @@ Sitemap: https://www.familyshop10.kz/sitemap.xml
 
 ### Что дальше
 Ревью файла → «go» на коммит и пуш; после деплоя — чек-листы разделов 6 и 9 (Telegram: сбросить кеш через @WebpageBot, в WhatsApp проверять новую ссылку).
+
+## 11. Шаг B3: JSON-LD (структурированные данные)
+
+Один формат в двух местах: сайт (для Google, исполняет JS) и ответы `/seo/product/{id}`, `/seo/category/{slug}` (для Яндекса и мессенджеров через Caddy).
+
+| Страница | Блоки | Где строится |
+|---|---|---|
+| Главная | `Organization` (name, url, logo, `contactPoint` только если заданы `VITE_CONTACT_PHONE`/`EMAIL`, `sameAs` из `VITE_SOCIAL_*`, Telegram, WhatsApp), `WebSite` (без `SearchAction`: поиск на сайте — оверлей без адреса) | сайт: `utils/jsonLd.ts`, `hooks/useJsonLd.ts` |
+| Товар | `Product` (name, description, sku, brand = Family Shop, url, image[], `offers`: price, `KZT`, availability по остатку `stock > 0`; `aggregateRating` только при отзывах) + `BreadcrumbList` (Главная → категория → товар) | сайт и API (`Api/Seo/JsonLd.cs`) |
+| Категория | `BreadcrumbList` (Главная → категория) | сайт и API |
+
+- Общий формат закреплён эталонным файлом `docs/fixtures/jsonld/product-page.json`: его читают и тест `SeoRendererTests` (бэкенд), и `utils/jsonLd.test.ts` (сайт). Меняете формат — меняйте файл, иначе тесты красные с обеих сторон.
+- Экранирование: бэкенд — `JavaScriptEncoder` (всегда `\uXXXX` для `< > & '`); сайт — `serializeJsonLd` заменяет `< > &` и U+2028/2029 на `\uXXXX`, текст ставится через `textContent`. `</script>` в названии товара не закрывает блок.
+- В SPA блоки добавляются в `<head>` при монтировании страницы и удаляются при уходе (в отличие от мета-тегов, чужой `Product` не остаётся).
+- `brand`: отдельного поля бренда у товара нет, указан сам магазин.
+- Проверка: валидатор https://validator.schema.org и «Проверка расширенных результатов» Google.

@@ -1,8 +1,5 @@
 using System.Globalization;
 using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using System.Text.Unicode;
 using System.Xml;
 using Application.DTOs;
 using Application.Services;
@@ -16,12 +13,6 @@ namespace Api.Seo;
 /// </summary>
 public static class SeoRenderer
 {
-    // Cyrillic stays readable; the encoder still always escapes < > & ' and + , so a name can never close the <script> block.
-    private static readonly JsonSerializerOptions JsonLdOptions = new()
-    {
-        Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic)
-    };
-
     // Only the five characters that can break out of text or a double-quoted attribute are replaced; everything else (Cyrillic, ₸, the
     // no-break space of prices) stays as it is. WebUtility.HtmlEncode would also turn U+00A0 into &#160;.
     private static string E(string? value) =>
@@ -58,8 +49,8 @@ public static class SeoRenderer
             sb.Append($"<meta property=\"product:price:amount\" content=\"{Amount(product.Price)}\">\n");
             sb.Append("<meta property=\"product:price:currency\" content=\"KZT\">\n");
             sb.Append($"<meta property=\"product:availability\" content=\"{(product.InStock ? "in stock" : "out of stock")}\">\n");
-            sb.Append($"<script type=\"application/ld+json\">{ProductJsonLd(page, product)}</script>\n");
         }
+        foreach (var json in JsonLd.ForPage(page)) sb.Append($"<script type=\"application/ld+json\">{json}</script>\n");
         sb.Append("</head>\n<body>\n");
         sb.Append($"<h1>{E(page.Heading)}</h1>\n<p>{E(page.Description)}</p>\n");
         if (page.PriceText is not null) sb.Append($"<p>{E(page.PriceText)}</p>\n");
@@ -73,40 +64,6 @@ public static class SeoRenderer
         "<!doctype html>\n<html lang=\"ru\">\n<head>\n<meta charset=\"utf-8\">\n" +
         $"<title>Страница не найдена — {SeoText.SiteName}</title>\n" +
         "<meta name=\"robots\" content=\"noindex,nofollow\">\n</head>\n<body>\n<h1>Страница не найдена</h1>\n</body>\n</html>\n";
-
-    /// <summary>schema.org Product with an Offer in KZT; an AggregateRating only when there are reviews.</summary>
-    public static string ProductJsonLd(SeoPageDto page, SeoProductDto product)
-    {
-        var data = new Dictionary<string, object?>
-        {
-            ["@context"] = "https://schema.org",
-            ["@type"] = "Product",
-            ["name"] = product.Name,
-            ["description"] = page.Description,
-            ["sku"] = product.Id.ToString(CultureInfo.InvariantCulture),
-            ["url"] = page.CanonicalUrl,
-            ["image"] = product.ImageUrls.Count > 0 ? product.ImageUrls : new[] { page.ImageUrl },
-            ["offers"] = new Dictionary<string, object?>
-            {
-                ["@type"] = "Offer",
-                ["url"] = page.CanonicalUrl,
-                ["price"] = Amount(product.Price),
-                ["priceCurrency"] = "KZT",
-                ["availability"] = product.InStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-                ["itemCondition"] = "https://schema.org/NewCondition"
-            }
-        };
-        if (product.Rating is not null && product.ReviewCount > 0)
-        {
-            data["aggregateRating"] = new Dictionary<string, object?>
-            {
-                ["@type"] = "AggregateRating",
-                ["ratingValue"] = Amount(product.Rating.Value),
-                ["reviewCount"] = product.ReviewCount
-            };
-        }
-        return JsonSerializer.Serialize(data, JsonLdOptions);
-    }
 
     public static string SitemapXml(IReadOnlyList<SitemapEntryDto> entries)
     {

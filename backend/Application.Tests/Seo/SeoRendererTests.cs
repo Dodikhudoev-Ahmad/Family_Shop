@@ -45,6 +45,7 @@ public class SeoRendererTests
         Assert.Contains("<meta property=\"og:image:width\" content=\"1200\">", html);
         Assert.Contains("<meta property=\"og:image:height\" content=\"630\">", html);
         Assert.DoesNotContain("product:price", html);
+        Assert.DoesNotContain("\"@type\":\"Product\"", html); // no breadcrumbs given here, so no structured data at all
         Assert.DoesNotContain("application/ld+json", html);
     }
 
@@ -76,12 +77,12 @@ public class SeoRendererTests
 
     // ---------- JSON-LD ----------
 
-    private static JsonElement JsonLd(SeoPageDto page) => JsonDocument.Parse(SeoRenderer.ProductJsonLd(page, page.Product!)).RootElement;
+    private static JsonElement ProductLd(SeoPageDto page) => JsonDocument.Parse(Api.Seo.JsonLd.Serialize(Api.Seo.JsonLd.Product(page, page.Product!))).RootElement;
 
     [Fact]
     public void JsonLd_IsAProductWithAnOfferInTenge()
     {
-        var root = JsonLd(ProductPage());
+        var root = ProductLd(ProductPage());
         Assert.Equal("https://schema.org", root.GetProperty("@context").GetString());
         Assert.Equal("Product", root.GetProperty("@type").GetString());
         Assert.Equal("Платье", root.GetProperty("name").GetString());
@@ -99,7 +100,7 @@ public class SeoRendererTests
     [Fact]
     public void JsonLd_OutOfStock_AndDecimalPriceWithoutTrailingZeros()
     {
-        var offer = JsonLd(ProductPage(price: 9900.5m, inStock: false)).GetProperty("offers");
+        var offer = ProductLd(ProductPage(price: 9900.5m, inStock: false)).GetProperty("offers");
         Assert.Equal("https://schema.org/OutOfStock", offer.GetProperty("availability").GetString());
         Assert.Equal("9900.5", offer.GetProperty("price").GetString());
     }
@@ -107,7 +108,7 @@ public class SeoRendererTests
     [Fact]
     public void JsonLd_HasARatingOnlyWhenThereAreReviews()
     {
-        var rating = JsonLd(ProductPage(rating: 4.5m, reviews: 12)).GetProperty("aggregateRating");
+        var rating = ProductLd(ProductPage(rating: 4.5m, reviews: 12)).GetProperty("aggregateRating");
         Assert.Equal("AggregateRating", rating.GetProperty("@type").GetString());
         Assert.Equal("4.5", rating.GetProperty("ratingValue").GetString());
         Assert.Equal(12, rating.GetProperty("reviewCount").GetInt32());
@@ -117,11 +118,107 @@ public class SeoRendererTests
     public void JsonLd_CannotCloseTheScriptBlock_AndStaysValidJson()
     {
         var page = ProductPage(name: Evil);
-        var raw = SeoRenderer.ProductJsonLd(page, page.Product!);
+        var raw = Api.Seo.JsonLd.Serialize(Api.Seo.JsonLd.Product(page, page.Product!));
         Assert.DoesNotContain("<", raw);
         Assert.DoesNotContain(">", raw);
-        Assert.Equal(Evil, JsonLd(page).GetProperty("name").GetString()); // the value survives the round trip
+        Assert.Equal(Evil, ProductLd(page).GetProperty("name").GetString()); // the value survives the round trip
     }
+
+    // ---------- JSON-LD: BreadcrumbList, brand, shared format ----------
+
+    private static string Root()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "docs", "fixtures"))) dir = dir.Parent;
+        return dir?.FullName ?? throw new InvalidOperationException("repository root not found");
+    }
+
+    private static IEnumerable<string> Blocks(string html) =>
+        System.Text.RegularExpressions.Regex.Matches(html, "<script type=\"application/ld\\+json\">(.*?)</script>", System.Text.RegularExpressions.RegexOptions.Singleline)
+            .Select(m => m.Groups[1].Value);
+
+    [Fact]
+    public void JsonLd_ProductHasABrand()
+    {
+        var brand = ProductLd(ProductPage()).GetProperty("brand");
+        Assert.Equal("Brand", brand.GetProperty("@type").GetString());
+        Assert.Equal("Family Shop", brand.GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public void ProductPage_CarriesProductAndBreadcrumbList_AsTwoBlocks()
+    {
+        var page = ProductPage() with { Breadcrumbs = [new("Главная", "https://www.familyshop10.kz/"), new("Платье", "https://www.familyshop10.kz/product/7")] };
+        var blocks = Blocks(SeoRenderer.PageHtml(page)).Select(b => JsonDocument.Parse(b).RootElement).ToList();
+
+        Assert.Equal(new[] { "Product", "BreadcrumbList" }, blocks.Select(b => b.GetProperty("@type").GetString()));
+        var items = blocks[1].GetProperty("itemListElement");
+        Assert.Equal(2, items.GetArrayLength());
+        Assert.Equal(1, items[0].GetProperty("position").GetInt32());
+        Assert.Equal("https://www.familyshop10.kz/product/7", items[1].GetProperty("item").GetString());
+    }
+
+    [Fact]
+    public void CategoryPage_CarriesOnlyABreadcrumbList()
+    {
+        var page = new SeoPageDto("t", "d", "https://www.familyshop10.kz/catalog/women", "https://www.familyshop10.kz/og-default.png", true, "Женское", null, null,
+            [new("Главная", "https://www.familyshop10.kz/"), new("Женское", "https://www.familyshop10.kz/catalog/women")]);
+        var blocks = Blocks(SeoRenderer.PageHtml(page)).ToList();
+
+        var only = Assert.Single(blocks);
+        Assert.Equal("BreadcrumbList", JsonDocument.Parse(only).RootElement.GetProperty("@type").GetString());
+    }
+
+    [Fact]
+    public void EvilNamesAndDescriptions_CannotBreakOutOfAnyJsonLdBlock_InTheWholePage()
+    {
+        var page = new SeoPageDto(Evil, Evil, "https://www.familyshop10.kz/product/7", "https://x.example/a.jpg", false, Evil, null,
+            new SeoProductDto(7, Evil, 100, true, ["https://x.example/a.jpg?q=</script><script>alert(1)</script>"], 4m, 1),
+            [new("Главная", "https://www.familyshop10.kz/"), new(Evil, "https://www.familyshop10.kz/catalog/</script>"), new(Evil, "https://www.familyshop10.kz/product/7")]);
+        var html = SeoRenderer.PageHtml(page);
+
+        // Exactly the two blocks we opened and closed ourselves; nothing in the data added a tag.
+        Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(html, "<script", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Count);
+        Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(html, "</script>", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Count);
+        foreach (var block in Blocks(html))
+        {
+            Assert.DoesNotContain("<", block);
+            Assert.DoesNotContain(">", block);
+            Assert.DoesNotContain("&", block);
+            JsonDocument.Parse(block); // still valid JSON
+        }
+        Assert.Equal(Evil, JsonDocument.Parse(Blocks(html).Last()).RootElement.GetProperty("itemListElement")[2].GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public void ProductAndBreadcrumbs_MatchTheGoldenFile_SharedWithTheSite()
+    {
+        using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(Root(), "docs", "fixtures", "jsonld", "product-page.json")));
+        var input = fixture.RootElement.GetProperty("input");
+        var site = input.GetProperty("siteUrl").GetString()!;
+        var id = input.GetProperty("productId").GetInt32();
+        var name = input.GetProperty("name").GetString()!;
+        var url = $"{site}/product/{id}";
+        var images = input.GetProperty("images").EnumerateArray().Select(i => i.GetString()!).ToList();
+        var page = new SeoPageDto("t", input.GetProperty("description").GetString()!, url, images[0], false, name, null,
+            new SeoProductDto(id, name, input.GetProperty("price").GetDecimal(), input.GetProperty("stock").GetInt32() > 0, images,
+                input.GetProperty("rating").GetDecimal(), input.GetProperty("reviewCount").GetInt32()),
+            [new("Главная", $"{site}/"), new(input.GetProperty("categoryName").GetString()!, $"{site}/catalog/{input.GetProperty("categorySlug").GetString()}"), new(name, url)]);
+
+        var blocks = Blocks(SeoRenderer.PageHtml(page)).Select(b => JsonDocument.Parse(b).RootElement).ToList();
+        var expected = fixture.RootElement.GetProperty("expected");
+
+        Assert.Equal(Canonical(expected.GetProperty("product")), Canonical(blocks[0]));
+        Assert.Equal(Canonical(expected.GetProperty("breadcrumbs")), Canonical(blocks[1]));
+    }
+
+    /// <summary>Property order does not matter to a parser, so compare with the keys sorted.</summary>
+    private static string Canonical(JsonElement e) => e.ValueKind switch
+    {
+        JsonValueKind.Object => "{" + string.Join(",", e.EnumerateObject().OrderBy(p => p.Name, StringComparer.Ordinal).Select(p => $"\"{p.Name}\":{Canonical(p.Value)}")) + "}",
+        JsonValueKind.Array => "[" + string.Join(",", e.EnumerateArray().Select(Canonical)) + "]",
+        _ => e.GetRawText()
+    };
 
     // ---------- sitemap ----------
 

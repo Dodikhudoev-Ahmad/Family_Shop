@@ -33,17 +33,23 @@ public class SeoService : ISeoService
         var price = product.EffectivePrice.Amount;
         var images = product.Images.Select(ToAbsoluteImage).OfType<string>().ToList();
         var ogImage = images.FirstOrDefault();
+        var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId, cancellationToken);
+        var canonical = $"{_settings.SiteUrl}/product/{product.Id}";
+        var crumbs = new List<SeoCrumbDto> { new(SeoText.HomeName, $"{_settings.SiteUrl}/") };
+        if (category is not null) crumbs.Add(new(category.Name, CategoryUrl(category.Slug)));
+        crumbs.Add(new(product.Name, canonical));
 
         return new SeoPageDto(
             Title: SeoText.ProductTitle(product.Name, price),
             Description: SeoText.ProductDescription(product.Name, product.Description),
-            CanonicalUrl: $"{_settings.SiteUrl}/product/{product.Id}",
+            CanonicalUrl: canonical,
             ImageUrl: ogImage ?? _settings.DefaultImageUrl,
             IsDefaultImage: ogImage is null,
             Heading: product.Name,
             PriceText: SeoText.FormatTenge(price),
             Product: new SeoProductDto(product.Id, product.Name, price, product.Stock > 0, images,
-                product.ReviewCount > 0 ? product.AverageRating : null, product.ReviewCount));
+                product.ReviewCount > 0 ? product.AverageRating : null, product.ReviewCount),
+            Breadcrumbs: crumbs);
     }
 
     public async Task<SeoPageDto?> GetCategoryPageAsync(string slug, CancellationToken cancellationToken = default)
@@ -55,13 +61,16 @@ public class SeoService : ISeoService
         return new SeoPageDto(
             Title: SeoText.CategoryTitle(category.Name),
             Description: SeoText.CategoryDescription(category.Name, count, minPrice),
-            CanonicalUrl: $"{_settings.SiteUrl}/catalog/{Uri.EscapeDataString(category.Slug)}",
+            CanonicalUrl: CategoryUrl(category.Slug),
             ImageUrl: _settings.DefaultImageUrl,
             IsDefaultImage: true,
             Heading: category.Name,
             PriceText: null,
-            Product: null);
+            Product: null,
+            Breadcrumbs: [new(SeoText.HomeName, $"{_settings.SiteUrl}/"), new(category.Name, CategoryUrl(category.Slug))]);
     }
+
+    private string CategoryUrl(string slug) => $"{_settings.SiteUrl}/catalog/{Uri.EscapeDataString(slug)}";
 
     public async Task<IReadOnlyList<SitemapEntryDto>> GetSitemapAsync(CancellationToken cancellationToken = default)
     {

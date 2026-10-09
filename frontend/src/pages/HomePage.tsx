@@ -13,9 +13,12 @@ import { HomeBand, alternatingTone, type BandTone } from '../components/HomeBand
 import { SaleBanner } from '../components/SaleBanner/SaleBanner';
 import { QuickChips } from '../components/QuickChips/QuickChips';
 import { useSeo } from '../hooks/useSeo';
+import { useJsonLd } from '../hooks/useJsonLd';
+import { organizationLd, webSiteLd } from '../utils/jsonLd';
+import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_TELEGRAM, CONTACT_WHATSAPP, SOCIAL_LINKS } from '../data/contacts';
 import { useHomeVariant } from '../lib/homeVariant';
 import { pickProducts, type QuickFilter } from '../utils/productFlags';
-import { SITE_NAME } from '../data/seo';
+import { SITE_NAME, SITE_URL } from '../data/seo';
 import { API_BASE_URL } from '../lib/config';
 import './HomePage.css';
 import { useTranslation } from 'react-i18next';
@@ -29,6 +32,16 @@ const heroTiles = [
 export function HomePage() {
   const { t } = useTranslation();
   useSeo({ title: t('seo.defaultTitle', { site: SITE_NAME }), description: t('seo.defaultDescription') });
+  useJsonLd([
+    organizationLd({
+      siteUrl: SITE_URL,
+      logoUrl: `${SITE_URL}/logo-icon-badge.svg`,
+      phone: CONTACT_PHONE,
+      email: CONTACT_EMAIL,
+      sameAs: [...SOCIAL_LINKS.map((s) => s.href), CONTACT_TELEGRAM, CONTACT_WHATSAPP].filter((u): u is string => Boolean(u)),
+    }),
+    webSiteLd(SITE_URL),
+  ]);
   const { products, isLoading, error } = useProducts();
   const variant = useHomeVariant();
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('new');

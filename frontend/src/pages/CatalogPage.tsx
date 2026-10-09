@@ -9,8 +9,10 @@ import { FilterPanelSkeleton } from '../components/Filters/FilterPanelSkeleton';
 import { TypeChips } from '../components/TypeChips/TypeChips';
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 import { useSeo } from '../hooks/useSeo';
+import { useJsonLd } from '../hooks/useJsonLd';
+import { breadcrumbLd } from '../utils/jsonLd';
 import { categorySeoText } from '../utils/seoText';
-import { SITE_NAME } from '../data/seo';
+import { SITE_NAME, SITE_URL } from '../data/seo';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 import { fetchProductsPage } from '../lib/api';
 import { mapProduct } from '../lib/mappers';
@@ -61,6 +63,16 @@ export function CatalogPage() {
     // An address of a category that does not exist (once the categories are known) is not a page to index.
     noindex: slug !== undefined && !activeCategory && !categoriesLoading,
   });
+  useJsonLd(
+    activeCategory
+      ? [
+          breadcrumbLd([
+            { name: t('common.home'), url: `${SITE_URL}/` },
+            { name: categoryName(activeCategory), url: `${SITE_URL}/catalog/${activeCategory.slug}` },
+          ]),
+        ]
+      : [],
+  );
 
   // The category lives in the URL and nowhere else: chips, mega menu, burger, the strip, links
   // and the filter panel's own category buttons all navigate, so every path lands in the same

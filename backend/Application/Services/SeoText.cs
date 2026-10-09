@@ -7,6 +7,7 @@ namespace Application.Services;
 public static class SeoText
 {
     public const string SiteName = "Family Shop";
+    public const string HomeName = "Главная";
     public const int TitleMax = 60;
     public const int DescriptionMax = 150;
 
