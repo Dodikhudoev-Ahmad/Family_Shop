@@ -3,7 +3,7 @@
 // left unset is simply not rendered. Set these in the deploy environment:
 //   VITE_CONTACT_PHONE, VITE_CONTACT_EMAIL, VITE_CONTACT_ADDRESS,
 //   VITE_SOCIAL_INSTAGRAM, VITE_SOCIAL_TELEGRAM, VITE_SOCIAL_VK, VITE_SOCIAL_WHATSAPP
-//   (full https:// URLs; VITE_CONTACT_PHONE is the display string, e.g. "+7 708 167 98 58")
+//   (full https:// URLs; VITE_CONTACT_PHONE is the display string, e.g. "+7 700 000 00 00")
 const env = import.meta.env;
 
 function clean(value: unknown): string | undefined {
@@ -19,7 +19,7 @@ export const CONTACT_PHONE = clean(env.VITE_CONTACT_PHONE);
 export const CONTACT_EMAIL = clean(env.VITE_CONTACT_EMAIL);
 export const CONTACT_ADDRESS = clean(env.VITE_CONTACT_ADDRESS);
 
-/** "+7 708 167 98 58" -> "tel:+77081679858" - keeps the leading "+", drops everything else
+/** "+7 700 000 00 00" -> "tel:+77000000000" - keeps the leading "+", drops everything else
  * that isn't a digit (spaces, brackets, dashes) so the display string can stay human-readable. */
 export const CONTACT_PHONE_HREF = CONTACT_PHONE ? `tel:${CONTACT_PHONE.replace(/(?!^\+)[^\d]/g, '')}` : undefined;
 

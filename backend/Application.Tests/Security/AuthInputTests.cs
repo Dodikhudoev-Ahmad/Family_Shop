@@ -12,7 +12,7 @@ public class PasswordPolicyTests
         _validator.Validate(new RegisterRequestDto(email, password, "User")).IsValid;
 
     [Theory]
-    [InlineData("REDACTED")]
+    [InlineData("Tr1ckyTestValue")]
     [InlineData("пароль2024долгий")]      // Cyrillic letters count as letters
     [InlineData("қазақпарол2024")]        // so do Kazakh-specific ones
     public void AcceptsReasonablePasswords(string password) => Assert.True(Accepts(password));
@@ -51,7 +51,7 @@ public class PasswordPolicyTests
     public void EmailLongerThanTheColumn_IsRejectedUpFront()
     {
         var longEmail = new string('a', 250) + "@example.com";
-        Assert.False(Accepts("REDACTED", longEmail));
+        Assert.False(Accepts("Tr1ckyTestValue", longEmail));
     }
 }
 
@@ -83,7 +83,7 @@ public class MobileInputTests
     public void MobileRegister_AppliesTheSamePasswordPolicyAsWeb()
     {
         Assert.False(new MobileRegisterRequestValidator().Validate(new MobileRegisterRequestDto("a@b.kz", "Password123", "A", GoodDevice, null)).IsValid);
-        Assert.True(new MobileRegisterRequestValidator().Validate(new MobileRegisterRequestDto("a@b.kz", "REDACTED", "A", GoodDevice, null)).IsValid);
+        Assert.True(new MobileRegisterRequestValidator().Validate(new MobileRegisterRequestDto("a@b.kz", "Tr1ckyTestValue", "A", GoodDevice, null)).IsValid);
     }
 }
 
