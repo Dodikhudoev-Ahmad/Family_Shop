@@ -207,7 +207,10 @@ public static class SeedData
             await context.SaveChangesAsync(cancellationToken);
         }
 
-        await NeutralizeKnownSeedPasswordsAsync(context, passwordHasher, logger, cancellationToken);
+        // The retired demo password is not kept in the repository: the operator supplies it (if it is still
+        // worth cleaning up on this database) via Seed__LegacyReviewerPassword. Not set - nothing to do.
+        await NeutralizeKnownSeedPasswordsAsync(
+            context, passwordHasher, configuration["Seed:LegacyReviewerPassword"], logger, cancellationToken);
 
         // Guarded independently of category/product seeding (same reasoning as the admin-user
         // guard above) - otherwise reviews silently never seed on a DB that already has a catalog.
@@ -722,20 +725,26 @@ public static class SeedData
     }
 
     private const string SeedReviewerDomain = "@seed.familyshop.kz";
-    private const string LegacySeedReviewerPassword = "Seed123!";
 
     /// <summary>
-    /// The demo reviewer accounts used to be created with the password "Seed123!" - which sits in the
-    /// public repository, so anyone could log in as them on a deployed database. New ones get a random
-    /// password nobody knows; this gives existing ones the same treatment (and ends their sessions).
+    /// The demo reviewer accounts used to be created with a password that sat in the public repository, so
+    /// anyone could log in as them on a deployed database. New ones get a random password nobody knows; this
+    /// gives existing ones the same treatment (and ends their sessions). The old password is passed in by the
+    /// operator (<c>Seed__LegacyReviewerPassword</c>) and is not stored in code. Empty or missing - does nothing.
     /// Idempotent: once the password is random the legacy one no longer verifies and nothing changes.
     /// </summary>
-    private static async Task NeutralizeKnownSeedPasswordsAsync(
+    internal static async Task NeutralizeKnownSeedPasswordsAsync(
         AppDbContext context,
         IPasswordHasher passwordHasher,
+        string? legacyPassword,
         ILogger logger,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrEmpty(legacyPassword))
+        {
+            return;
+        }
+
         // Parameterised raw SQL: the Email value-object column can't be pattern-matched through LINQ, and
         // loading every user at each start just to find eight demo accounts would be wasteful.
         var pattern = "%" + SeedReviewerDomain;
@@ -746,7 +755,7 @@ public static class SeedData
         var fixedCount = 0;
         foreach (var user in seedUsers)
         {
-            if (!passwordHasher.Verify(LegacySeedReviewerPassword, user.PasswordHash))
+            if (!passwordHasher.Verify(legacyPassword, user.PasswordHash))
             {
                 continue;
             }
