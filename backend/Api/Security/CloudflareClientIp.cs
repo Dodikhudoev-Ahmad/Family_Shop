@@ -11,12 +11,9 @@ namespace Api.Security;
 /// <c>CF-Connecting-IP</c> (overwriting whatever the visitor sent), and this middleware uses it - but ONLY when the connecting
 /// peer, as already established by the forwarded-headers step, is inside Cloudflare's published ranges.
 ///
-/// Why that is safe: a request that goes straight to <c>*.up.railway.app</c> (bypassing Cloudflare) arrives from the visitor's own
+/// Why that is safe: a request that reaches the origin directly (bypassing Cloudflare) arrives from the visitor's own
 /// address, which is not a Cloudflare address, so a forged <c>CF-Connecting-IP</c> is ignored and the visitor keeps the
 /// address Railway recorded. The header is never read for any other purpose, and X-Forwarded-For is still never read raw.
-/// Known limit: someone who sends requests from inside Cloudflare's network (their own Cloudflare Worker, say) straight to the
-/// Railway origin could set the header; closing that needs Cloudflare Authenticated Origin Pulls or a shared secret header
-/// (docs/Deploy.md).
 /// </summary>
 public static class CloudflareClientIp
 {

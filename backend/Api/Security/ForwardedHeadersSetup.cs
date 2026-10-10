@@ -16,8 +16,8 @@ public static class ForwardedHeadersSetup
     /// DECISION on trust: the default trust list (loopback only) is cleared, because Railway's proxy address is not fixed
     /// (the edge proxies come from a changing internal range), so a pinned list would silently stop honouring the header and
     /// collapse all visitors into one bucket. That is acceptable only because the service is reachable from the internet
-    /// solely through Railway's edge, which appends the real client address to X-Forwarded-For (this has to be re-checked
-    /// on the platform after a deploy - see TODO.md, item 3). Two things keep it safe if a client forges the header:
+    /// solely through Railway's edge, which appends the real client address to X-Forwarded-For (worth re-checking
+    /// on the platform after a deploy). Two things keep it safe if a client forges the header:
     ///  - <c>ForwardLimit = 1</c>: only the LAST entry, the one the proxy itself appended, is used. Whatever a client puts
     ///    to the left of it ("X-Forwarded-For: 1.2.3.4" sent by the visitor becomes "1.2.3.4, &lt;real ip&gt;") is ignored;
     ///  - a fixed set of trusted ranges can be pinned without a code change via <see cref="KnownNetworksKey"/>, which turns

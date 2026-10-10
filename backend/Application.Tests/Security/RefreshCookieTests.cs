@@ -52,7 +52,7 @@ public class RefreshCookieTests
     }
 
     [Theory]
-    [InlineData("familyshop-production.up.railway.app")]  // the old address kept during the move: cross-site with the old frontend
+    [InlineData("old-api.example.net")]  // another host: cross-site arrangement
     [InlineData("evilfamilyshop10.kz")]
     [InlineData("familyshop10.kz.evil.example")]
     public void Production_OnAnyOtherHost_KeepsTheOldCrossSiteCookie_WithoutADomain(string host)
@@ -189,11 +189,11 @@ public class RefreshCookieTests
     }
 
     [Fact]
-    public async Task OnTheOldRailwayHost_SignInStillGivesTheCrossSiteCookie()
+    public async Task OnAnyOtherHost_SignInStillGivesTheCrossSiteCookie()
     {
         var service = Substitute.For<IAuthService>();
         service.LoginAsync(Arg.Any<LoginRequestDto>(), Arg.Any<SessionContext>(), Arg.Any<CancellationToken>()).Returns(Result<AuthResult>.Success(Issued("refresh-1")));
-        var controller = Controller(service, Policy("Production"), "familyshop-production.up.railway.app");
+        var controller = Controller(service, Policy("Production"), "old-api.example.net");
 
         await controller.Login(new LoginRequestDto("a@b.kz", "pw"), CancellationToken.None);
 

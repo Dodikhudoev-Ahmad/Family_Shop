@@ -6,7 +6,7 @@ namespace Infrastructure.Persistence;
 /// <summary>
 /// Moves the host of uploaded-image URLs already stored in the database to the configured public base URL
 /// (<c>Uploads:PublicBaseUrl</c>). Before the move to the shop's own domain the admin's uploads were saved with whatever host
-/// the request arrived on (the Railway address), so existing products keep pointing there; this rewrites just those URLs in
+/// the request arrived on (the platform's address), so existing products keep pointing there; this rewrites just those URLs in
 /// place. Only a URL of exactly our own upload shape (<c>[origin]/uploads/products/{32 hex}.{jpg|png|webp|gif}</c>) is touched -
 /// photos from other sites are not - and rows are only UPDATEd, never recreated, so orders and reviews that reference the
 /// products are unaffected. Idempotent: a second run finds nothing left to change.

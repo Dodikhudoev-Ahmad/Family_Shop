@@ -10,7 +10,7 @@ using Domain.Interfaces;
 namespace Application.Services;
 
 /// <summary>Creating an order: validation of lines and sizes, promo code, atomic stock write-off, idempotent replay.
-/// Used by <see cref="OrderService"/>; behaviour is described in CLAUDE.md, 3.2 and 3.3.</summary>
+/// Used by <see cref="OrderService"/>; stock write-off, promo usage and the order insert share one transaction.</summary>
 internal sealed class OrderCreator
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
