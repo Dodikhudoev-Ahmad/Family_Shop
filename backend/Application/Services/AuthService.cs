@@ -25,17 +25,20 @@ public class AuthService : IAuthService
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
     private readonly ILogger<AuthService> _logger;
+    private readonly ILoginAttemptTracker _attempts;
 
     public AuthService(
         IUnitOfWork unitOfWork,
         IPasswordHasher passwordHasher,
         IJwtTokenGenerator jwtTokenGenerator,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger,
+        ILoginAttemptTracker? attempts = null)
     {
         _unitOfWork = unitOfWork;
         _passwordHasher = passwordHasher;
         _jwtTokenGenerator = jwtTokenGenerator;
         _logger = logger;
+        _attempts = attempts ?? new LoginAttemptTracker();
     }
 
     public async Task<Result<AuthResult>> RegisterAsync(RegisterRequestDto request, SessionContext session, CancellationToken cancellationToken = default)
@@ -68,15 +71,27 @@ public class AuthService : IAuthService
         // A deleted account is "no such user": its placeholder e-mail must not be usable to sign in.
         var user = found is { IsDeleted: false } ? found : null;
 
-        // Always run one password verification, against a dummy hash if there is no such user.
-        var hash = user?.PasswordHash ?? GetDummyHash();
+        // A paused account (too many wrong passwords) is answered like a wrong password and its real hash is not even
+        // checked, so a pause cannot be told apart from a bad guess - and guessing during it gets nowhere.
+        var attemptKey = user?.Email.Value ?? request.Email;
+        var locked = user is not null && _attempts.IsLocked(attemptKey);
+
+        // Always run one password verification, against a dummy hash if there is no such user (or the account is paused).
+        var hash = locked ? GetDummyHash() : user?.PasswordHash ?? GetDummyHash();
         var passwordOk = _passwordHasher.Verify(request.Password, hash);
 
-        if (user is null || !passwordOk)
+        if (user is null || locked || !passwordOk)
         {
+            if (user is not null && !locked)
+            {
+                _attempts.RegisterFailure(attemptKey);
+            }
+
             _logger.LogWarning("Failed login attempt for a user.");
             return Result<AuthResult>.Failure("Invalid email or password.");
         }
+
+        _attempts.Reset(attemptKey);
 
         return Result<AuthResult>.Success(await StartSessionAsync(user, session, cancellationToken));
     }
@@ -210,6 +225,55 @@ public class AuthService : IAuthService
         // Reviews and order lines stay as they are: they point at the (now anonymous) row, which still exists.
         _logger.LogInformation("Account {UserId} deleted by its owner.", userId);
         return DeleteAccountOutcome.Deleted;
+    }
+
+    public async Task<ChangePasswordOutcome> ChangePasswordAsync(int userId, string currentPassword, string newPassword, CancellationToken cancellationToken = default)
+    {
+        var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
+        if (user is null || user.IsDeleted)
+        {
+            return ChangePasswordOutcome.NotFound;
+        }
+
+        // Same brake as sign-in: a stolen access token must not be a way to guess the password at leisure.
+        var key = user.Email.Value;
+        var locked = _attempts.IsLocked(key);
+        if (locked || !_passwordHasher.Verify(currentPassword, user.PasswordHash))
+        {
+            if (!locked)
+            {
+                _attempts.RegisterFailure(key);
+            }
+
+            _logger.LogWarning("Password change refused for user {UserId}: wrong current password.", userId);
+            return ChangePasswordOutcome.InvalidPassword;
+        }
+
+        if (string.Equals(newPassword, user.Email.Value, StringComparison.OrdinalIgnoreCase))
+        {
+            return ChangePasswordOutcome.NotAllowed;
+        }
+
+        _attempts.Reset(key);
+        var now = DateTime.UtcNow;
+        var newHash = _passwordHasher.Hash(newPassword);
+
+        // One transaction: the new hash and the end of every session go together or not at all.
+        var done = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
+        {
+            user.PasswordHash = newHash;
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(userId, now, ct);
+            return true;
+        }, cancellationToken);
+
+        if (!done)
+        {
+            return ChangePasswordOutcome.NotFound;
+        }
+
+        _logger.LogInformation("User {UserId} changed the password; all sessions revoked.", userId);
+        return ChangePasswordOutcome.Changed;
     }
 
     public async Task<IReadOnlyList<SessionDto>> GetSessionsAsync(int userId, Guid? currentSessionId, CancellationToken cancellationToken = default)
