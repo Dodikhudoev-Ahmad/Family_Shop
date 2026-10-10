@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using Application.Common;
 using Application.Interfaces;
 using Application.Services;
 using Application.Validators;
@@ -14,6 +15,7 @@ public static class DependencyInjection
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddSingleton<ILoginAttemptTracker, LoginAttemptTracker>(); // per-account pause after repeated wrong passwords (in memory)
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IPromoCodeService, PromoCodeService>();
         services.AddScoped<IPromoBannerService, PromoBannerService>();
