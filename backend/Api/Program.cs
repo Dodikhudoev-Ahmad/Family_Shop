@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Api.Common;
@@ -173,7 +174,9 @@ try
 }
 catch (Exception ex)
 {
-    app.Logger.LogError(ex, "Database migration/seed failed on startup");
+    // TEMPORARY: start-up used to be aborted here, but that took production down (502) - the cause of the failure has
+    // to be read from the deploy logs first. Until then the failure is logged loudly and the app keeps starting.
+    app.Logger.LogCritical(ex, "Database migration/seed failed on startup");
 }
 
 // Uploaded-image URLs saved before the move to the shop's own domain still carry the old host: move them to the
@@ -216,6 +219,7 @@ app.Use(async (context, next) =>
     context.Response.Headers["X-Frame-Options"] = "DENY";
     context.Response.Headers["Content-Security-Policy"] = "default-src 'self'";
     context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()";
     await next();
 });
 
@@ -238,8 +242,8 @@ app.MapControllers();
 // container and restart it — no dedicated health-check package needed for a single DB check.
 app.MapGet("/health", async (AppDbContext db, CancellationToken cancellationToken) =>
 {
-    var canConnect = await db.Database.CanConnectAsync(cancellationToken);
-    return canConnect
+    var healthy = await db.Database.CanConnectAsync(cancellationToken);
+    return healthy
         ? Results.Ok(new { status = "healthy" })
         : Results.Json(new { status = "unhealthy" }, statusCode: StatusCodes.Status503ServiceUnavailable);
 }).AllowAnonymous();

@@ -70,5 +70,12 @@
 - [x] **5** Нейтральное сообщение при регистрации: без подтверждения по почте невозможно, код не менялся (причина — в отчёте шага). Сайт всё ещё показывает «already exists» (открыто, ждёт решения владельца).
 - [x] **6** [mobile] `npm audit fix` без `--force`: патч-обновления Expo 57.0.27, только `package-lock.json`; оставшиеся уязвимости — инструменты разработки, не рантайм (`ca516c6`).
 - [x] **7** [BE] ClosedXML 0.105.1, IdentityModel 8.23.0 (`5a9546c`).
-- [x] **8** [QA] Комментарий в `Program.cs` и `CLAUDE.md` п. 3.4 о старте без прерывания при сбое миграции/сидера и о `/health`; пересчитаны тесты: backend 668, frontend 520 (56 файлов), mobile 271 (4 skipped).
+- [x] **8** [QA] Комментарий в `Program.cs` и `CLAUDE.md` п. 3.4 о старте без прерывания при сбое миграции/сидера и о `/health`; пересчитаны тесты: backend 682, frontend 520 (56 файлов), mobile 271 (4 skipped).
 - [ ] Не делалось, ждёт решения владельца: подтверждение email, перекодирование картинок при загрузке, удаление старого origin Railway из CORS, возврат fail-closed запуска, переписывание истории git.
+
+### Выполнено 2026-10-10 (Phase 14 Security [BE], вне порядка, ветка `security/phase14-hardening`)
+
+- [x] Старт падает при ошибке миграции/сидера; `/health` проверяет непримёненные миграции; `Permissions-Policy` на API; заголовки безопасности в `frontend/Caddyfile`; `npm audit fix` (source-map-js).
+- [x] Пауза аккаунта после 5 неверных паролей (`LoginAttemptTracker`, в памяти, без миграции) и `POST /auth/change-password` с отзывом всех сессий; тесты `LoginAttemptTrackerTests`, `PasswordChangeAndLockoutTests`.
+- [x] `OrderService` разбит на `OrderCreator` / `OrderStatusChanger` / `OrderQueries` / `OrderMapper`, поведение и публичный API прежние.
+- [ ] Перекодирование загруженных фото — ждёт выбора библиотеки (`TODO.md`).

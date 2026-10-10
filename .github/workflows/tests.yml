@@ -18,8 +18,22 @@ jobs:
         run: dotnet restore FamilyShop.slnx
         working-directory: backend
       - name: Test
-        run: dotnet test FamilyShop.slnx --no-restore --configuration Release
+        run: dotnet test FamilyShop.slnx --no-restore --configuration Release --logger "trx;LogFileName=results.trx"
         working-directory: backend
+      # Names and messages of failed tests as check annotations, so a red run is readable without downloading logs.
+      - name: Failed tests summary
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          ns = {'t': 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010'}
+          for f in glob.glob('backend/**/results.trx', recursive=True):
+              for r in ET.parse(f).getroot().iterfind('.//t:UnitTestResult', ns):
+                  if r.get('outcome') == 'Failed':
+                      msg = r.find('.//t:Message', ns)
+                      text = ((msg.text or '') if msg is not None else '').strip().replace('\n', ' | ')[:900]
+                      print(f"::error title=Failed test::{r.get('testName')}: {text}")
+          PY
 
   frontend-tests:
     name: npm run test (frontend)

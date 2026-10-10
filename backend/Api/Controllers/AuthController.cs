@@ -165,6 +165,31 @@ public class AuthController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Смена собственного пароля. Нужен текущий пароль; под строгим лимитом входа (10/мин на IP) и общей паузой аккаунта после
+    /// повторных неверных паролей. После смены все сессии (веб и мобильные) завершаются — нужно войти заново с новым паролем.
+    /// Неверный текущий пароль — 400 (не 401: иначе клиент решит, что сессия умерла); новый пароль совпадает с email — 400.
+    /// </summary>
+    [Authorize]
+    [HttpPost("change-password")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequestDto request, CancellationToken cancellationToken)
+    {
+        var outcome = await _authService.ChangePasswordAsync(GetUserId(), request.CurrentPassword, request.NewPassword, cancellationToken);
+        switch (outcome)
+        {
+            case ChangePasswordOutcome.Changed:
+                Response.Cookies.Delete(RefreshTokenCookie, BuildCookieOptions(null));
+                return NoContent();
+            case ChangePasswordOutcome.InvalidPassword:
+                return BadRequest(ApiResponse<bool>.Fail("Incorrect password."));
+            case ChangePasswordOutcome.NotAllowed:
+                return BadRequest(ApiResponse<bool>.Fail("Password must not be the same as the e-mail address."));
+            default:
+                return NotFound(ApiResponse<bool>.Fail("Account not found."));
+        }
+    }
+
     private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     private Guid? GetSessionId()
