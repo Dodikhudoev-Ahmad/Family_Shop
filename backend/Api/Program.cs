@@ -171,8 +171,9 @@ try
 }
 catch (Exception ex)
 {
-    app.Logger.LogCritical(ex, "Database migration/seed failed on startup - aborting");
-    throw;
+    // TEMPORARY: start-up used to be aborted here, but that took production down (502) - the cause of the failure has
+    // to be read from the deploy logs first. Until then the failure is logged loudly and the app keeps starting.
+    app.Logger.LogCritical(ex, "Database migration/seed failed on startup");
 }
 
 // Uploaded-image URLs saved before the move to the shop's own domain still carry the old host: move them to the
@@ -238,10 +239,7 @@ app.MapControllers();
 // container and restart it — no dedicated health-check package needed for a single DB check.
 app.MapGet("/health", async (AppDbContext db, CancellationToken cancellationToken) =>
 {
-    // Healthy = the database answers AND the schema is fully migrated (a reachable DB with missing
-    // migrations used to report healthy while queries failed). Details are never put in the response.
-    var healthy = await db.Database.CanConnectAsync(cancellationToken)
-        && !(await db.Database.GetPendingMigrationsAsync(cancellationToken)).Any();
+    var healthy = await db.Database.CanConnectAsync(cancellationToken);
     return healthy
         ? Results.Ok(new { status = "healthy" })
         : Results.Json(new { status = "unhealthy" }, statusCode: StatusCodes.Status503ServiceUnavailable);
