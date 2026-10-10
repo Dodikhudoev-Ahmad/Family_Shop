@@ -158,9 +158,9 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 // ("relation Products does not exist"). SeedData.SeedAsync is idempotent: it calls
 // Database.MigrateAsync (a no-op once migrations are applied) and each seed step is
 // separately guarded by an Any() check, so re-running this on every restart is safe and
-// won't duplicate the admin user, categories/products, or reviews. Wrapped in try/catch so
-// a migration failure logs instead of crashing a pod that might already have a working
-// schema from a previous deploy.
+// won't duplicate the admin user, categories/products, or reviews. Fail closed: if the migration
+// or seed fails, the start-up is aborted (the process exits non-zero), so the platform keeps the
+// previous healthy release instead of serving an API whose schema does not match the code.
 try
 {
     using var migrationScope = app.Services.CreateScope();
@@ -170,7 +170,8 @@ try
 }
 catch (Exception ex)
 {
-    app.Logger.LogError(ex, "Database migration/seed failed on startup");
+    app.Logger.LogCritical(ex, "Database migration/seed failed on startup - aborting");
+    throw;
 }
 
 // Uploaded-image URLs saved before the move to the shop's own domain still carry the old host: move them to the
@@ -213,6 +214,7 @@ app.Use(async (context, next) =>
     context.Response.Headers["X-Frame-Options"] = "DENY";
     context.Response.Headers["Content-Security-Policy"] = "default-src 'self'";
     context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()";
     await next();
 });
 
@@ -235,8 +237,11 @@ app.MapControllers();
 // container and restart it — no dedicated health-check package needed for a single DB check.
 app.MapGet("/health", async (AppDbContext db, CancellationToken cancellationToken) =>
 {
-    var canConnect = await db.Database.CanConnectAsync(cancellationToken);
-    return canConnect
+    // Healthy = the database answers AND the schema is fully migrated (a reachable DB with missing
+    // migrations used to report healthy while queries failed). Details are never put in the response.
+    var healthy = await db.Database.CanConnectAsync(cancellationToken)
+        && !(await db.Database.GetPendingMigrationsAsync(cancellationToken)).Any();
+    return healthy
         ? Results.Ok(new { status = "healthy" })
         : Results.Json(new { status = "unhealthy" }, statusCode: StatusCodes.Status503ServiceUnavailable);
 }).AllowAnonymous();
