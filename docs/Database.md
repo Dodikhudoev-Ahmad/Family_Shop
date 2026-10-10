@@ -49,8 +49,8 @@
 | Миграция | Идемпотентна (`IF [NOT] EXISTS` в коде) |
 |---|---|
 | InitialCreate, AddCategorySlugAndProductMeta, AddOrderDeliveryFields, AddReviewsAndProductRating, AddPromoCodesAndBanners, AddCategoryHasSizes, AddDataProtectionKeys, AddPromoBannerPlacement, AddProductType | нет (стандартные EF, выполняются один раз; EF не применит повторно через `__EFMigrationsHistory`) |
-| MoveShoesBagsToGenderCategories | нет в виде `IF EXISTS`; по `CLAUDE.md` это UPDATE по CategoryId без пересоздания записей. TODO: уточнить, безопасен ли повторный запуск |
-| HardenRefreshTokens | нет. TODO: уточнить |
+| MoveShoesBagsToGenderCategories | UPDATE по CategoryId без пересоздания записей (без `IF EXISTS`-обёртки) |
+| HardenRefreshTokens | без `IF EXISTS`-обёртки |
 | AddUserDeletedAt | да |
 | AddProductAvailableSizes | да (`ADD COLUMN IF NOT EXISTS`) |
 | AddIdempotencyKeys | да (`CREATE ... IF NOT EXISTS`) |

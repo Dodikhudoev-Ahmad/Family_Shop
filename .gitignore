@@ -23,6 +23,13 @@ backend/Api/wwwroot/uploads/products/*
 .vscode/
 .idea/
 
-# Claude Code local state (команды в .claude/commands/ коммитятся)
-.claude/*
-!.claude/commands/
+# Internal working files (kept locally, not published)
+CLAUDE.md
+PROGRESS.md
+TODO.md
+.claude/
+docs/reports/
+docs/phase-summaries/
+docs/DRIFT.md
+docs/TZ_*.md
+docs/Deploy.md

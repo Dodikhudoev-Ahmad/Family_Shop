@@ -11,17 +11,7 @@ Full-cycle e-commerce store for the Kazakhstan market (clothing, footwear, bags,
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 ![Expo](https://img.shields.io/badge/Expo-React_Native-000020?logo=expo&logoColor=white)
-![Railway](https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway&logoColor=white)
-
-## Screenshots
-
-| Home | Catalog |
-|---|---|
-| ![Home page](docs/screenshots/home.png) | ![Catalog](docs/screenshots/catalog.png) |
-
-| Product | Mobile |
-|---|---|
-| ![Product page](docs/screenshots/product.png) | ![Mobile layout](docs/screenshots/mobile.png) |
+![Docker](https://img.shields.io/badge/Docker-API-2496ED?logo=docker&logoColor=white)
 
 ## Tech stack
 
@@ -32,7 +22,7 @@ Full-cycle e-commerce store for the Kazakhstan market (clothing, footwear, bags,
 | Frontend | React 19, TypeScript 6, Vite 8, React Router 7, i18next (ru / kk / en), plain CSS with design tokens, light and dark themes |
 | Mobile | Expo (React Native 0.86), React Navigation, expo-secure-store, i18next |
 | Testing | xUnit (backend), Vitest + Testing Library (frontend), Jest + jest-expo (mobile) |
-| Deployment | Railway (API in Docker, site built with Railpack and served by Caddy, Railway Volume for uploaded images), GitHub Actions (tests, dependency audit) |
+| Deployment | API in Docker, static site served by Caddy, persistent volume for uploaded images; GitHub Actions (tests, dependency audit) |
 
 ## Architecture
 
@@ -202,9 +192,9 @@ backend/
   Application.Tests/ unit and integration tests
 frontend/            React + Vite storefront and admin panel, Caddyfile
 mobile/              Expo (React Native) app
-docs/                API, database, roles, state machines, money rules, SEO, deployment, design
+docs/                API, database, roles, state machines, money rules, SEO, design
 .githooks/           pre-commit secret scanner and its tests
 .github/workflows/   CI: tests and dependency audit
 ```
 
-Further documentation lives in [docs/](docs/): [API](docs/Api.md), [Database](docs/Database.md), [Roles and sessions](docs/Roles.md), [Money and finance](docs/Money.md), [State machines](docs/StateMachines.md), [SEO](docs/Seo.md), [Deployment](docs/Deploy.md), [Design](docs/Design.md).
+Further documentation lives in [docs/](docs/): [API](docs/Api.md), [Database](docs/Database.md), [Roles and sessions](docs/Roles.md), [Money and finance](docs/Money.md), [State machines](docs/StateMachines.md), [SEO](docs/Seo.md), [Design](docs/Design.md).

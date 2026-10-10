@@ -1,7 +1,7 @@
 # API
 
-Источник: `backend/Api/Controllers/`, `RateLimiting/`, `CLAUDE.md`. Префикс: `/api/v1`. Ответы обёрнуты в `ApiResponse<T>` (`success`, `data`, `errors`, при ошибке с кодом — `code`, `meta`).
-Прод: `https://api.familyshop10.kz`. Старый адрес Railway работает параллельно.
+Источник: `backend/Api/Controllers/`, `RateLimiting/`. Префикс: `/api/v1`. Ответы обёрнуты в `ApiResponse<T>` (`success`, `data`, `errors`, при ошибке с кодом — `code`, `meta`).
+Прод: `https://api.familyshop10.kz`.
 
 Доступ: Г = гость, П = покупатель (нужен токен), А = только Admin.
 
@@ -100,7 +100,7 @@ Access-токен привязан к сессии (claim `sid`): после log
 | 400 | — | Host не из `AllowedHosts` |
 | 500 | — | `ExceptionHandlingMiddleware`, клиенту общее сообщение |
 
-TODO: уточнить: точная форма 400 для регистрации на занятый e-mail (по `TODO.md` — 409).
+Регистрация на занятый e-mail возвращает ошибку конфликта; точную форму ответа смотрите в `AuthController`.
 
 ## Заголовки ответа
 
