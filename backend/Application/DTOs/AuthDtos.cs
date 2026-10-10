@@ -33,6 +33,16 @@ public record DeleteAccountRequestDto(string Password)
     }
 }
 
+/// <summary>Changing the password needs the current one again: a stolen access token alone must not be enough.</summary>
+public record ChangePasswordRequestDto(string CurrentPassword, string NewPassword)
+{
+    protected virtual bool PrintMembers(StringBuilder builder)
+    {
+        builder.Append("CurrentPassword = ***, NewPassword = ***");
+        return true;
+    }
+}
+
 public record AuthResponseDto(int UserId, string Email, string Name, string Role, string AccessToken)
 {
     protected virtual bool PrintMembers(StringBuilder builder)
