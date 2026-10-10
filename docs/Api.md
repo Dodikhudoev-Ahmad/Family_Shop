@@ -42,6 +42,7 @@
 | POST `/auth/refresh` | Г (cookie + `X-Requested-With: fetch`) | 20/мин |
 | POST `/auth/logout` | Г (cookie + `X-Requested-With: fetch`) | 10/мин |
 | POST `/auth/logout-all` | П | общий |
+| POST `/auth/change-password` | П | `auth` 10/мин |
 | GET `/auth/sessions`, DELETE `/auth/sessions/{id}` | П | общий (чужой id — 404) |
 | DELETE `/auth/me` (тело `{password}`) | П | 10/мин |
 

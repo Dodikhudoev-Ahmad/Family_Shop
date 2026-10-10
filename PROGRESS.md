@@ -60,3 +60,11 @@
 - [x] **9 B3** [FULL] JSON-LD: Organization/WebSite, Product, BreadcrumbList; общий формат `JsonLd.cs` ↔ `jsonLd.ts`, эталон `docs/fixtures/jsonld/`.
 - [x] **10** [BE] Реальный IP клиента за Cloudflare (`CloudflareClientIp`).
 - [x] **11** [FE] Контраст кнопок с белым текстом (`--accent-strong`).
+
+### Выполнено 2026-10-10 (Phase 14 Security [BE], вне порядка, ветка `security/phase14-hardening`)
+
+- [x] Старт падает при ошибке миграции/сидера; `/health` проверяет непримёненные миграции; `Permissions-Policy` на API; заголовки безопасности в `frontend/Caddyfile`; `npm audit fix` (source-map-js).
+- [x] Пауза аккаунта после 5 неверных паролей (`LoginAttemptTracker`, в памяти, без миграции) и `POST /auth/change-password` с отзывом всех сессий; тесты `LoginAttemptTrackerTests`, `PasswordChangeAndLockoutTests`.
+- [x] `OrderService` разбит на `OrderCreator` / `OrderStatusChanger` / `OrderQueries` / `OrderMapper`, поведение и публичный API прежние.
+- [ ] Перекодирование загруженных фото — ждёт выбора библиотеки (`TODO.md`).
+- [ ] Пересчитать числа тестов в README/CLAUDE.md после слияния (добавлено 14 тестов backend).
