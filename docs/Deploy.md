@@ -21,7 +21,7 @@ Backend:
 - `Seed__AdminPassword` (читается и `SEED_ADMIN_PASSWORD`) — пароль админа сидера.
 - `Seed__LegacyReviewerPassword` — необязательно: прежний, ставший публичным пароль демо-рецензентов. Если задан, сидер при старте заменяет им-известный пароль таких аккаунтов (`@seed.familyshop.kz`) случайным и завершает их сессии; в коде значения нет. Не задан — ничего не делается. После очистки переменную можно убрать.
 - `Store__TimeZone` — по умолчанию `Asia/Almaty`.
-- `AllowedHosts` — хосты через `;`; по умолчанию в `appsettings.Production.json`: `api.familyshop10.kz;familyshop-production.up.railway.app`. Новый адрес API (staging, домен) вписать сюда; запрос с другим Host получает 400.
+- `AllowedHosts` — хосты через `;`; базовый `appsettings.json` — только `localhost;127.0.0.1;[::1]` (среда без своего значения, например неверный `ASPNETCORE_ENVIRONMENT`, не отвечает чужим хостам); Development — `*` (телефон по LAN); по умолчанию в `appsettings.Production.json`: `api.familyshop10.kz;familyshop-production.up.railway.app`. Новый адрес API (staging, домен) вписать сюда; запрос с другим Host получает 400.
 - `Cors__AllowedOrigins` (строка через запятую/пробел) и/или `Cors__AllowedOriginsList`; складывается с массивом в `appsettings.Production.json`. Некорректный origin — ошибка запуска.
 - `Auth__RefreshCookieDomain` — по умолчанию `.familyshop10.kz` в `appsettings.Production.json`.
 - `Uploads__Path` — `/data/uploads` (при подключённом Volume).

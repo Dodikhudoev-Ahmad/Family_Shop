@@ -31,6 +31,26 @@ public class AllowedHostsTests
     }
 
     [Fact]
+    public void BaseDefault_IsNotAWildcard_SoAnUnconfiguredEnvironmentOnlyAnswersLocalhost()
+    {
+        var hosts = Hosts(Deployed("appsettings.json"));
+
+        Assert.NotEmpty(hosts);
+        Assert.DoesNotContain("*", hosts);
+        Assert.Contains("localhost", hosts);
+    }
+
+    [Theory]
+    [InlineData("localhost", HttpStatusCode.OK)]
+    [InlineData("localhost:5280", HttpStatusCode.OK)]
+    [InlineData("127.0.0.1:5280", HttpStatusCode.OK)]
+    [InlineData("evil.example", HttpStatusCode.BadRequest)]
+    public async Task BaseDefault_AnswersOnlyLoopbackHosts(string host, HttpStatusCode expected)
+    {
+        Assert.Equal(expected, await StatusFor(Deployed("appsettings.json"), host));
+    }
+
+    [Fact]
     public void Development_AllowsAnyHost_SoLocalhostAndLanAddressesWork()
     {
         Assert.Equal("*", Deployed("appsettings.json", "appsettings.Development.json"));
