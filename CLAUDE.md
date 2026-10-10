@@ -49,7 +49,7 @@ Backend разбит на 4 проекта, зависимости идут ст
 ### 3.1 FamilyShop.Domain
 Ядро бизнес-логики, без зависимостей от EF Core, ASP.NET или чего-либо внешнего.
 - **Entities**: Product, Category, User, Order, OrderItem, Review, PromoBanner, DataProtectionKey (для персистентных ключей шифрования сессий).
-- **Value Objects**: Money (инкапсулирует цену + валюту, защищает от случайных float-ошибок), Email (валидация формата на уровне типа, а не строки).
+- **Value Objects**: Money (decimal `Amount` ≥ 0, без float-ошибок; валюта в типе не хранится — магазин работает в тенге), Email (валидация формата на уровне типа, а не строки).
 - **Enums**: OrderStatus, ProductSortOrder, ProductSortBy, Gender (Мужское/Женское/Детское), PromoBannerPlacement, Role (в т.ч. Admin).
 - **Result<T> паттерн**: методы сервисов возвращают Result<T> вместо исключений для ожидаемых бизнес-ошибок (например "товара недостаточно на складе"), что даёт контроллерам предсказуемый способ мапить ошибку в HTTP-статус без try/catch на каждом шагу.
 
