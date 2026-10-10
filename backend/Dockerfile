@@ -10,6 +10,11 @@ RUN dotnet restore Api/Api.csproj
 RUN dotnet publish Api/Api.csproj -c Release -o /app/out --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
+# Npgsql probes Kerberos (GSSAPI) when it connects to Postgres; without this library the deploy log fills with
+# "Cannot load library libgssapi_krb5.so.2" errors (the connection still works, it is only noise).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app/out .
 
