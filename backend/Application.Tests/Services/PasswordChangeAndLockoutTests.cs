@@ -38,7 +38,10 @@ public class PasswordChangeAndLockoutTests
 
         _passwordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
         _passwordHasher.Verify("alice-pw", "hash-alice").Returns(true);
-        _passwordHasher.Hash(Arg.Any<string>()).Returns(call => "hash-of-" + call.Arg<string>());
+        // AuthService keeps its dummy hash in a static field shared by every test class, so any Hash() call that is not
+        // the one under test must return the same "dummy-hash" the other test classes use.
+        _passwordHasher.Hash(Arg.Any<string>()).Returns("dummy-hash");
+        _passwordHasher.Hash("brand-new-pw1").Returns("hash-of-brand-new-pw1");
         _jwt.GenerateAccessToken(Arg.Any<User>(), Arg.Any<Guid>()).Returns("access-token");
         _jwt.GenerateRefreshToken().Returns(_ => $"refresh-token-{++_tokenCounter}");
         _jwt.AccessTokenLifetimeSeconds.Returns(900);
