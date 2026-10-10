@@ -160,7 +160,10 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 // separately guarded by an Any() check, so re-running this on every restart is safe and
 // won't duplicate the admin user, categories/products, or reviews. Wrapped in try/catch so
 // a migration failure logs instead of crashing a pod that might already have a working
-// schema from a previous deploy.
+// schema from a previous deploy. This is deliberately NOT fail-closed (a temporary rollback
+// decided by the owner): a failed migration/seed does not stop the start-up, the API keeps
+// serving, and /health below only checks that the database is reachable - it cannot tell a
+// half-migrated schema from a healthy one, so such a failure is visible in the log only.
 try
 {
     using var migrationScope = app.Services.CreateScope();
