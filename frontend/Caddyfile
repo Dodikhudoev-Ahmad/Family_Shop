@@ -44,6 +44,13 @@
 	header {
 		# Prevent some browsers from MIME-sniffing a response away from the declared Content-Type
 		X-Content-Type-Options "nosniff"
+		# Только HTTPS на год (Railway/Cloudflare терминируют TLS, браузер получает заголовок по https)
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# Сайт нельзя встроить в чужой iframe (clickjacking)
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Лишние возможности браузера магазину не нужны
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
 		# Remove Server header
 		-Server
 	}
