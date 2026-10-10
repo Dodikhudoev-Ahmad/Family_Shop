@@ -38,6 +38,11 @@ public class MobileAuthController : ControllerBase
     {
         var session = new SessionContext(ClientType.Mobile, request.DeviceId, request.DeviceName);
         var result = await _authService.RegisterAsync(new RegisterRequestDto(request.Email, request.Password, request.Name), session, cancellationToken);
+        if (result.ErrorCode == ResultErrorCodes.BreachedPassword)
+        {
+            return BadRequest(ApiResponse<MobileAuthResponseDto>.Fail(result.Errors));
+        }
+
         return result.IsSuccess
             ? Ok(ApiResponse<MobileAuthResponseDto>.Ok(ToResponse(result.Value!)))
             : Conflict(ApiResponse<MobileAuthResponseDto>.Fail(result.Errors));
