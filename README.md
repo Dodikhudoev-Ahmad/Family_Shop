@@ -125,14 +125,14 @@ Mobile app (Expo)
 
 ## Testing
 
-All suites were run on 2026-10-09:
+All suites were run on 2026-10-10:
 
 | Suite | Result |
 |---|---|
-| Backend (`dotnet test`, xUnit) | 603 passed, 0 failed, 0 skipped |
-| Frontend (`vitest`) | 500 passed in 53 files |
+| Backend (`dotnet test`, xUnit) | 668 passed, 0 failed, 0 skipped |
+| Frontend (`vitest`) | 520 passed in 56 files |
 | Mobile (`jest`) | 271 passed, 4 skipped (30 of 31 suites run) |
-| **Total** | **1374 passed, 0 failed** |
+| **Total** | **1459 passed, 0 failed** |
 
 What is covered:
 
