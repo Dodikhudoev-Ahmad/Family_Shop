@@ -21,13 +21,13 @@ public class AllowedHostsTests
     private static string[] Hosts(string? value) => (value ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries);
 
     [Fact]
-    public void ProductionDefaults_AllowTheShopsApiHost_AndTheCurrentRailwayHost()
+    public void ProductionDefaults_AllowOnlyTheShopsApiHost()
     {
         var hosts = Hosts(Deployed("appsettings.json", "appsettings.Production.json"));
 
         Assert.Contains("api.familyshop10.kz", hosts);
-        Assert.Contains("familyshop-production.up.railway.app", hosts);
         Assert.DoesNotContain("*", hosts);
+        Assert.Single(hosts);
     }
 
     [Fact]
@@ -82,13 +82,13 @@ public class AllowedHostsTests
         }
     }
 
-    private const string RailwayValue = "api.familyshop10.kz;familyshop-production.up.railway.app";
+    private const string RailwayValue = "api.familyshop10.kz";
 
     [Theory]
     [InlineData("api.familyshop10.kz", HttpStatusCode.OK)]
     [InlineData("API.FamilyShop10.kz", HttpStatusCode.OK)]
     [InlineData("api.familyshop10.kz:443", HttpStatusCode.OK)]
-    [InlineData("familyshop-production.up.railway.app", HttpStatusCode.OK)]
+    [InlineData("old-api.example.net", HttpStatusCode.BadRequest)]
     [InlineData("evil.example", HttpStatusCode.BadRequest)]
     [InlineData("api.familyshop10.kz.evil.example", HttpStatusCode.BadRequest)]
     [InlineData("www.familyshop10.kz", HttpStatusCode.BadRequest)] // the site is not the API
@@ -100,8 +100,8 @@ public class AllowedHostsTests
     [Fact]
     public async Task ChangingTheValue_ChangesTheAnswer_WithoutAnyCodeChange()
     {
-        // e.g. after the Railway address is retired, or when a staging host is added
-        Assert.Equal(HttpStatusCode.BadRequest, await StatusFor("api.familyshop10.kz", "familyshop-production.up.railway.app"));
+        // e.g. when a staging host is added
+        Assert.Equal(HttpStatusCode.BadRequest, await StatusFor("api.familyshop10.kz", "old-api.example.net"));
         Assert.Equal(HttpStatusCode.OK, await StatusFor("api.familyshop10.kz;staging-api.familyshop10.kz", "staging-api.familyshop10.kz"));
         Assert.Equal(HttpStatusCode.OK, await StatusFor("*", "anything.example"));
     }

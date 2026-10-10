@@ -20,7 +20,6 @@ public class CorsOriginsTests
 {
     private const string Www = "https://www.familyshop10.kz";
     private const string Root = "https://familyshop10.kz";
-    private const string OldFrontend = "https://endearing-consideration-production-6e0c.up.railway.app";
 
     private static IConfiguration Config(params (string Key, string Value)[] values) =>
         new ConfigurationBuilder().AddInMemoryCollection(values.Select(v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
@@ -77,24 +76,23 @@ public class CorsOriginsTests
     // ---- what is deployed ----
 
     [Fact]
-    public void Production_AllowsTheNewDomainsAndStillTheOldFrontend_ToBeRemovedLater()
+    public void Production_AllowsOnlyTheShopsDomains()
     {
         var origins = CorsOrigins.Read(FromFiles("appsettings.json", "appsettings.Production.json"));
 
         Assert.Contains(Www, origins);
         Assert.Contains(Root, origins);
-        Assert.Contains(OldFrontend, origins);
+        Assert.Equal(2, origins.Count);
         Assert.All(origins, o => Assert.StartsWith("https://", o));
         Assert.DoesNotContain(origins, o => o.Contains("localhost"));
     }
 
     [Fact]
-    public void Production_AcceptsRequestsForTheNewApiHost_AndTheOldOne()
+    public void Production_AcceptsRequestsForTheApiHost()
     {
         var hosts = FromFiles("appsettings.json", "appsettings.Production.json")["AllowedHosts"]!.Split(';');
 
         Assert.Contains("api.familyshop10.kz", hosts); // otherwise host filtering answers 400 on the new domain
-        Assert.Contains("familyshop-production.up.railway.app", hosts);
     }
 
     // ---- the real CORS pipeline ----
@@ -140,7 +138,6 @@ public class CorsOriginsTests
     [Theory]
     [InlineData(Www)]
     [InlineData(Root)]
-    [InlineData(OldFrontend)]
     public async Task ThePreflightOfAWhitelistedOrigin_IsAnswered_WithCredentialsAllowed(string origin)
     {
         await using var host = new Host(Deployed());
@@ -195,7 +192,6 @@ public class CorsOriginsTests
     [Theory]
     [InlineData(Www)]
     [InlineData(Root)]
-    [InlineData(OldFrontend)]
     public void TheCookieEndpoints_AcceptTheWhitelistedOrigins(string origin) =>
         Assert.False(RunFilter(Deployed(), origin).Blocked);
 
