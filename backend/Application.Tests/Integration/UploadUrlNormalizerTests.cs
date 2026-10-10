@@ -21,7 +21,7 @@ namespace Application.Tests.Integration;
 public class UploadUrlNormalizerTests : IClassFixture<PostgresFixture>
 {
     private const string NewBase = "https://api.familyshop10.kz";
-    private const string OldBase = "https://familyshop-production.up.railway.app";
+    private const string OldBase = "https://old-api.example.net";
     private readonly PostgresFixture _db;
 
     public UploadUrlNormalizerTests(PostgresFixture db) => _db = db;
@@ -180,12 +180,12 @@ public class UploadUrlNormalizerTests : IClassFixture<PostgresFixture>
     [Fact]
     public async Task AFreshUpload_GetsTheConfiguredPublicBase_NotTheHostOfTheRequest()
     {
-        Assert.Equal($"{NewBase}/uploads/products/abc.png", await UploadedUrlAsync(Config(NewBase), "familyshop-production.up.railway.app"));
+        Assert.Equal($"{NewBase}/uploads/products/abc.png", await UploadedUrlAsync(Config(NewBase), "old-api.example.net"));
     }
 
     [Fact]
     public async Task WithoutAConfiguredBase_TheRequestsOwnHostIsUsed_AsBefore()
     {
-        Assert.Equal("https://familyshop-production.up.railway.app/uploads/products/abc.png", await UploadedUrlAsync(Config(null), "familyshop-production.up.railway.app"));
+        Assert.Equal("https://old-api.example.net/uploads/products/abc.png", await UploadedUrlAsync(Config(null), "old-api.example.net"));
     }
 }

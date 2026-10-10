@@ -9,9 +9,9 @@ namespace Api.Security;
 ///    safe and survives a reload because the requests are same-site; CookieCsrfFilter stays as a second layer.
 ///  - Development: no Domain (host-only on localhost) and <c>SameSite=Lax</c>, so the Vite / Expo web preview on another
 ///    localhost port works.
-///  - Production, but the API is reached on any other host (the old *.up.railway.app address kept during the move): the old
+///  - Production, but the API is reached on any other host (any host outside the shop's own domain): the old
 ///    cross-site arrangement, <c>SameSite=None; Secure</c> with no Domain - a Strict cookie or a Domain of another site would be
-///    rejected by the browser and every reload would log the user out. This branch goes away with the Railway addresses.
+///    rejected by the browser and every reload would log the user out.
 /// The decision is made per request from the host the browser called, so Delete() sends the same attributes as the cookie it
 /// removes (the browser ignores a deletion whose Domain / Path / SameSite differ).
 /// </summary>
