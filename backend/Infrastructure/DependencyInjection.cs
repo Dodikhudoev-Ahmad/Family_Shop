@@ -34,6 +34,21 @@ public static class DependencyInjection
 
         services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+
+        // Optional online check of new passwords against known breaches (k-anonymity: five hash characters leave the server).
+        // Off unless Auth:BreachCheck is true; one long-lived HttpClient with a short timeout, and it fails open.
+        if (configuration.GetValue<bool>("Auth:BreachCheck"))
+        {
+            var breachHttp = new HttpClient { Timeout = HibpBreachedPasswordChecker.Timeout + TimeSpan.FromSeconds(1) };
+            services.AddSingleton<IBreachedPasswordChecker>(sp => new HibpBreachedPasswordChecker(
+                breachHttp,
+                sp.GetRequiredService<Microsoft.Extensions.Logging.ILoggerFactory>().CreateLogger(nameof(HibpBreachedPasswordChecker)),
+                configuration["Auth:BreachCheckUrl"]));
+        }
+        else
+        {
+            services.AddSingleton<IBreachedPasswordChecker, NoBreachedPasswordCheck>();
+        }
         services.AddSingleton(sp => new UploadsDirectory(
             UploadsLocation.Resolve(configuration, sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>().ContentRootPath)));
         services.AddScoped<IImageStorageService>(sp => new LocalImageStorageService(sp.GetRequiredService<UploadsDirectory>().Path));

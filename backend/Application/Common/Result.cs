@@ -53,4 +53,7 @@ public static class ResultErrorCodes
 
     /// <summary>The state changed under a concurrent request (e.g. the order was already moved) - maps to 409.</summary>
     public const string Conflict = "conflict";
+
+    /// <summary>The password is known from public data breaches (optional online check) - maps to 400.</summary>
+    public const string BreachedPassword = "breached_password";
 }

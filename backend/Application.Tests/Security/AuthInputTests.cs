@@ -26,6 +26,39 @@ public class PasswordPolicyTests
     [InlineData("12345678")]
     public void RejectsWeakPasswords(string password) => Assert.False(Accepts(password));
 
+    [Theory]
+    [InlineData("Dragon2024")]            // word + year
+    [InlineData("Qwerty12345")]
+    [InlineData("1q2w3e4r5t")]            // keyboard walk
+    [InlineData("Qazwsx123")]
+    [InlineData("Privet2023")]            // transliterated Russian
+    [InlineData("пароль123")]             // Cyrillic
+    [InlineData("Kazakhstan2026")]
+    [InlineData("Iloveyou1")]
+    [InlineData("Admin@123")]             // symbol-suffixed variants
+    [InlineData("FamilyShop123")]         // the shop's own name
+    [InlineData("ALMATY1234")]
+    public void RejectsFrequentPasswordsFromTheExtendedList(string password) => Assert.False(Accepts(password));
+
+    [Fact]
+    public void TheOfflineList_HasSeveralHundredEntries_AllLongEnoughAndWithLettersAndDigits()
+    {
+        Assert.True(CommonPasswords.All.Count >= 300, $"only {CommonPasswords.All.Count} entries");
+        Assert.All(CommonPasswords.All, p =>
+        {
+            Assert.True(p.Length >= 8);
+            Assert.Contains(p, c => char.IsLetter(c));
+            Assert.Contains(p, c => char.IsDigit(c));
+        });
+    }
+
+    [Theory]
+    [InlineData("Tr1ckyTestValue")]
+    [InlineData("blue-Horse-battery-7")]
+    [InlineData("Zebra9Lantern42")]
+    public void TheOfflineList_DoesNotCatchOrdinaryLongPasswords(string password) =>
+        Assert.DoesNotContain(password, CommonPasswords.All);
+
     [Fact]
     public void RejectsAPasswordLongerThanBcryptCanActuallyUse_InsteadOfSilentlyTruncatingIt()
     {

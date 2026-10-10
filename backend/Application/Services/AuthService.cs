@@ -25,6 +25,7 @@ public class AuthService : IAuthService
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
     private readonly ILogger<AuthService> _logger;
+    private readonly IBreachedPasswordChecker? _breachedPasswords;
     private readonly ILoginAttemptTracker _attempts;
 
     public AuthService(
@@ -32,8 +33,10 @@ public class AuthService : IAuthService
         IPasswordHasher passwordHasher,
         IJwtTokenGenerator jwtTokenGenerator,
         ILogger<AuthService> logger,
+        IBreachedPasswordChecker? breachedPasswords = null,
         ILoginAttemptTracker? attempts = null)
     {
+        _breachedPasswords = breachedPasswords;
         _unitOfWork = unitOfWork;
         _passwordHasher = passwordHasher;
         _jwtTokenGenerator = jwtTokenGenerator;
@@ -48,6 +51,12 @@ public class AuthService : IAuthService
         {
             _logger.LogWarning("Registration attempt with already-used email.");
             return Result<AuthResult>.Failure("A user with this email already exists.");
+        }
+
+        if (_breachedPasswords is not null && await _breachedPasswords.IsBreachedAsync(request.Password, cancellationToken))
+        {
+            return Result<AuthResult>.Failure(
+                "This password has appeared in a data breach - choose another one.", ResultErrorCodes.BreachedPassword);
         }
 
         var user = new User
