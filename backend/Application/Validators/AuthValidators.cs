@@ -114,3 +114,15 @@ public class DeleteAccountRequestValidator : AbstractValidator<DeleteAccountRequ
         RuleFor(x => x.Password).NotEmpty().MaximumLength(1024);
     }
 }
+
+public class ChangePasswordRequestValidator : AbstractValidator<ChangePasswordRequestDto>
+{
+    public ChangePasswordRequestValidator()
+    {
+        // The current password is checked against the account as it is, so no complexity rules on it.
+        RuleFor(x => x.CurrentPassword).NotEmpty().MaximumLength(1024);
+        RuleFor(x => x.NewPassword).MustBeAcceptablePassword();
+        RuleFor(x => x.NewPassword).Must((x, p) => !string.Equals(p, x.CurrentPassword, StringComparison.Ordinal))
+            .WithMessage("The new password must differ from the current one.");
+    }
+}
