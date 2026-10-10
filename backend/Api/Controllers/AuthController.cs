@@ -37,6 +37,11 @@ public class AuthController : ControllerBase
         var result = await _authService.RegisterAsync(request, SessionContext.Web, cancellationToken);
         if (!result.IsSuccess)
         {
+            if (result.ErrorCode == ResultErrorCodes.BreachedPassword)
+            {
+                return BadRequest(ApiResponse<AuthResponseDto>.Fail(result.Errors));
+            }
+
             return Conflict(ApiResponse<AuthResponseDto>.Fail(result.Errors));
         }
 
