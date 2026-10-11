@@ -7,12 +7,17 @@ on:
   schedule:
     - cron: '0 6 * * 1'
 
+permissions:
+  contents: read
+
 jobs:
   npm-audit:
     name: npm audit (frontend)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -30,6 +35,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
