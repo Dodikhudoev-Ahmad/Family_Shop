@@ -43,7 +43,8 @@ Caddy проксирует `/sitemap.xml` на API, поэтому `Sitemap:` в
 Правила `frontend/Caddyfile`, взаимоисключающие `handle` по порядку:
 
 1. `/health` — пустой 200.
-2. `GET/HEAD` от User-Agent `whatsapp|telegrambot|facebookexternalhit|twitterbot|yandexbot|slackbot|linkedinbot`: `/product/{число}` → `API/seo/product/{id}`, `/catalog/{slug}` → `API/seo/category/{slug}`. Googlebot и bingbot в список не входят: они исполняют JS и читают мету из `useSeo`.
+2. `GET/HEAD` от User-Agent `whatsapp|telegrambot|facebookexternalhit|twitterbot|yandexbot|slackbot|linkedinbot|discordbot|applebot|duckduckbot|baiduspider|bingbot`: `/product/{число}` → `API/seo/product/{id}`, `/catalog/{slug}` → `API/seo/category/{slug}`. **Googlebot в список не входит** сознательно: он исполняет JS и читает мету из `useSeo`, а отдельный HTML для него добавил бы только риск расхождения с тем, что видит человек. Список записан в Caddyfile дважды (товар, категория) и ещё раз для устаревшего slug — менять во всех трёх местах.
+2a. Те же боты на `/catalog/shoes-bags` получают `301 → /catalog` (человека туда переводит сам сайт), а не 404 от API.
 3. `/sitemap.xml` → API.
 4. Статика и SPA-fallback (`try_files {path} /index.html`). `/assets/*` — `public, max-age=31536000, immutable` (имена с хешем), остальное — `no-cache`.
 
@@ -53,7 +54,8 @@ Caddy проксирует `/sitemap.xml` на API, поэтому `Sitemap:` в
 - Адрес API по умолчанию `https://api.familyshop10.kz`, переопределяется переменной `SEO_API_ORIGIN`.
 - Сбой API (400/401/403/429/5xx, таймаут, недоступность): бот получает `index.html` со статусом 200 (общая мета). 404 от API проходит как есть (404 + `noindex`) — это настоящее «нет товара».
 - Все боты приходят на API с одного адреса сервиса фронтенда и делят один лимит: для `/seo/*` и `/sitemap.xml` действует отдельная политика 600/мин на IP, а не общие 100/мин.
-- Обычные пользователи в API не проксируются никогда.
+- Обычные пользователи в API не проксируются никогда. Ответ SPA для `/product/{id}` и `/catalog/{slug}` тоже несёт `Vary: User-Agent` (содержимое по этим адресам зависит от UA, кеши обязаны это учитывать); у остальных страниц `Vary` прежний.
+- Таймаут ответа API для страниц бота — 5 с (`response_header_timeout`), для sitemap — 8 с.
 - Метка DIST_DIR (двойные фигурные скобки в Caddyfile) подставляется сборщиком фронтенда; любые другие двойные фигурные скобки в файле ломают сборку.
 - Если Caddyfile невалиден, сервис фронтенда не стартует. Откат — убрать `frontend/Caddyfile` (вернётся шаблон сборщика).
 
@@ -81,6 +83,10 @@ Caddy проксирует `/sitemap.xml` на API, поэтому `Sitemap:` в
 - Rich Results Test (Google) для страницы товара: `Product` и `Offer` без ошибок.
 - Превью: Telegram (сброс кеша через @WebpageBot), WhatsApp (кеш держится долго — проверять на новой ссылке), Facebook Sharing Debugger.
 
-## 8. Возможные доработки
+## 8. Проверка Caddyfile локально
+
+`brew install caddy`; подставить метку DIST_DIR (двойные фигурные скобки) путём к каталогу с `index.html`; `PORT=8081 SEO_API_ORIGIN=http://127.0.0.1:9101 caddy validate --config <файл> --adapter caddyfile`, затем `caddy run` и `curl -A <UA>` против мок-API (ответы 200/404/500/429/медленный/недоступен). Матрица результатов — в отчёте шага 18.1.
+
+## 9. Возможные доработки
 
 404 с настоящим статусом для несуществующих товаров в SPA, `hreflang` для kk/en, бот-рендер на kk/en, `AggregateRating` и `Organization` в бот-HTML.
