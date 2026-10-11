@@ -196,7 +196,10 @@
     "loginTitle": "Sign in — {{site}}",
     "favoritesTitle": "Favorites — {{site}}",
     "adminTitle": "Admin — {{site}}",
-    "notFoundTitle": "Page not found — {{site}}"
+    "notFoundTitle": "Page not found — {{site}}",
+    "forgotPasswordTitle": "Password recovery — {{site}}",
+    "resetPasswordTitle": "New password — {{site}}",
+    "confirmEmailTitle": "Email confirmation — {{site}}"
   },
   "card": {
     "new": "New",
@@ -368,7 +371,10 @@
     "create": "Create account",
     "loggedIn": "You're logged in",
     "registered": "Account created, welcome!",
-    "loggedOut": "You've logged out"
+    "loggedOut": "You've logged out",
+    "forgotLink": "Forgot your password?",
+    "passwordIsEmail": "Password must not be the same as your email",
+    "passwordBreached": "This password appears in data breaches — choose another one"
   },
   "account": {
     "eyebrow": "My account",
@@ -426,5 +432,38 @@
     "ctaText": "Take a look at the catalog — new arrivals and bestsellers for women, men and children are waiting for you.",
     "ctaButton": "Go to catalog",
     "ctaMail": "Or write to us: {{email}}"
+  },
+  "forgotPassword": {
+    "title": "Password recovery",
+    "intro": "Enter your account's email and we will send you a link to set a new password. The link is valid for 30 minutes.",
+    "submit": "Send the link",
+    "sent": "If this address is registered, we have sent a message with the link. Check your inbox, including the spam folder.",
+    "back": "Back to log in"
+  },
+  "resetPassword": {
+    "title": "New password",
+    "intro": "Choose a new password for your account.",
+    "newPassword": "New password",
+    "repeatPassword": "Repeat password",
+    "mismatch": "Passwords do not match",
+    "submit": "Save password",
+    "success": "Password changed. You have been signed out on all devices — log in with the new password.",
+    "toLogin": "Log in",
+    "invalidLink": "This link is invalid or has expired. Request a new message.",
+    "requestNew": "Request a new message"
+  },
+  "confirmEmail": {
+    "title": "Email confirmation",
+    "checking": "Confirming your address…",
+    "success": "Email confirmed. Thank you!",
+    "failure": "This link is invalid or has expired. Send the message again from your account.",
+    "toAccount": "To my account",
+    "toLogin": "Log in"
+  },
+  "emailBanner": {
+    "text": "Please confirm your email: we sent a message to {{email}}. You can order without confirming.",
+    "resend": "Send again",
+    "sending": "Sending…",
+    "sent": "Message sent. Check your inbox, including the spam folder."
   }
 }

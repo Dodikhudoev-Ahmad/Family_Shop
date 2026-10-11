@@ -1,22 +1,14 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/Button/Button';
 import { ApiError } from '../lib/api';
 import './AccountPage.css';
 import { useTranslation } from 'react-i18next';
-import i18n from '../i18n';
+import { PASSWORD_MIN_LENGTH, passwordComplexityError } from '../utils/passwordRules';
 import { useNoindexSeo } from '../hooks/useNoindexSeo';
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
-const PASSWORD_MIN_LENGTH = 8;
-
-function passwordComplexityError(password: string): string | null {
-  if (password.length < PASSWORD_MIN_LENGTH) return i18n.t('auth.passwordMin', { n: PASSWORD_MIN_LENGTH });
-  // \p{L}: any letter, so Kazakh-only passwords (ә, қ, ү...) count as having letters too.
-  if (!/\p{L}/u.test(password) || !/\d/.test(password)) return i18n.t('auth.passwordComplexity');
-  return null;
-}
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -128,6 +120,11 @@ export function LoginPage() {
             {passwordError && <span className="checkout__error">{passwordError}</span>}
             {tab === 'register' && !passwordError && (
               <span className="auth-form__hint">{t('auth.hint', { n: PASSWORD_MIN_LENGTH })}</span>
+            )}
+            {tab === 'login' && (
+              <Link to="/forgot-password" className="auth-form__link">
+                {t('auth.forgotLink')}
+              </Link>
             )}
           </div>
 

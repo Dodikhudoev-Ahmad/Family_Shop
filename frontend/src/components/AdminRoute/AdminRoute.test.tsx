@@ -34,6 +34,7 @@ describe('AdminRoute', () => {
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
+      reloadSession: vi.fn(),
     });
 
     renderAdminRoute();
@@ -44,11 +45,12 @@ describe('AdminRoute', () => {
 
   it('redirects a non-admin user to home', () => {
     vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
-      user: { id: 1, email: 'a@b.com', name: 'A', role: 'Customer' },
+      user: { id: 1, email: 'a@b.com', name: 'A', role: 'Customer', emailConfirmed: true },
       isLoading: false,
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
+      reloadSession: vi.fn(),
     });
 
     renderAdminRoute();
@@ -58,11 +60,12 @@ describe('AdminRoute', () => {
 
   it('renders admin content for an admin user', () => {
     vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
-      user: { id: 1, email: 'a@b.com', name: 'A', role: 'Admin' },
+      user: { id: 1, email: 'a@b.com', name: 'A', role: 'Admin', emailConfirmed: true },
       isLoading: false,
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
+      reloadSession: vi.fn(),
     });
 
     renderAdminRoute();
@@ -74,11 +77,12 @@ describe('AdminRoute', () => {
 describe('AdminRoute: search engines', () => {
   it('marks the admin area noindex', () => {
     vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
-      user: { id: 1, email: 'a@b.com', name: 'A', role: 'Admin' },
+      user: { id: 1, email: 'a@b.com', name: 'A', role: 'Admin', emailConfirmed: true },
       isLoading: false,
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
+      reloadSession: vi.fn(),
     });
     renderAdminRoute();
     expect(document.head.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe('noindex,nofollow');

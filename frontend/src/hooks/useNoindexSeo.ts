@@ -7,6 +7,9 @@ export type NoindexTitleKey =
   | 'checkoutTitle'
   | 'accountTitle'
   | 'loginTitle'
+  | 'forgotPasswordTitle'
+  | 'resetPasswordTitle'
+  | 'confirmEmailTitle'
   | 'favoritesTitle'
   | 'adminTitle'
   | 'notFoundTitle';

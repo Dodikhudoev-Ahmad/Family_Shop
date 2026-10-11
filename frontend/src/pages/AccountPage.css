@@ -416,3 +416,51 @@
   font-size: 26px;
   color: var(--accent-text);
 }
+
+.auth-form__title {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.auth-form__text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.auth-form__notice {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.auth-form__notice--error {
+  border-left: 3px solid var(--color-accent);
+}
+
+.auth-form__link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 14px;
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.auth-form__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}

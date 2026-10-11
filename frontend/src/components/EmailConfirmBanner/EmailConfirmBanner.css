@@ -1,0 +1,59 @@
+.email-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.email-banner__text {
+  flex: 1 1 240px;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.email-banner__button {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--accent-text);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--accent-text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-base), color var(--transition-base);
+}
+
+.email-banner__button:hover:not(:disabled) {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: var(--color-white);
+}
+
+.email-banner__button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.email-banner__sent,
+.email-banner__error {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.email-banner__error {
+  color: var(--color-text);
+}
