@@ -63,6 +63,8 @@ export interface MobileAuthResponseDto {
   accessTokenExpiresInSeconds: number;
   refreshToken: string;
   refreshTokenExpiresAt: string;
+  /** True once the owner confirmed the address from the e-mail link. Missing in an older API answer = not confirmed. */
+  emailConfirmed?: boolean;
 }
 
 export interface AuthUser {
@@ -70,6 +72,7 @@ export interface AuthUser {
   email: string;
   name: string;
   role: ApiUserRole;
+  emailConfirmed: boolean;
 }
 
 export interface SessionDto {

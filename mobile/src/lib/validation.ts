@@ -173,6 +173,7 @@ export function authErrorKey(mode: AuthMode, message: string): { key: string } |
   if (mode === 'register') {
     if (text.includes('already exists')) return { key: 'mobile.registerFailed' };
     if (text.includes('too common')) return { key: 'mobile.passwordTooCommon' };
+    if (text.includes('data breach')) return { key: 'mobile.passwordBreached' };
     if (text.includes('same as the e-mail')) return { key: 'mobile.passwordSameAsEmail' };
     if (text.includes('letters and digits')) return { key: 'auth.passwordComplexity' };
   }

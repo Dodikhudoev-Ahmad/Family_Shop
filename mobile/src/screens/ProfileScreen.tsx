@@ -7,6 +7,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { AuthForm } from '../components/AuthForm';
 import { ConfirmSheet } from '../components/forms';
 import { DeleteAccountFlow } from '../components/DeleteAccountFlow';
+import { EmailConfirmBanner } from '../components/EmailConfirmBanner';
 import { Button, Screen, Segmented } from '../components/ui';
 import { LANGUAGE_META, LANGUAGES, setLanguage, type Language } from '../i18n';
 import { useAuth } from '../state/AuthContext';
@@ -76,6 +77,7 @@ export function ProfileScreen() {
                 </Text>
               </View>
             </View>
+            {user.emailConfirmed ? null : <EmailConfirmBanner email={user.email} />}
             <Pressable accessibilityRole="button" accessibilityLabel={t('account.myOrders')} onPress={() => navigation.navigate('Orders')} style={s.row}>
               <Text style={s.rowText}>{t('account.myOrders')}</Text>
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />

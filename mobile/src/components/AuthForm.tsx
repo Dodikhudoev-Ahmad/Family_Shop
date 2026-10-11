@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useFieldError } from '../i18n/labels';
 import {
   authErrorKey,
@@ -11,9 +11,10 @@ import {
   type AuthMode,
 } from '../lib/validation';
 import { useAuth } from '../state/AuthContext';
-import { fontSizes, fonts, radius, spacing } from '../theme/tokens';
+import { fontSizes, fonts, MIN_TOUCH_TARGET, radius, spacing } from '../theme/tokens';
 import { useThemedStyles } from '../theme/ThemeContext';
 import type { ColorTokens } from '../theme/tokens';
+import { ForgotPasswordFlow } from './ForgotPasswordFlow';
 import { TextField } from './forms';
 import { Button, Segmented } from './ui';
 
@@ -22,6 +23,8 @@ const styles = (c: ColorTokens) => ({
   notice: { padding: spacing.md, borderRadius: radius.md, backgroundColor: c.accentSoft },
   noticeText: { color: c.text, fontFamily: fonts.bodyMedium, fontSize: fontSizes.sm },
   error: { color: c.error, fontFamily: fonts.bodyMedium, fontSize: fontSizes.sm },
+  link: { minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' as const, alignSelf: 'flex-start' as const },
+  linkText: { color: c.text, fontFamily: fonts.bodySemibold, fontSize: fontSizes.sm, textDecorationLine: 'underline' as const },
 });
 
 type Field = 'name' | 'email' | 'password';
@@ -44,6 +47,7 @@ export function AuthForm({ intro }: { intro?: string }) {
   const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   const errors = {
     name: mode === 'register' ? validateName(name) : null,
@@ -144,6 +148,13 @@ export function AuthForm({ intro }: { intro?: string }) {
       ) : null}
 
       <Button label={busy ? t('auth.wait') : mode === 'login' ? t('auth.tabLogin') : t('auth.create')} onPress={() => void submit()} loading={busy} />
+
+      {mode === 'login' ? (
+        <Pressable accessibilityRole="link" accessibilityLabel={t('mobile.forgotPassword')} onPress={() => setForgotOpen(true)} style={s.link}>
+          <Text style={s.linkText}>{t('mobile.forgotPassword')}</Text>
+        </Pressable>
+      ) : null}
+      {forgotOpen ? <ForgotPasswordFlow initialEmail={validateEmail(email) ? '' : email.trim()} onClose={() => setForgotOpen(false)} /> : null}
     </View>
   );
 }

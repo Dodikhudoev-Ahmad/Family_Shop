@@ -103,3 +103,14 @@ export function fetchOrders(): Promise<OrderDto[]> {
 export function validatePromoCode(code: string, orderSubtotal: number): Promise<PromoCodeApplicationDto> {
   return api.request<PromoCodeApplicationDto>('/promo-codes/validate', { method: 'POST', body: { code, orderSubtotal } });
 }
+
+// ---- E-mail confirmation and password reset. Anonymous and session-free (the link in the letter opens the site), and
+// the server answers the same for every address: the app can never tell whether an account exists. ----
+
+export function requestPasswordReset(email: string, locale: string): Promise<boolean> {
+  return api.request<boolean>('/auth/password/forgot', { method: 'POST', body: { email, locale } });
+}
+
+export function resendEmailConfirmation(email: string, locale: string): Promise<boolean> {
+  return api.request<boolean>('/auth/email/resend', { method: 'POST', body: { email, locale } });
+}

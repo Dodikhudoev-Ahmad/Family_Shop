@@ -470,6 +470,16 @@
     "boundaryText": "An unexpected error occurred. Restart the app — your cart and favourites are saved.",
     "restart": "Restart",
     "signOut": "Sign out",
-    "activeOrdersCannotDelete": "You can't delete your account while you have active orders. Wait until they are delivered or cancelled, then try again."
+    "activeOrdersCannotDelete": "You can't delete your account while you have active orders. Wait until they are delivered or cancelled, then try again.",
+    "forgotPassword": "Forgot your password?",
+    "forgotTitle": "Password recovery",
+    "forgotText": "Enter your account email and we will send a message with a link. The link opens on the website: you set a new password there, then log in to the app again.",
+    "forgotSend": "Send the link",
+    "forgotSent": "If this address is registered, we have sent a message to it. Check your inbox, including the spam folder. The link is valid for 30 minutes.",
+    "emailBannerText": "Please confirm your email: we sent a message to {{email}}. You can order without confirming.",
+    "emailBannerResend": "Send again",
+    "emailBannerCheck": "I have confirmed",
+    "emailBannerSent": "Message sent. Check your inbox, including the spam folder.",
+    "passwordBreached": "This password appears in data breaches — choose another one"
   }
 }

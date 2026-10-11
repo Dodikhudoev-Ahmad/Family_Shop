@@ -77,7 +77,7 @@ describe('login', () => {
     // The access token lives in memory only: it is not among the persisted secrets.
     expect([...h.store.data.values()]).not.toContain('access-1');
     // The caller gets the user, never a token.
-    expect(user).toEqual({ id: 1, email: 'alice@example.kz', name: 'Alice', role: 'Customer' });
+    expect(user).toEqual({ id: 1, email: 'alice@example.kz', name: 'Alice', role: 'Customer', emailConfirmed: false });
     expect(JSON.stringify(user)).not.toMatch(/access-|refresh-/);
   });
 
@@ -97,6 +97,16 @@ describe('login', () => {
 
     expect(h.calls[0].url).toBe('/auth/mobile/register');
     expect(h.calls[0].body).toMatchObject({ email: 'new@example.kz', name: 'New', deviceId: DEVICE });
+  });
+
+  it('tells the server the app language for the confirmation letter, and reads emailConfirmed back', async () => {
+    const h = setup();
+    h.onFetch(() => jsonResponse(200, envelope(authDto(1, { emailConfirmed: true }))));
+
+    const user = await h.client.register('new@example.kz', 'Tr1cky-Horse', 'New');
+
+    expect(typeof (h.calls[0].body as { locale?: unknown }).locale).toBe('string');
+    expect(user.emailConfirmed).toBe(true);
   });
 });
 
