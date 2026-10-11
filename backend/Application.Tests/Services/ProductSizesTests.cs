@@ -35,6 +35,18 @@ public class ProductSizesTests
         Assert.Empty(SizeGrids.For(null, "Худи"));
     }
 
+    [Theory]
+    [InlineData("Этажерки")]
+    [InlineData("Органайзеры")]
+    [InlineData("Системы хранения")]
+    [InlineData("Декор")]
+    public void HomeGoodsTypes_HaveNoGrid_AndTakeNoSizes(string type)
+    {
+        var grid = SizeGrids.For(Cat("dom-i-byt", hasSizes: false), type);
+        Assert.Empty(grid);
+        Assert.False(ProductSizeRules.Normalize(["M"], grid).IsSuccess);
+    }
+
     [Fact]
     public void EffectiveSizes_AreAllOfTheGridWhenNull_AndTheSelectionOtherwise()
     {

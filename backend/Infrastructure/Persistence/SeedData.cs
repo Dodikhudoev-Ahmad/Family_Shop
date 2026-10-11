@@ -85,6 +85,7 @@ public static class SeedData
             ("Мужское", "men", true),
             ("Детское", "kids", true),
             ("Бытовая техника", "bytovaya-tehnika", false),
+            ("Дом и быт", "dom-i-byt", false),
             ("Спортивные товары", "sport", false),
             ("Посуда", "posuda", false),
             ("Аксессуары", "aksessuary", false),
