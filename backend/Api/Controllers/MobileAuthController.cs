@@ -37,7 +37,7 @@ public class MobileAuthController : ControllerBase
     public async Task<ActionResult<ApiResponse<MobileAuthResponseDto>>> Register(MobileRegisterRequestDto request, CancellationToken cancellationToken)
     {
         var session = new SessionContext(ClientType.Mobile, request.DeviceId, request.DeviceName);
-        var result = await _authService.RegisterAsync(new RegisterRequestDto(request.Email, request.Password, request.Name), session, cancellationToken);
+        var result = await _authService.RegisterAsync(new RegisterRequestDto(request.Email, request.Password, request.Name, request.Locale), session, cancellationToken);
         if (result.ErrorCode == ResultErrorCodes.BreachedPassword)
         {
             return BadRequest(ApiResponse<MobileAuthResponseDto>.Fail(result.Errors));
@@ -94,5 +94,6 @@ public class MobileAuthController : ControllerBase
         result.Response.AccessToken,
         result.AccessTokenLifetimeSeconds,
         result.RefreshToken,
-        result.RefreshTokenExpiresAt);
+        result.RefreshTokenExpiresAt,
+        result.Response.EmailConfirmed);
 }

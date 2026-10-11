@@ -16,6 +16,12 @@ public class User
     public string Name { get; set; } = string.Empty;
     public UserRole Role { get; set; } = UserRole.Customer;
 
+    /// <summary>When the owner proved they read this mailbox (e-mail link or a completed password reset). Null for
+    /// accounts that have not: they are not blocked from anything, the site only suggests confirming.</summary>
+    public DateTime? EmailConfirmedAt { get; set; }
+
+    public bool IsEmailConfirmed => EmailConfirmedAt is not null;
+
     /// <summary>Set when the owner deleted the account. The row stays (orders and reviews point at it) but holds
     /// no personal data any more - see <see cref="Anonymize"/>.</summary>
     public DateTime? DeletedAt { get; set; }
@@ -32,5 +38,6 @@ public class User
         Name = DeletedDisplayName;
         PasswordHash = "!deleted";
         DeletedAt = now;
+        EmailConfirmedAt = null;
     }
 }

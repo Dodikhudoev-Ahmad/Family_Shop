@@ -61,7 +61,8 @@ public class EndpointAuthorizationTests
 
         var expected = new[]
         {
-            "AuthController.Login", "AuthController.Logout", "AuthController.Refresh", "AuthController.Register",
+            "AuthController.ConfirmEmail", "AuthController.ForgotPassword", "AuthController.Login", "AuthController.Logout",
+            "AuthController.Refresh", "AuthController.Register", "AuthController.ResendConfirmation", "AuthController.ResetPassword",
             "CategoriesController.GetCategories",
             "MobileAuthController.Login", "MobileAuthController.Logout", "MobileAuthController.Refresh", "MobileAuthController.Register",
             "ProductsController.GetProduct", "ProductsController.GetProducts",

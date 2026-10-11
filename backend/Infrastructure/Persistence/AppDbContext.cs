@@ -19,6 +19,7 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<EmailToken> EmailTokens => Set<EmailToken>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<PromoCode> PromoCodes => Set<PromoCode>();
     public DbSet<PromoBanner> PromoBanners => Set<PromoBanner>();

@@ -31,6 +31,10 @@ public class RateLimitPolicyTests
     [InlineData(typeof(AuthController), "Register", RateLimitPolicies.AuthRegister)]
     [InlineData(typeof(AuthController), "Refresh", RateLimitPolicies.AuthRefresh)]
     [InlineData(typeof(AuthController), "DeleteAccount", RateLimitPolicies.Auth)]
+    [InlineData(typeof(AuthController), "ForgotPassword", RateLimitPolicies.AuthEmail)]
+    [InlineData(typeof(AuthController), "ResendConfirmation", RateLimitPolicies.AuthEmail)]
+    [InlineData(typeof(AuthController), "ConfirmEmail", RateLimitPolicies.AuthEmailLink)]
+    [InlineData(typeof(AuthController), "ResetPassword", RateLimitPolicies.AuthEmailLink)]
     [InlineData(typeof(MobileAuthController), "Login", RateLimitPolicies.Auth)]
     [InlineData(typeof(MobileAuthController), "Logout", RateLimitPolicies.Auth)]
     [InlineData(typeof(MobileAuthController), "Register", RateLimitPolicies.AuthRegister)]
@@ -97,6 +101,10 @@ public class RateLimitPolicyTests
         Map("/mobile-login", typeof(MobileAuthController), "Login", post: true);
         Map("/sessions", typeof(AuthController), "GetSessions", post: false);
         Map("/logout-all", typeof(AuthController), "LogoutAll", post: true);
+        Map("/forgot", typeof(AuthController), "ForgotPassword", post: true);
+        Map("/resend", typeof(AuthController), "ResendConfirmation", post: true);
+        Map("/reset", typeof(AuthController), "ResetPassword", post: true);
+        Map("/confirm", typeof(AuthController), "ConfirmEmail", post: true);
         app.MapGet("/seo/product/{id}", (int id) => Results.Ok());
         app.MapGet("/seo/category/{slug}", (string slug) => Results.Ok());
         app.MapGet("/sitemap.xml", () => Results.Ok());
@@ -171,6 +179,33 @@ public class RateLimitPolicyTests
         var refresh = await Hit(host.Client, "/refresh", 21);
         Assert.All(refresh.Take(20), status => Assert.Equal(HttpStatusCode.OK, status));
         Assert.Equal(HttpStatusCode.TooManyRequests, refresh[20]);
+    }
+
+    [Fact]
+    public async Task ForgotPasswordAndResend_ShareAFivePerMinuteBudget_ApartFromLogin()
+    {
+        await using var host = StartHost();
+
+        var forgot = await Hit(host.Client, "/forgot", 3);
+        var resend = await Hit(host.Client, "/resend", 3);
+
+        Assert.All(forgot, status => Assert.Equal(HttpStatusCode.OK, status));
+        Assert.All(resend.Take(2), status => Assert.Equal(HttpStatusCode.OK, status));
+        Assert.Equal(HttpStatusCode.TooManyRequests, resend[2]); // 6th letter request from this IP
+        Assert.Equal(HttpStatusCode.OK, (await Hit(host.Client, "/login", 1))[0]); // login has its own bucket
+    }
+
+    [Fact]
+    public async Task UsingALink_AllowsTenPerMinute_PerIp()
+    {
+        await using var host = StartHost();
+
+        var reset = await Hit(host.Client, "/reset", 6);
+        var confirm = await Hit(host.Client, "/confirm", 5);
+
+        Assert.All(reset, status => Assert.Equal(HttpStatusCode.OK, status));
+        Assert.All(confirm.Take(4), status => Assert.Equal(HttpStatusCode.OK, status));
+        Assert.Equal(HttpStatusCode.TooManyRequests, confirm[4]);
     }
 
     [Fact]

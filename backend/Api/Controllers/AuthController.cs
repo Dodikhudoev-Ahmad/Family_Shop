@@ -20,11 +20,13 @@ public class AuthController : ControllerBase
 {
     private const string RefreshTokenCookie = "refreshToken";
     private readonly IAuthService _authService;
+    private readonly IAccountEmailService _accountEmails;
     private readonly RefreshCookiePolicy _cookiePolicy;
 
-    public AuthController(IAuthService authService, RefreshCookiePolicy cookiePolicy)
+    public AuthController(IAuthService authService, IAccountEmailService accountEmails, RefreshCookiePolicy cookiePolicy)
     {
         _authService = authService;
+        _accountEmails = accountEmails;
         _cookiePolicy = cookiePolicy;
     }
 
@@ -189,6 +191,72 @@ public class AuthController : ControllerBase
                 return NotFound(ApiResponse<bool>.Fail("Account not found."));
         }
     }
+
+    // ---- E-mail confirmation and password reset. No session is involved (the link is opened in any browser), so the same
+    // four endpoints serve the site and the mobile app. They carry no cookies, hence no CSRF filter. ----
+
+    /// <summary>Подтверждение email по токену из письма. Токен одноразовый (24 ч); неверный, использованный и просроченный дают один и тот же ответ 400 `invalid_token`.</summary>
+    [AllowAnonymous]
+    [HttpPost("email/confirm")]
+    [EnableRateLimiting(RateLimitPolicies.AuthEmailLink)]
+    public async Task<IActionResult> ConfirmEmail(ConfirmEmailRequestDto request, CancellationToken cancellationToken)
+    {
+        var outcome = await _accountEmails.ConfirmEmailAsync(request.Token, cancellationToken);
+        return outcome == ConfirmEmailOutcome.Confirmed
+            ? Ok(ApiResponse<bool>.Ok(true))
+            : BadRequest(InvalidTokenResponse());
+    }
+
+    /// <summary>Отправить письмо с подтверждением ещё раз. Ответ всегда 200 и не зависит от того, есть ли такой email, подтверждён ли он и ушло ли письмо.</summary>
+    [AllowAnonymous]
+    [HttpPost("email/resend")]
+    [EnableRateLimiting(RateLimitPolicies.AuthEmail)]
+    public async Task<IActionResult> ResendConfirmation(ResendConfirmationRequestDto request, CancellationToken cancellationToken)
+    {
+        await _accountEmails.RequestConfirmationAsync(request.Email, request.Locale, cancellationToken);
+        return Ok(ApiResponse<bool>.Ok(true));
+    }
+
+    /// <summary>«Забыли пароль»: письмо со ссылкой (30 мин, один раз). Ответ всегда 200 и не различает известный и неизвестный email.</summary>
+    [AllowAnonymous]
+    [HttpPost("password/forgot")]
+    [EnableRateLimiting(RateLimitPolicies.AuthEmail)]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequestDto request, CancellationToken cancellationToken)
+    {
+        await _accountEmails.RequestPasswordResetAsync(request.Email, request.Locale, cancellationToken);
+        return Ok(ApiResponse<bool>.Ok(true));
+    }
+
+    /// <summary>
+    /// Новый пароль по токену из письма. Политика пароля как при регистрации; хеш, использование токена и отзыв всех сессий
+    /// (веб и мобильные) — в одной транзакции. После этого нужно войти заново. Неверный/просроченный токен — 400 `invalid_token`;
+    /// пароль совпадает с email — 400 `password_is_email`, утёкший пароль — 400 `breached_password` (токен при этом не гасится).
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("password/reset")]
+    [EnableRateLimiting(RateLimitPolicies.AuthEmailLink)]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequestDto request, CancellationToken cancellationToken)
+    {
+        var outcome = await _accountEmails.ResetPasswordAsync(request.Token, request.NewPassword, cancellationToken);
+        switch (outcome)
+        {
+            case ResetPasswordOutcome.Reset:
+                // A stale cookie of this browser would only be refused at its next refresh; drop it now.
+                Response.Cookies.Delete(RefreshTokenCookie, BuildCookieOptions(null));
+                return Ok(ApiResponse<bool>.Ok(true));
+            case ResetPasswordOutcome.NotAllowed:
+                return BadRequest(ApiResponse<bool>.Fail(
+                    new[] { "Password must not be the same as the e-mail address." }, "password_is_email", null));
+            case ResetPasswordOutcome.BreachedPassword:
+                return BadRequest(ApiResponse<bool>.Fail(
+                    new[] { "This password has appeared in a data breach - choose another one." }, ResultErrorCodes.BreachedPassword, null));
+            default:
+                return BadRequest(InvalidTokenResponse());
+        }
+    }
+
+    private static ApiResponse<bool> InvalidTokenResponse() =>
+        ApiResponse<bool>.Fail(new[] { "The link is invalid or has expired." }, "invalid_token", null);
 
     private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 

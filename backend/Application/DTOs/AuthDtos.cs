@@ -5,7 +5,7 @@ namespace Application.DTOs;
 // Records print every member from ToString(); anything that holds a secret overrides PrintMembers so
 // an accidental `logger.LogInformation("{Request}", request)` can never write a password or token.
 
-public record RegisterRequestDto(string Email, string Password, string Name)
+public record RegisterRequestDto(string Email, string Password, string Name, string? Locale = null)
 {
     protected virtual bool PrintMembers(StringBuilder builder)
     {
@@ -43,7 +43,7 @@ public record ChangePasswordRequestDto(string CurrentPassword, string NewPasswor
     }
 }
 
-public record AuthResponseDto(int UserId, string Email, string Name, string Role, string AccessToken)
+public record AuthResponseDto(int UserId, string Email, string Name, string Role, string AccessToken, bool EmailConfirmed = false)
 {
     protected virtual bool PrintMembers(StringBuilder builder)
     {
@@ -66,7 +66,7 @@ public record AuthResult(AuthResponseDto Response, string RefreshToken, DateTime
 // ---- Mobile: the refresh token travels in the JSON body (there is no cookie jar), bound to a device. ----
 
 /// <summary>DeviceId is a random UUID the app generates once and keeps in the Keychain/Keystore; the server stores only its hash.</summary>
-public record MobileRegisterRequestDto(string Email, string Password, string Name, string DeviceId, string? DeviceName)
+public record MobileRegisterRequestDto(string Email, string Password, string Name, string DeviceId, string? DeviceName, string? Locale = null)
 {
     protected virtual bool PrintMembers(StringBuilder builder)
     {
@@ -110,11 +110,38 @@ public record MobileAuthResponseDto(
     string AccessToken,
     int AccessTokenExpiresInSeconds,
     string RefreshToken,
-    DateTime RefreshTokenExpiresAt)
+    DateTime RefreshTokenExpiresAt,
+    bool EmailConfirmed = false)
 {
     protected virtual bool PrintMembers(StringBuilder builder)
     {
         builder.Append($"UserId = {UserId}, Email = {Email}, Role = {Role}, AccessToken = ***, RefreshToken = ***");
+        return true;
+    }
+}
+
+// ---- E-mail confirmation and password reset (same endpoints for web and mobile: no session is involved) ----
+
+/// <summary>The token from the e-mail link (32 random bytes, base64url).</summary>
+public record ConfirmEmailRequestDto(string Token)
+{
+    protected virtual bool PrintMembers(StringBuilder builder)
+    {
+        builder.Append("Token = ***");
+        return true;
+    }
+}
+
+/// <summary>Locale is "ru", "kk" or "en" (the language of the letter); anything else means Russian.</summary>
+public record ResendConfirmationRequestDto(string Email, string? Locale = null);
+
+public record ForgotPasswordRequestDto(string Email, string? Locale = null);
+
+public record ResetPasswordRequestDto(string Token, string NewPassword)
+{
+    protected virtual bool PrintMembers(StringBuilder builder)
+    {
+        builder.Append("Token: ***, NewPassword: ***");
         return true;
     }
 }

@@ -27,6 +27,7 @@ public class AuthService : IAuthService
     private readonly ILogger<AuthService> _logger;
     private readonly IBreachedPasswordChecker? _breachedPasswords;
     private readonly ILoginAttemptTracker _attempts;
+    private readonly IAccountEmailService? _accountEmails;
 
     public AuthService(
         IUnitOfWork unitOfWork,
@@ -34,8 +35,10 @@ public class AuthService : IAuthService
         IJwtTokenGenerator jwtTokenGenerator,
         ILogger<AuthService> logger,
         IBreachedPasswordChecker? breachedPasswords = null,
-        ILoginAttemptTracker? attempts = null)
+        ILoginAttemptTracker? attempts = null,
+        IAccountEmailService? accountEmails = null)
     {
+        _accountEmails = accountEmails;
         _breachedPasswords = breachedPasswords;
         _unitOfWork = unitOfWork;
         _passwordHasher = passwordHasher;
@@ -69,6 +72,13 @@ public class AuthService : IAuthService
 
         await _unitOfWork.Users.AddAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Not awaited for its outcome and never throws: a letter that does not go out must not fail the registration
+        // (the site offers "send again"). Orders are not held back until the address is confirmed.
+        if (_accountEmails is not null)
+        {
+            await _accountEmails.SendConfirmationAsync(user.Id, request.Locale, cancellationToken);
+        }
 
         return Result<AuthResult>.Success(await StartSessionAsync(user, session, cancellationToken));
     }
@@ -220,6 +230,7 @@ public class AuthService : IAuthService
         {
             await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(userId, now, ct);
             await _unitOfWork.RefreshTokens.DeleteAllForUserAsync(userId, ct);
+            await _unitOfWork.EmailTokens.DeleteAllForUserAsync(userId, ct);
             await _unitOfWork.Orders.AnonymizeContactDataForUserAsync(userId, ct);
             user.Anonymize(now);
             await _unitOfWork.SaveChangesAsync(ct);
@@ -420,7 +431,7 @@ public class AuthService : IAuthService
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var response = new AuthResponseDto(user.Id, user.Email.Value, user.Name, user.Role.ToString(), accessToken);
+        var response = new AuthResponseDto(user.Id, user.Email.Value, user.Name, user.Role.ToString(), accessToken, user.IsEmailConfirmed);
         return new AuthResult(response, refreshToken, expiresAt)
         {
             AccessTokenLifetimeSeconds = _jwtTokenGenerator.AccessTokenLifetimeSeconds
