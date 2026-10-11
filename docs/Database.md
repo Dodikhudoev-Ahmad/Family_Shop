@@ -57,11 +57,12 @@
 | AddProductUpdatedAt | да: `ADD COLUMN IF NOT EXISTS "UpdatedAt" timestamptz NULL`, затем `UPDATE ... SET "UpdatedAt" = "CreatedAt" WHERE "UpdatedAt" IS NULL` (трогает только строки без значения — правки, сделанные после первого запуска, повторный запуск не затирает), затем `SET DEFAULT now()` и `SET NOT NULL`. Default `now()` оставлен, чтобы код предыдущей версии (откат кода) мог вставлять товары без этой колонки. Order/OrderItem/Review и записи с FK на них не затрагиваются, товары не пересоздаются. Откат кода безопасен, откат схемы — только из бэкапа |
 | AddExpenseSoftDelete | да: `ADD COLUMN IF NOT EXISTS` (`IsDeleted boolean NOT NULL DEFAULT false`, `DeletedAt`, `DeletedByUserId`), внешний ключ и индекс — только если их ещё нет. Существующие расходы не пересоздаются, получают `IsDeleted = false`; Orders/OrderItems/Reviews не затрагиваются. Откат кода безопасен (старый код колонки игнорирует), откат схемы — из бэкапа |
 | AddFinance | да: `CREATE TABLE/INDEX IF NOT EXISTS`, `CHECK (Amount > 0)`; бэкфилл `Income` для заказов в `Delivered` — `INSERT ... ON CONFLICT (OrderId, Type) DO NOTHING`, повторный запуск ничего не добавляет. Существующие строки Orders/OrderItems/Reviews не затрагиваются. Откат схемы — только из бэкапа (`DROP TABLE` в `Down` — для локальной БД) |
+| AddHomeGoodsCategory | да, только данные (схема не меняется): `INSERT ... SELECT ... WHERE NOT EXISTS` категории «Дом и быт» (`dom-i-byt`, `HasSizes = false`); `UPDATE` товара «Этажерка для обуви», который лежит в «Бытовая техника», — `CategoryId` на `dom-i-byt` и `ProductType = 'Этажерки'` по Name, Id не меняется (Reviews/OrderItems целы). Повтор и база без такого товара ничего не меняют; одноимённый товар в другой категории не трогается. Откат кода безопасен, откат схемы не нужен (колонок и индексов нет); откат данных — `Down` (возвращает товар, удаляет категорию, только пока она пуста) или бэкап |
 
 Правило: новые миграции только аддитивные и идемпотентные; записи с FK на Order/Review не пересоздавать (см. `.claude/commands/migration.md`).
 
 ## Сидер и старт
 
-- Upsert по стабильному ключу: Category — по Slug, Product — по CategoryId+Name. Id не меняются, повтор запуска дублей не создаёт.
+- Upsert по стабильному ключу: Category — по Slug (в т.ч. `dom-i-byt` — та же запись, что создала миграция `AddHomeGoodsCategory`), Product — по CategoryId+Name. Id не меняются, повтор запуска дублей не создаёт.
 - `UploadUrlNormalizer` на старте переносит хост старых URL фото товаров и баннеров на `Uploads:PublicBaseUrl` (UPDATE на месте).
 - `Product.Stock` — один остаток на товар (не по размерам).
