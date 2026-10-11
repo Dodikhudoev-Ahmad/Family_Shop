@@ -1,4 +1,4 @@
-import { CLOTHING_SIZES, discountPercent, formatPrice, KIDS_SHOE_SIZES, productSizes, SHOE_SIZES, sizesFor } from '../../src/lib/mappers';
+import { CLOTHING_SIZES, discountPercent, formatPrice, KIDS_SHOE_SIZES, mapCategory, productSizes, SHOE_SIZES, sizesFor, sortCategories } from '../../src/lib/mappers';
 import type { Category } from '../../src/lib/types';
 
 const categories: Category[] = [
@@ -47,5 +47,23 @@ describe('productSizes - the sizes a customer can pick', () => {
   it('a product without a grid has no sizes whatever the API says', () => {
     expect(productSizes(dto({ categoryId: 7, productType: 'Тарелки', availableSizes: ['M'] }), categories)).toEqual([]);
     expect(productSizes(dto({ productType: 'Сумки', availableSizes: ['M'] }), categories)).toEqual([]);
+  });
+});
+
+describe('category order', () => {
+  it('mapCategory carries sortOrder, 0 when the server did not send it', () => {
+    const base = { id: 1, name: 'A', slug: 'a', parentCategoryId: null, hasSizes: true };
+    expect(mapCategory({ ...base, sortOrder: 40 }).sortOrder).toBe(40);
+    expect(mapCategory(base).sortOrder).toBe(0);
+  });
+
+  it('sortCategories orders by sortOrder, then id, without mutating its input', () => {
+    const list = [
+      { id: '3', name: 'C', slug: 'c', hasSizes: true, sortOrder: 20 },
+      { id: '9', name: 'Z', slug: 'z', hasSizes: true, sortOrder: 10 },
+      { id: '2', name: 'B', slug: 'b', hasSizes: true, sortOrder: 20 },
+    ];
+    expect(sortCategories(list).map((c) => c.slug)).toEqual(['z', 'b', 'c']);
+    expect(list[0].slug).toBe('c');
   });
 });
