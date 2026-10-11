@@ -42,6 +42,10 @@ describe('productTypesFor', () => {
     expect(productTypesFor('men')).toEqual(expect.arrayContaining(['Худи', 'Кроссовки', 'Сумки']));
     expect(productTypesFor('bytovaya-tehnika')).toContain('Холодильники');
     expect(productTypesFor('bytovaya-tehnika')).not.toContain('Худи');
+    expect(productTypesFor('bytovaya-tehnika')).toContain('Чайники');
+    expect(productTypesFor('posuda')).toContain('Чайники');
+    const fallback = productTypesFor('some-new-category');
+    expect(fallback.filter((type) => type === 'Чайники')).toHaveLength(1);
     expect(productTypesFor('some-new-category')).toEqual(expect.arrayContaining(['Худи', 'Холодильники']));
   });
 });
