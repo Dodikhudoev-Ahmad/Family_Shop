@@ -14,7 +14,17 @@ namespace Application.Tests.Storage;
 /// /uploads/products/* URLs, and that a request cannot escape the directory.</summary>
 public class UploadsServingTests : IDisposable
 {
-    private static readonly byte[] Png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D];
+    // A real (tiny) PNG: uploads are decoded and re-encoded, so the signature alone no longer passes.
+    private static readonly byte[] Png = MakePng();
+
+    private static byte[] MakePng()
+    {
+        using var bitmap = new SkiaSharp.SKBitmap(8, 8);
+        bitmap.Erase(SkiaSharp.SKColors.SaddleBrown);
+        using var image = SkiaSharp.SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+        return data.ToArray();
+    }
 
     private readonly string _temp = Path.Combine(Path.GetTempPath(), $"family-shop-uploads-{Guid.NewGuid():N}");
     private string Volume => Path.Combine(_temp, "volume", "uploads");   // stands for the mounted /data/uploads
@@ -87,16 +97,17 @@ public class UploadsServingTests : IDisposable
         var saved = await sut.SaveImageAsync(content, "photo.png", "image/png");
 
         Assert.True(saved.IsSuccess);
-        Assert.Matches(@"^/uploads/products/[0-9a-f]{32}\.png$", saved.Value); // same format as the URLs already in the DB
+        Assert.Matches(@"^/uploads/products/[0-9a-f]{32}\.webp$", saved.Value); // same path shape as the URLs already in the DB
         var onDisk = Path.Combine(Volume, "products", Path.GetFileName(saved.Value!));
-        Assert.Equal(Png, await File.ReadAllBytesAsync(onDisk));
+        var stored = await File.ReadAllBytesAsync(onDisk);
+        Assert.Equal("RIFF", System.Text.Encoding.ASCII.GetString(stored, 0, 4)); // re-encoded as WEBP
         Assert.False(Directory.Exists(Path.Combine(ContentRoot, "wwwroot"))); // nothing leaked to the old location
 
         await using var server = await ServerAsync(Volume);
         var response = await server.CreateClient().GetAsync(saved.Value);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal(Png, await response.Content.ReadAsByteArrayAsync());
+        Assert.Equal(stored, await response.Content.ReadAsByteArrayAsync());
     }
 
     [Fact]

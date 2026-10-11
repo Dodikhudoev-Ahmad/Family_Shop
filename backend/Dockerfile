@@ -6,8 +6,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY . .
-RUN dotnet restore Api/Api.csproj
-RUN dotnet publish Api/Api.csproj -c Release -o /app/out --no-restore
+# Linux x64 only (Railway): without -r the publish carries SkiaSharp's native library for every platform (~460 MB).
+RUN dotnet restore Api/Api.csproj -r linux-x64
+RUN dotnet publish Api/Api.csproj -c Release -r linux-x64 --self-contained false -o /app/out --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 # Npgsql probes Kerberos (GSSAPI) when it connects to Postgres; without this library the deploy log fills with

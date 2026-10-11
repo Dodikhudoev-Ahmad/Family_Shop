@@ -65,7 +65,7 @@ Access-токен привязан к сессии (claim `sid`): после log
 
 | Путь | Действия |
 |---|---|
-| `/admin/products` | POST, PUT `{id}`, DELETE `{id}`, POST `images` (загрузка фото) |
+| `/admin/products` | POST, PUT `{id}`, DELETE `{id}`, POST `images` (загрузка фото: JPEG/PNG/WEBP/GIF до 5 МБ; файл **перекодируется** и всегда сохраняется как `/uploads/products/{guid}.webp`, качество 85, длинная сторона не более 2000 px без увеличения, метаданные EXIF не сохраняются, у GIF берётся первый кадр; сторона > 10000 px или > 40 млн пикселей, повреждённый файл и всё остальное — 400 с общим текстом ru/kk/en; обработка не дольше 5 с, не более 2 одновременно) |
 | `/admin/categories` | POST, PUT, DELETE |
 | `/admin/promo-banners` | GET, POST, PUT, DELETE |
 | `/admin/diagnostics/client-ip` | GET: `{remoteIp, xForwardedForEntries, cfConnectingIpPresent, cloudflareTrusted, scheme}` — какой адрес клиента видит API (значения заголовков не отдаются, ответ `no-store`); общий лимит |

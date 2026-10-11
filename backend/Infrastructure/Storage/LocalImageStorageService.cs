@@ -5,13 +5,16 @@ namespace Infrastructure.Storage;
 
 public class LocalImageStorageService : IImageStorageService
 {
-    private static readonly Dictionary<string, string> AllowedContentTypes = new()
-    {
-        ["image/jpeg"] = ".jpg",
-        ["image/png"] = ".png",
-        ["image/webp"] = ".webp",
-        ["image/gif"] = ".gif"
-    };
+    // The declared type only has to be one of these; whatever is accepted is re-encoded and always stored as .webp.
+    private static readonly HashSet<string> AllowedContentTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+    /// <summary>Same wording for every decode/validation failure, in ru / kk / en, with no detail of what was wrong.</summary>
+    public const string InvalidImageMessage =
+        "Не удалось обработать изображение, загрузите другой файл (JPEG, PNG, WEBP или GIF). / " +
+        "Суретті өңдеу мүмкін болмады, басқа файл жүктеңіз (JPEG, PNG, WEBP немесе GIF). / " +
+        "The image could not be processed, please upload another file (JPEG, PNG, WEBP or GIF).";
+
+    private const string StoredExtension = ".webp";
 
     private const long MaxFileSizeBytes = 5 * 1024 * 1024;
 
@@ -27,9 +30,9 @@ public class LocalImageStorageService : IImageStorageService
     {
         // A multipart part may arrive with no Content-Type at all; treat that as "not an allowed type".
         contentType = (contentType ?? string.Empty).ToLowerInvariant();
-        if (!AllowedContentTypes.TryGetValue(contentType, out var extension))
+        if (!AllowedContentTypes.Contains(contentType))
         {
-            return Result<string>.Failure("Допустимы только изображения JPEG, PNG, WEBP или GIF.");
+            return Result<string>.Failure(InvalidImageMessage);
         }
 
         if (content.Length > MaxFileSizeBytes)
@@ -41,7 +44,21 @@ public class LocalImageStorageService : IImageStorageService
         // trusted on its own — confirm the actual file bytes match a real image signature.
         if (!await MatchesImageSignatureAsync(content, contentType, cancellationToken))
         {
-            return Result<string>.Failure("Файл повреждён или не является изображением.");
+            return Result<string>.Failure(InvalidImageMessage);
+        }
+
+        // Only the re-encoded pixels are stored: the original bytes (metadata, appended payloads, animation) are dropped.
+        byte[] original;
+        using (var buffer = new MemoryStream((int)content.Length))
+        {
+            await content.CopyToAsync(buffer, cancellationToken);
+            original = buffer.ToArray();
+        }
+
+        var reencoded = await ImageReencoder.ReencodeAsync(original, cancellationToken);
+        if (reencoded is null)
+        {
+            return Result<string>.Failure(InvalidImageMessage);
         }
 
         var targetDirectory = Path.Combine(_uploadsRoot, UploadsLocation.ProductsFolder);
@@ -49,11 +66,10 @@ public class LocalImageStorageService : IImageStorageService
 
         // Random name - never trust the client-supplied filename for a path, and it also
         // sidesteps collisions between concurrent uploads.
-        var storedFileName = $"{Guid.NewGuid():N}{extension}";
+        var storedFileName = $"{Guid.NewGuid():N}{StoredExtension}";
         var fullPath = Path.Combine(targetDirectory, storedFileName);
 
-        await using var fileStream = new FileStream(fullPath, FileMode.CreateNew, FileAccess.Write);
-        await content.CopyToAsync(fileStream, cancellationToken);
+        await File.WriteAllBytesAsync(fullPath, reencoded, cancellationToken);
 
         // The public URL format is fixed (and stored in the database), whatever directory the files really live in.
         return Result<string>.Success($"{UploadsLocation.RequestPath}/{UploadsLocation.ProductsFolder}/{storedFileName}");
