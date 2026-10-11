@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Channels;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -31,14 +32,19 @@ public sealed class ResendEmailTransport : IEmailTransport
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, _settings.ApiUrl);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.ApiKey);
-        request.Content = JsonContent.Create(new
-        {
-            from = _settings.From,
-            to = new[] { message.To },
-            subject = message.Subject,
-            html = message.HtmlBody,
-            text = message.TextBody
-        });
+        // A buffered body (with Content-Length), not streamed JsonContent: plain HTTP servers and proxies in front of a
+        // provider read it without chunked-encoding support.
+        request.Content = new StringContent(
+            JsonSerializer.Serialize(new
+            {
+                from = _settings.From,
+                to = new[] { message.To },
+                subject = message.Subject,
+                html = message.HtmlBody,
+                text = message.TextBody
+            }),
+            Encoding.UTF8,
+            "application/json");
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(Timeout);
@@ -163,8 +169,9 @@ public sealed class EmailDispatchService : BackgroundService
             }
             catch (Exception ex)
             {
-                // Type only: the message can carry the request URL or an address.
-                _logger.LogWarning("E-mail delivery failed (attempt {Attempt}): {ErrorType}.", attempt, ex.GetType().Name);
+                // Types and the transport-level error kind only: the message can carry the request URL or an address.
+                var kind = ex is HttpRequestException http ? http.HttpRequestError.ToString() : ex.InnerException?.GetType().Name;
+                _logger.LogWarning("E-mail delivery failed (attempt {Attempt}): {ErrorType} {ErrorKind}.", attempt, ex.GetType().Name, kind);
             }
 
             if (attempt == 1)

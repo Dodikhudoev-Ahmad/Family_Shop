@@ -106,6 +106,7 @@ public class EmailTransportTests
         await transport.SendAsync(Message, CancellationToken.None);
 
         Assert.Equal(HttpMethod.Post, handler.Request!.Method);
+        Assert.NotNull(handler.Request.Content!.Headers.ContentLength); // buffered body, not chunked: simple servers read it
         Assert.Equal("https://api.resend.com/emails", handler.Request.RequestUri!.ToString());
         Assert.Equal($"Bearer {Key}", handler.Request.Headers.Authorization!.ToString());
         using var json = JsonDocument.Parse(handler.Body!);
