@@ -139,13 +139,13 @@
 }
 
 .quick-view__price-new {
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .quick-view__stock-warning {
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-accent);
+  color: var(--accent-text);
   margin-top: var(--space-1);
 }
 

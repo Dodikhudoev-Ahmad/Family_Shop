@@ -21,7 +21,7 @@
 
 .status-badge--created {
   background: rgba(193, 122, 84, 0.14);
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .status-badge--processing {

@@ -155,6 +155,8 @@
     "type": "Тип",
     "size": "Размер",
     "price": "Цена",
+    "priceFrom": "Цена от",
+    "priceTo": "Цена до",
     "discountOnly": "Только со скидкой",
     "typeAria": "Тип товара",
     "sizeGroups": {
@@ -269,7 +271,7 @@
     "deleted": "Отзыв удалён",
     "deleteFailed": "Не удалось удалить отзыв.",
     "title": "Отзывы",
-    "loginPrompt": "<link>Войдите</link>, чтобы оставить отзыв о товаре.",
+    "loginPrompt": "<signin>Войдите</signin>, чтобы оставить отзыв о товаре.",
     "count_one": "{{count}} отзыв",
     "count_few": "{{count}} отзыва",
     "count_many": "{{count}} отзывов",

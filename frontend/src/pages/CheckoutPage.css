@@ -199,7 +199,7 @@
   align-items: center;
   justify-content: center;
   background: var(--color-accent-glow);
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .checkout-items {
@@ -303,7 +303,7 @@
   font-family: var(--font-heading);
   font-size: 30px;
   font-weight: 700;
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .checkout__summary-total-old {
@@ -382,7 +382,7 @@
   font-family: var(--font-heading);
   font-size: 28px;
   font-weight: 700;
-  color: var(--color-accent);
+  color: var(--accent-text);
   margin: var(--space-2) 0;
 }
 

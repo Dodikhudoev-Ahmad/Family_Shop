@@ -42,7 +42,7 @@
 }
 
 .slider__arrow:hover {
-  color: var(--color-accent);
+  color: var(--accent-text);
   transform: translateY(-50%) scale(1.06);
 }
 

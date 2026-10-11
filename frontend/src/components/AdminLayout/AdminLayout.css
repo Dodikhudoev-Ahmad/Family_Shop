@@ -34,7 +34,7 @@
 }
 
 .admin-topbar__logo svg {
-  color: var(--color-accent);
+  color: var(--accent-text);
   flex-shrink: 0;
 }
 
@@ -43,7 +43,7 @@
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-accent);
+  color: var(--accent-text);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: 2px 6px;
@@ -73,7 +73,7 @@
 
 .admin-topbar__icon-btn:hover {
   border-color: var(--color-accent);
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .admin-topbar__user {
@@ -179,12 +179,12 @@
 }
 
 .admin-sidebar__link.is-active {
-  color: var(--color-accent);
+  color: var(--accent-text);
   background: var(--color-bg-secondary);
 }
 
 .admin-sidebar__link.is-active svg {
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .admin-main {

@@ -85,7 +85,7 @@
 }
 
 .reviews__login-prompt a {
-  color: var(--color-accent);
+  color: var(--accent-text);
   font-weight: 600;
   text-decoration: underline;
 }
@@ -200,7 +200,7 @@
 
 .reviews__more:hover:not(:disabled) {
   border-color: var(--color-accent);
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .reviews__more:disabled {

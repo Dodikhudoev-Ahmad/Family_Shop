@@ -25,7 +25,7 @@
 .lang-menu__trigger:hover,
 .lang-menu__trigger[aria-expanded='true'] {
   background: var(--color-bg-secondary);
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .lang-menu__chevron {
@@ -74,7 +74,7 @@
 }
 
 .lang-menu__item.is-active {
-  color: var(--color-accent);
+  color: var(--accent-text);
   font-weight: 600;
 }
 

@@ -47,7 +47,7 @@
 }
 
 a.footer__link:hover {
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .footer__contact-link {
@@ -63,7 +63,7 @@ a.footer__link:hover {
 }
 
 a.footer__contact-link:hover svg {
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .footer__bottom {

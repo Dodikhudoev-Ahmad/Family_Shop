@@ -36,7 +36,7 @@
 
 .admin-orders__view-toggle button.is-active {
   background: var(--color-bg-secondary);
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .admin-page-error {
@@ -114,7 +114,7 @@
 
 .admin-table__expand:hover {
   border-color: var(--color-accent);
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 /* Cards view */
@@ -151,7 +151,7 @@
 
 .admin-pagination button:hover:not(:disabled) {
   border-color: var(--color-accent);
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .admin-pagination button:disabled {
@@ -177,7 +177,7 @@
   height: 72px;
   border-radius: 50%;
   background: var(--color-bg-secondary);
-  color: var(--color-accent);
+  color: var(--accent-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -510,7 +510,7 @@
 .admin-dropzone.is-dragging {
   border-color: var(--color-accent);
   background: color-mix(in srgb, var(--color-accent) 6%, transparent);
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .admin-dropzone.is-dragging svg {
