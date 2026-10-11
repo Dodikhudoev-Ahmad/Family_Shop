@@ -39,7 +39,7 @@ export interface ApiClientDeps {
 }
 
 function toUser(data: MobileAuthResponseDto): AuthUser {
-  return { id: data.userId, email: data.email, name: data.name, role: data.role };
+  return { id: data.userId, email: data.email, name: data.name, role: data.role, emailConfirmed: data.emailConfirmed === true };
 }
 
 /**
@@ -219,7 +219,8 @@ export function createApiClient(deps: ApiClientDeps) {
       establishSession('/auth/mobile/login', { email, password }),
 
     register: (email: string, password: string, name: string): Promise<AuthUser> =>
-      establishSession('/auth/mobile/register', { email, password, name }),
+      // `locale` is the language of the confirmation letter the server sends.
+      establishSession('/auth/mobile/register', { email, password, name, locale: i18n.language }),
 
     /** Restores the user at app start from the stored refresh token. Null when there is no live session. */
     async restoreSession(): Promise<AuthUser | null> {

@@ -198,6 +198,8 @@ export interface AuthResponseDto {
   name: string;
   role: ApiUserRole;
   accessToken: string;
+  /** True once the owner confirmed the address from the e-mail link (older accounts: false until they do). */
+  emailConfirmed: boolean;
 }
 
 export function loginRequest(email: string, password: string): Promise<AuthResponseDto> {
@@ -212,7 +214,43 @@ export function loginRequest(email: string, password: string): Promise<AuthRespo
 export function registerRequest(email: string, password: string, name: string): Promise<AuthResponseDto> {
   return apiFetch<AuthResponseDto>(
     '/auth/register',
-    { method: 'POST', body: JSON.stringify({ email, password, name }) },
+    { method: 'POST', body: JSON.stringify({ email, password, name, locale: currentLocale() }) },
+    false
+  );
+}
+
+/** Language of the letter the server sends: the site's current language (ru / kk / en). */
+function currentLocale(): string {
+  return (i18n.resolvedLanguage ?? i18n.language ?? 'ru').slice(0, 2);
+}
+
+// ---- E-mail confirmation and password reset. No session: the link is opened in any browser, so none of these carries
+// the access token's refresh-retry (allowRefresh = false). "forgot" and "resend" answer the same for every address. ----
+
+export function forgotPasswordRequest(email: string): Promise<boolean> {
+  return apiFetch<boolean>(
+    '/auth/password/forgot',
+    { method: 'POST', body: JSON.stringify({ email, locale: currentLocale() }) },
+    false
+  );
+}
+
+export function resendConfirmationRequest(email: string): Promise<boolean> {
+  return apiFetch<boolean>(
+    '/auth/email/resend',
+    { method: 'POST', body: JSON.stringify({ email, locale: currentLocale() }) },
+    false
+  );
+}
+
+export function confirmEmailRequest(token: string): Promise<boolean> {
+  return apiFetch<boolean>('/auth/email/confirm', { method: 'POST', body: JSON.stringify({ token }) }, false);
+}
+
+export function resetPasswordRequest(token: string, newPassword: string): Promise<boolean> {
+  return apiFetch<boolean>(
+    '/auth/password/reset',
+    { method: 'POST', body: JSON.stringify({ token, newPassword }) },
     false
   );
 }

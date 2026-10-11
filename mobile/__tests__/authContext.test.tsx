@@ -3,7 +3,7 @@ import { ApiError } from '../src/lib/api/errors';
 import type { AuthUser } from '../src/lib/api/types';
 import { AuthProvider, useAuth } from '../src/state/AuthContext';
 
-const alice: AuthUser = { id: 1, email: 'alice@example.kz', name: 'Alice', role: 'Customer' };
+const alice: AuthUser = { id: 1, email: 'alice@example.kz', name: 'Alice', role: 'Customer', emailConfirmed: false };
 
 jest.mock('../src/lib/api/client', () => ({
   api: {
@@ -92,6 +92,29 @@ describe('session at startup', () => {
     const auth = await mount();
     expect(auth.current?.user).toBeNull();
     expect(auth.current?.isLoading).toBe(false);
+  });
+});
+
+describe('reloadUser', () => {
+  it('replaces the user with the server\'s current view (e.g. the address was confirmed)', async () => {
+    mockApi.restoreSession.mockResolvedValueOnce({ ...alice, emailConfirmed: false });
+    const auth = await mount();
+    expect(auth.current?.user?.emailConfirmed).toBe(false);
+
+    mockApi.restoreSession.mockResolvedValueOnce({ ...alice, emailConfirmed: true });
+    await act(async () => auth.current?.reloadUser());
+
+    expect(auth.current?.user?.emailConfirmed).toBe(true);
+  });
+
+  it('keeps the shown user when the server cannot be reached', async () => {
+    mockApi.restoreSession.mockResolvedValueOnce(alice);
+    const auth = await mount();
+
+    mockApi.restoreSession.mockRejectedValueOnce(new Error('offline'));
+    await act(async () => auth.current?.reloadUser());
+
+    expect(auth.current?.user).toEqual(alice);
   });
 });
 

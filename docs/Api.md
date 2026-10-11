@@ -52,8 +52,24 @@
 | POST `/auth/logout` | Г (cookie + `X-Requested-With: fetch`) | 10/мин |
 | POST `/auth/logout-all` | П | общий |
 | POST `/auth/change-password` | П | `auth` 10/мин |
+| POST `/auth/email/confirm` (тело `{token}`) | Г | `auth-email-link` 10/мин |
+| POST `/auth/email/resend` (тело `{email, locale?}`) | Г | `auth-email` 5/мин + 3 письма на адрес за 15 мин |
+| POST `/auth/password/forgot` (тело `{email, locale?}`) | Г | `auth-email` 5/мин + 3 письма на адрес за 15 мин |
+| POST `/auth/password/reset` (тело `{token, newPassword}`) | Г | `auth-email-link` 10/мин |
 | GET `/auth/sessions`, DELETE `/auth/sessions/{id}` | П | общий (чужой id — 404) |
 | DELETE `/auth/me` (тело `{password}`) | П | 10/мин |
+
+### Подтверждение email и сброс пароля (Phase 21)
+
+Четыре эндпоинта выше — без сессии и без cookie (ссылку открывают в любом браузере), поэтому **одни и те же** для сайта и приложения; CSRF-фильтр им не нужен, ответы `Cache-Control: no-store`.
+
+- **Токен**: 32 байта из криптографического ГСЧ (base64url, 43 символа), в БД только SHA-256 (`EmailTokens.TokenHash`). Подтверждение — 24 ч, сброс — 30 мин. Одноразовый: погашение — один условный `UPDATE ... WHERE UsedAt IS NULL AND ExpiresAt > now`, из параллельных запросов успешен один. Новая выдача удаляет прежние неиспользованные токены того же назначения (работает только последнее письмо).
+- **Ссылка** в письме: `{Seo:SiteUrl}/confirm-email#token=…` и `{Seo:SiteUrl}/reset-password#token=…`. Токен в **фрагменте** (`#`): он не попадает ни в логи Caddy/Railway, ни в `Referer`; страница сайта читает его, убирает из адреса и отправляет POST'ом. GET по ссылке ничего не меняет (сканеры писем не гасят токен).
+- **`forgot` и `resend` отвечают всегда `200 {success: true}`** — для существующего, несуществующего, удалённого, уже подтверждённого адреса, при исчерпанном лимите на адрес и при сбое отправки. Время ответа выравнивается нижней границей 300 мс; письмо уходит через очередь в фоне, запрос не ждёт провайдера.
+- `email/confirm`, `password/reset`: неверный, использованный и просроченный токен — один и тот же **400 `invalid_token`**. `password/reset` дополнительно: пароль совпадает с email — 400 `password_is_email`, пароль из утечек (если включён `Auth__BreachCheck`) — 400 `breached_password`; в обоих случаях токен не гасится. Политика пароля — как при регистрации.
+- **Сброс пароля**: в одной транзакции гасится токен, меняется хеш и отзываются **все** сессии пользователя (веб и mobile); дальше вход заново. Заодно ставится `EmailConfirmedAt` (письмо дошло до ящика) и сбрасывается пауза после неверных паролей. Удаление аккаунта удаляет и его токены.
+- `locale` (`ru`/`kk`/`en`, иное — `ru`) выбирает язык письма. `register` (веб и mobile) тоже принимает необязательный `locale` и отправляет письмо подтверждения; сбой отправки регистрацию не ломает. Заказ **не** блокируется до подтверждения, существующие пользователи не блокируются (`EmailConfirmedAt = NULL`).
+- В ответах `login`/`register`/`refresh` (веб: `AuthResponseDto`, mobile: `MobileAuthResponseDto`) добавлено поле `emailConfirmed` — по нему сайт и приложение показывают мягкий баннер.
 
 Мобильный контур `/auth/mobile/{register,login,refresh,logout}`: refresh в теле JSON, обязателен `deviceId`; лимиты те же, что у веб-аналогов.
 
@@ -101,6 +117,9 @@ Access-токен привязан к сессии (claim `sid`): после log
 | 401 | — | нет или просрочен access-токен |
 | 403 | — | не Admin на `/admin/*`; нет заголовка `X-Requested-With` / чужой Origin на cookie-эндпоинтах; удаление аккаунта админа |
 | 404 | — | нет ресурса (чужая сессия — тоже 404) |
+| 400 | `invalid_token` | ссылка из письма неверна, уже использована или просрочена (`email/confirm`, `password/reset`) |
+| 400 | `password_is_email` | новый пароль совпадает с email (`password/reset`) |
+| 400 | `breached_password` | пароль известен по утечкам (регистрация, `password/reset`; только при `Auth__BreachCheck=true`) |
 | 409 | `out_of_stock` | не хватает остатка; `meta`: productId, productName, available |
 | 409 | `size_unavailable` | размера нет среди доступных; `meta`: productId, productName, size |
 | 409 | `conflict` | гонка смены статуса, проигравший запрос |

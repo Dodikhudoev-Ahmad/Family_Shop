@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Application.Interfaces;
+using Infrastructure.Mail;
 using Domain.Interfaces;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
@@ -49,10 +50,40 @@ public static class DependencyInjection
         {
             services.AddSingleton<IBreachedPasswordChecker, NoBreachedPasswordCheck>();
         }
+        AddEmail(services, configuration);
+
         services.AddSingleton(sp => new UploadsDirectory(
             UploadsLocation.Resolve(configuration, sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>().ContentRootPath)));
         services.AddScoped<IImageStorageService>(sp => new LocalImageStorageService(sp.GetRequiredService<UploadsDirectory>().Path));
 
         return services;
+    }
+
+    // Letters (confirmation, password reset). The provider sits behind IEmailTransport and the application only sees
+    // IEmailSender, so swapping Resend for something else touches this method alone. Without Email__ApiKey nothing is sent and
+    // the service still starts.
+    private static void AddEmail(IServiceCollection services, IConfiguration configuration)
+    {
+        var settings = Mail.EmailSettings.Read(configuration);
+        services.AddSingleton(settings);
+        services.AddSingleton(System.Threading.Channels.Channel.CreateBounded<EmailMessage>(
+            new System.Threading.Channels.BoundedChannelOptions(500)
+            {
+                FullMode = System.Threading.Channels.BoundedChannelFullMode.Wait,
+                SingleReader = true
+            }));
+        services.AddSingleton<IEmailSender, Mail.QueuedEmailSender>();
+
+        if (settings.IsConfigured)
+        {
+            var http = new HttpClient { Timeout = Mail.ResendEmailTransport.Timeout + TimeSpan.FromSeconds(2) };
+            services.AddSingleton<Mail.IEmailTransport>(new Mail.ResendEmailTransport(http, settings));
+        }
+        else
+        {
+            services.AddSingleton<Mail.IEmailTransport, Mail.DisabledEmailTransport>();
+        }
+
+        services.AddHostedService<Mail.EmailDispatchService>();
     }
 }

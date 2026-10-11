@@ -116,7 +116,7 @@ public class RefreshCookieTests
 
     private static AuthController Controller(IAuthService service, RefreshCookiePolicy policy, string host, string? cookie = null)
     {
-        var controller = new AuthController(service, policy);
+        var controller = new AuthController(service, Substitute.For<Application.Interfaces.IAccountEmailService>(), policy);
         var http = new DefaultHttpContext();
         http.Request.Host = new HostString(host);
         http.Request.Scheme = "https";

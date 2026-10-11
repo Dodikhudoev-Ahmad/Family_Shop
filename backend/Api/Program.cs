@@ -196,6 +196,13 @@ if (publicBaseUrl is not null)
     }, app.Logger, "Normalizing uploaded image URLs failed on startup");
 }
 
+// Letters (e-mail confirmation, password reset) need Email__ApiKey. Without it the API starts and works, sending is simply off.
+// The warning names the variable only - never a value.
+if (!app.Services.GetRequiredService<Infrastructure.Mail.EmailSettings>().IsConfigured)
+{
+    app.Logger.LogWarning("Email__ApiKey is not set: e-mail sending is disabled (confirmation and password-reset letters will not be sent).");
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

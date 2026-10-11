@@ -11,6 +11,7 @@ import { ApiError, fetchOrders, type ApiOrderStatus, type OrderDto } from '../li
 import './AccountPage.css';
 import { useTranslation } from 'react-i18next';
 import { useNoindexSeo } from '../hooks/useNoindexSeo';
+import { EmailConfirmBanner } from '../components/EmailConfirmBanner/EmailConfirmBanner';
 
 export function AccountPage() {
   const { t } = useTranslation();
@@ -46,6 +47,8 @@ export function AccountPage() {
           {t('header.logout')}
         </button>
       </div>
+
+      {!user.emailConfirmed && <EmailConfirmBanner email={user.email} />}
 
       <OrderHistory />
       <hr className="account__divider" />

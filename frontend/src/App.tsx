@@ -12,6 +12,9 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { OrderDetailPage } from './pages/OrderDetailPage';
 import { AccountPage } from './pages/AccountPage';
 import { LoginPage } from './pages/LoginPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
 import { FavoritesPage } from './pages/FavoritesPage';
 import { AboutPage } from './pages/AboutPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -90,6 +93,9 @@ export default function App() {
             <Route path="/account" element={<AccountPage />} />
             <Route path="/account/orders/:id" element={<OrderDetailPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/confirm-email" element={<ConfirmEmailPage />} />
             <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="*" element={<NotFoundPage />} />

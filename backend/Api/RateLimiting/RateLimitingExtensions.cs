@@ -15,6 +15,13 @@ public static class RateLimitPolicies
     /// <summary>Token refresh: looser (20/min per IP) because it also fires on every page load / app start.</summary>
     public const string AuthRefresh = "auth-refresh";
 
+    /// <summary>"Forgot password" and "send the confirmation again": each call can send a letter, so 5/min per IP (and 3 per
+    /// 15 min per address inside the service).</summary>
+    public const string AuthEmail = "auth-email";
+
+    /// <summary>Using an e-mail link (confirm, reset): 10/min per IP - tokens are 256-bit, this only blunts noise.</summary>
+    public const string AuthEmailLink = "auth-email-link";
+
     public const string OrderCreate = "order-create";
     public const string ReviewCreate = "review-create";
     public const string PromoValidate = "promo-validate";
@@ -73,6 +80,26 @@ public static class RateLimitingExtensions
                     _ => new FixedWindowRateLimiterOptions
                     {
                         PermitLimit = 20,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0
+                    }));
+
+            options.AddPolicy(RateLimitPolicies.AuthEmail, context =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 5,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0
+                    }));
+
+            options.AddPolicy(RateLimitPolicies.AuthEmailLink, context =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
                         Window = TimeSpan.FromMinutes(1),
                         QueueLimit = 0
                     }));

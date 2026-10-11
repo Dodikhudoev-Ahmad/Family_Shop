@@ -9,6 +9,11 @@ interface AuthUser {
   email: string;
   name: string;
   role: ApiUserRole;
+  emailConfirmed: boolean;
+}
+
+function toUser(data: { userId: number; email: string; name: string; role: ApiUserRole; emailConfirmed?: boolean }): AuthUser {
+  return { id: data.userId, email: data.email, name: data.name, role: data.role, emailConfirmed: data.emailConfirmed === true };
 }
 
 interface AuthContextValue {
@@ -18,6 +23,8 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<AuthUser>;
   register: (email: string, password: string, name: string) => Promise<AuthUser>;
   logout: () => void;
+  /** Re-reads the session from the refresh cookie (e.g. after the e-mail was confirmed in this browser). */
+  reloadSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -51,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         setAccessToken(data.accessToken);
-        setUser({ id: data.userId, email: data.email, name: data.name, role: data.role });
+        setUser(toUser(data));
       })
       .catch(() => {
         // network error: stay logged out instead of leaving an unhandled rejection
@@ -67,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const data = await loginRequest(email, password);
     setAccessToken(data.accessToken);
-    const loggedInUser = { id: data.userId, email: data.email, name: data.name, role: data.role };
+    const loggedInUser = toUser(data);
     setUser(loggedInUser);
     showToast(i18n.t('auth.loggedIn'));
     return loggedInUser;
@@ -76,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (email: string, password: string, name: string) => {
     const data = await registerRequest(email, password, name);
     setAccessToken(data.accessToken);
-    const registeredUser = { id: data.userId, email: data.email, name: data.name, role: data.role };
+    const registeredUser = toUser(data);
     setUser(registeredUser);
     showToast(i18n.t('auth.registered'));
     return registeredUser;
@@ -89,8 +96,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void logoutRequest();
   };
 
+  const reloadSession = async () => {
+    if (!hasSessionHint()) return;
+    try {
+      const data = await silentRefresh();
+      if (!data) return;
+      setAccessToken(data.accessToken);
+      setUser(toUser(data));
+    } catch {
+      // unreachable service: keep what is shown
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, reloadSession }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

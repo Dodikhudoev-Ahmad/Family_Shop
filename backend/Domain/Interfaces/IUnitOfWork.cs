@@ -7,6 +7,7 @@ public interface IUnitOfWork
     IOrderRepository Orders { get; }
     IUserRepository Users { get; }
     IRefreshTokenRepository RefreshTokens { get; }
+    IEmailTokenRepository EmailTokens { get; }
     IReviewRepository Reviews { get; }
     IPromoCodeRepository PromoCodes { get; }
     IPromoBannerRepository PromoBanners { get; }

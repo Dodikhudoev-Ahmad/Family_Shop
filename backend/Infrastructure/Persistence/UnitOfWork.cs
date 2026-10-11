@@ -12,6 +12,7 @@ public class UnitOfWork : IUnitOfWork
     private IOrderRepository? _orders;
     private IUserRepository? _users;
     private IRefreshTokenRepository? _refreshTokens;
+    private IEmailTokenRepository? _emailTokens;
     private IReviewRepository? _reviews;
     private IPromoCodeRepository? _promoCodes;
     private IPromoBannerRepository? _promoBanners;
@@ -29,6 +30,7 @@ public class UnitOfWork : IUnitOfWork
     public IOrderRepository Orders => _orders ??= new OrderRepository(_context);
     public IUserRepository Users => _users ??= new UserRepository(_context);
     public IRefreshTokenRepository RefreshTokens => _refreshTokens ??= new RefreshTokenRepository(_context);
+    public IEmailTokenRepository EmailTokens => _emailTokens ??= new EmailTokenRepository(_context);
     public IReviewRepository Reviews => _reviews ??= new ReviewRepository(_context);
     public IPromoCodeRepository PromoCodes => _promoCodes ??= new PromoCodeRepository(_context);
     public IIdempotencyKeyRepository IdempotencyKeys => _idempotencyKeys ??= new IdempotencyKeyRepository(_context);

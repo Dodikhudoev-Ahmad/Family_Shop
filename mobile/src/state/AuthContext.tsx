@@ -12,6 +12,8 @@ interface AuthContextValue {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   logoutAll: () => Promise<void>;
+  /** Re-reads the user from the server (e.g. after the e-mail link was opened in the browser). Keeps the current user when offline. */
+  reloadUser: () => Promise<void>;
   /** Deletes the account for good (needs the current password). Throws the server's refusal (wrong password, admin). */
   deleteAccount: (password: string) => Promise<void>;
 }
@@ -61,6 +63,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSessionEnded(false);
   }, []);
 
+  const reloadUser = useCallback(async () => {
+    try {
+      const restored = await api.restoreSession();
+      if (restored) setUser(restored);
+    } catch {
+      // offline: keep what is shown
+    }
+  }, []);
+
   const endVoluntarily = useCallback(async (action: () => Promise<void>) => {
     voluntary.current = true;
     try {
@@ -90,8 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, isLoading, sessionEnded, login, register, logout, logoutAll, deleteAccount }),
-    [user, isLoading, sessionEnded, login, register, logout, logoutAll, deleteAccount]
+    () => ({ user, isLoading, sessionEnded, login, register, logout, logoutAll, reloadUser, deleteAccount }),
+    [user, isLoading, sessionEnded, login, register, logout, logoutAll, reloadUser, deleteAccount]
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

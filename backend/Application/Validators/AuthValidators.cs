@@ -32,6 +32,7 @@ public class RegisterRequestValidator : AbstractValidator<RegisterRequestDto>
         RuleFor(x => x.Password).Must((x, p) => !string.Equals(p, x.Email, StringComparison.OrdinalIgnoreCase))
             .WithMessage("Password must not be the same as the e-mail address.");
         RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.Locale).MaximumLength(16);
     }
 }
 
@@ -65,6 +66,7 @@ public class MobileRegisterRequestValidator : AbstractValidator<MobileRegisterRe
         RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
         RuleFor(x => x.DeviceId).MustBeDeviceId();
         RuleFor(x => x.DeviceName).MaximumLength(100);
+        RuleFor(x => x.Locale).MaximumLength(16);
     }
 }
 
@@ -114,5 +116,49 @@ public class ChangePasswordRequestValidator : AbstractValidator<ChangePasswordRe
         RuleFor(x => x.NewPassword).MustBeAcceptablePassword();
         RuleFor(x => x.NewPassword).Must((x, p) => !string.Equals(p, x.CurrentPassword, StringComparison.Ordinal))
             .WithMessage("The new password must differ from the current one.");
+    }
+}
+
+public static class EmailTokenRules
+{
+    // 32 bytes in base64url are 43 characters; the cap leaves room without letting a huge string reach the database.
+    public static IRuleBuilderOptions<T, string> MustBeEmailToken<T>(this IRuleBuilder<T, string> rule) =>
+        rule.NotEmpty().MaximumLength(128).Matches("^[A-Za-z0-9_-]+$")
+            .WithMessage("The link is invalid or has expired.");
+}
+
+public class ConfirmEmailRequestValidator : AbstractValidator<ConfirmEmailRequestDto>
+{
+    public ConfirmEmailRequestValidator()
+    {
+        RuleFor(x => x.Token).MustBeEmailToken();
+    }
+}
+
+public class ResendConfirmationRequestValidator : AbstractValidator<ResendConfirmationRequestDto>
+{
+    public ResendConfirmationRequestValidator()
+    {
+        RuleFor(x => x.Email).NotEmpty().EmailAddress().MaximumLength(256);
+        RuleFor(x => x.Locale).MaximumLength(16);
+    }
+}
+
+public class ForgotPasswordRequestValidator : AbstractValidator<ForgotPasswordRequestDto>
+{
+    public ForgotPasswordRequestValidator()
+    {
+        RuleFor(x => x.Email).NotEmpty().EmailAddress().MaximumLength(256);
+        RuleFor(x => x.Locale).MaximumLength(16);
+    }
+}
+
+public class ResetPasswordRequestValidator : AbstractValidator<ResetPasswordRequestDto>
+{
+    public ResetPasswordRequestValidator()
+    {
+        RuleFor(x => x.Token).MustBeEmailToken();
+        // Same policy as registration; "not equal to the e-mail address" is checked once the token has told us whose account it is.
+        RuleFor(x => x.NewPassword).MustBeAcceptablePassword();
     }
 }

@@ -16,6 +16,8 @@ public static class DependencyInjection
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddSingleton<ILoginAttemptTracker, LoginAttemptTracker>(); // per-account pause after repeated wrong passwords (in memory)
+        services.AddScoped<IAccountEmailService, AccountEmailService>();
+        services.AddSingleton<IEmailRequestThrottle, EmailRequestThrottle>(); // per-address brake on forgot/resend (in memory)
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IPromoCodeService, PromoCodeService>();
         services.AddScoped<IPromoBannerService, PromoBannerService>();
