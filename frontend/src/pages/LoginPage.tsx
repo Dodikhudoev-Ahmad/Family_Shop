@@ -52,7 +52,8 @@ export function LoginPage() {
       const loggedInUser = tab === 'login' ? await login(email, password) : await register(email, password, name);
       navigate(loggedInUser.role === 'Admin' ? '/admin/orders' : from ?? '/account', { replace: true });
     } catch (err) {
-      setServerError(err instanceof ApiError ? err.message : t('auth.generic'));
+      if (err instanceof ApiError && err.code === 'breached_password') setServerError(t('auth.passwordBreached'));
+      else setServerError(err instanceof ApiError ? err.message : t('auth.generic'));
     } finally {
       setIsSubmitting(false);
     }

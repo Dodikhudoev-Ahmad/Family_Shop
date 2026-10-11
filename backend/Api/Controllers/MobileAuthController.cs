@@ -40,7 +40,7 @@ public class MobileAuthController : ControllerBase
         var result = await _authService.RegisterAsync(new RegisterRequestDto(request.Email, request.Password, request.Name, request.Locale), session, cancellationToken);
         if (result.ErrorCode == ResultErrorCodes.BreachedPassword)
         {
-            return BadRequest(ApiResponse<MobileAuthResponseDto>.Fail(result.Errors));
+            return BadRequest(ApiResponse<MobileAuthResponseDto>.Fail(result.Errors, ResultErrorCodes.BreachedPassword, null));
         }
 
         return result.IsSuccess

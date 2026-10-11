@@ -274,6 +274,11 @@ public class AuthService : IAuthService
             return ChangePasswordOutcome.NotAllowed;
         }
 
+        if (_breachedPasswords is not null && await _breachedPasswords.IsBreachedAsync(newPassword, cancellationToken))
+        {
+            return ChangePasswordOutcome.BreachedPassword;
+        }
+
         _attempts.Reset(key);
         var now = DateTime.UtcNow;
         var newHash = _passwordHasher.Hash(newPassword);

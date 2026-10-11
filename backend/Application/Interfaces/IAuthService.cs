@@ -45,5 +45,7 @@ public enum ChangePasswordOutcome
     InvalidPassword,
     /// <summary>The new password equals the account's e-mail address.</summary>
     NotAllowed,
+    /// <summary>The new password is known from data breaches (only when the online check is on).</summary>
+    BreachedPassword,
     NotFound
 }

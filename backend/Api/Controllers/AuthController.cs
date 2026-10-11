@@ -41,7 +41,7 @@ public class AuthController : ControllerBase
         {
             if (result.ErrorCode == ResultErrorCodes.BreachedPassword)
             {
-                return BadRequest(ApiResponse<AuthResponseDto>.Fail(result.Errors));
+                return BadRequest(ApiResponse<AuthResponseDto>.Fail(result.Errors, ResultErrorCodes.BreachedPassword, null));
             }
 
             return Conflict(ApiResponse<AuthResponseDto>.Fail(result.Errors));
@@ -185,6 +185,9 @@ public class AuthController : ControllerBase
                 return NoContent();
             case ChangePasswordOutcome.InvalidPassword:
                 return BadRequest(ApiResponse<bool>.Fail("Incorrect password."));
+            case ChangePasswordOutcome.BreachedPassword:
+                return BadRequest(ApiResponse<bool>.Fail(
+                    new[] { "This password has appeared in a data breach - choose another one." }, ResultErrorCodes.BreachedPassword, null));
             case ChangePasswordOutcome.NotAllowed:
                 return BadRequest(ApiResponse<bool>.Fail("Password must not be the same as the e-mail address."));
             default:
