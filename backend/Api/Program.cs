@@ -219,6 +219,8 @@ app.Use(async (context, next) =>
     await next();
 });
 
+app.UsePersonalDataCacheHeaders();
+
 app.UseFamilyShopCors();
 
 // Uploaded photos are served from the configured uploads directory (Uploads:Path; a mounted volume in production),
