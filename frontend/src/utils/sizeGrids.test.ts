@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import ru from '../i18n/locales/ru.json';
+import kk from '../i18n/locales/kk.json';
+import en from '../i18n/locales/en.json';
 import { productTypesFor, sizeGridFor, summarizeSizes } from './sizeGrids';
 
 const women = { slug: 'women', hasSizes: true };
@@ -47,5 +50,29 @@ describe('productTypesFor', () => {
     const fallback = productTypesFor('some-new-category');
     expect(fallback.filter((type) => type === 'Чайники')).toHaveLength(1);
     expect(productTypesFor('some-new-category')).toEqual(expect.arrayContaining(['Худи', 'Холодильники']));
+  });
+});
+
+describe('"Дом и быт" (dom-i-byt)', () => {
+  const homeTypes = ['Этажерки', 'Органайзеры', 'Системы хранения', 'Декор'];
+  const home = { slug: 'dom-i-byt', hasSizes: false };
+
+  it('offers its own four types and none of the clothing or appliance ones', () => {
+    expect(productTypesFor('dom-i-byt')).toEqual(homeTypes);
+  });
+
+  it('has no size grid for any of its types', () => {
+    for (const type of homeTypes) expect(sizeGridFor(home, type)).toBeNull();
+    expect(summarizeSizes(null, sizeGridFor(home, 'Этажерки'))).toBe('без размеров');
+  });
+
+  it('is named and its types are translated in ru, kk and en', () => {
+    for (const locale of [ru, kk, en]) {
+      expect(locale.categories['dom-i-byt']).toBeTruthy();
+      for (const type of homeTypes) {
+        expect((locale.productTypes as Record<string, string>)[type]).toBeTruthy();
+      }
+    }
+    expect(ru.categories['dom-i-byt']).toBe('Дом и быт');
   });
 });

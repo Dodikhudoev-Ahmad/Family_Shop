@@ -16,7 +16,7 @@ interface CategoryMegaMenuProps {
 // "Одежда"/"Дом"/"Спорт и аксессуары" aren't real categories, just labels.
 const GROUPS = [
   { label: 'clothing', slugs: ['women', 'men', 'kids'] },
-  { label: 'home', slugs: ['bytovaya-tehnika', 'posuda'] },
+  { label: 'home', slugs: ['bytovaya-tehnika', 'dom-i-byt', 'posuda'] },
   { label: 'sportAccessories', slugs: ['sport', 'aksessuary'] },
 ] as const;
 

@@ -54,6 +54,12 @@ public static class ProductTypeClassifier
         ("Украшения", ["колье", "цепочк", "браслет", "кольц", "колец", "кулон"]),
         ("Часы", ["часы"]),
         ("Чехлы", ["чехол"]),
+        // Home & household ("Дом и быт"). Types without keywords are chosen explicitly by the admin only: a
+        // name-based guess would clash with kitchen "органайзер" above and with words like "декоративный".
+        ("Этажерки", ["этажерк"]),
+        ("Органайзеры", []),
+        ("Системы хранения", ["стеллаж"]),
+        ("Декор", []),
     ];
 
     /// <summary>Every type the catalogue knows - what the admin can pick for a product.</summary>

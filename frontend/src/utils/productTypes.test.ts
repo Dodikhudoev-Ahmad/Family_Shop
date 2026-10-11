@@ -29,4 +29,8 @@ describe('availableProductTypes', () => {
     expect(availableProductTypes(products, 'men')).toEqual(['Кроссовки']);
     expect(availableProductTypes(products, null)).toEqual([]);
   });
+
+  it('shows no chips for a category with a single product (the "Дом и быт" case)', () => {
+    expect(availableProductTypes([make(1, 'home', 'Этажерки')], 'home')).toEqual([]);
+  });
 });
