@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Api.Common;
 using Api.Filters;
+using Api.Health;
 using Api.Middleware;
 using Api.RateLimiting;
 using Api.Security;
@@ -63,6 +64,8 @@ builder.Services.AddScoped<CookieCsrfFilter>();
 // Crawler pages and sitemap: canonical origin and cache time from Seo:* (validated here, a bad value stops the start-up).
 builder.Services.AddSingleton(Api.Seo.SeoSettingsFactory.Resolve(builder.Configuration));
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<Api.Health.StartupStatus>();
+builder.Services.AddScoped<Api.Health.IDatabaseProbe, Api.Health.DbContextProbe>();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -153,51 +156,44 @@ app.UseCloudflareClientIp(builder.Configuration);
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-// Apply pending EF Core migrations and seed initial data on every startup, in every
-// environment - this used to run only inside the IsDevelopment() branch below, which is
-// why a fresh Production database (e.g. Railway Postgres) never got its schema created
-// ("relation Products does not exist"). SeedData.SeedAsync is idempotent: it calls
-// Database.MigrateAsync (a no-op once migrations are applied) and each seed step is
-// separately guarded by an Any() check, so re-running this on every restart is safe and
-// won't duplicate the admin user, categories/products, or reviews. Wrapped in try/catch so
-// a migration failure logs instead of crashing a pod that might already have a working
-// schema from a previous deploy. This is deliberately NOT fail-closed (a temporary rollback
-// decided by the owner): a failed migration/seed does not stop the start-up, the API keeps
-// serving, and /health below only checks that the database is reachable - it cannot tell a
-// half-migrated schema from a healthy one, so such a failure is visible in the log only.
-try
+// Apply pending EF Core migrations and seed initial data on every startup, in every environment (a fresh
+// Production database must get its schema). SeedData.SeedAsync is idempotent: each seed step is separately guarded,
+// so re-running it on every restart is safe and won't duplicate the admin user, categories/products or reviews.
+// Deliberately NOT fail-closed (a temporary rollback decided by the owner): a failed migration/seed does not stop
+// the start-up and the API keeps serving, /health only checks that the database is reachable, and the failure is
+// visible on /health/ready (StartupStatus) and in the log.
+var startupStatus = app.Services.GetRequiredService<Api.Health.StartupStatus>();
+
+await startupStatus.RunAsync(Api.Health.StartupStep.Migrations, async () =>
 {
     using var migrationScope = app.Services.CreateScope();
     var db = migrationScope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var passwordHasher = migrationScope.ServiceProvider.GetRequiredService<Application.Interfaces.IPasswordHasher>();
-    await SeedData.SeedAsync(db, passwordHasher, app.Configuration, app.Logger, app.Environment.IsDevelopment());
-}
-catch (Exception ex)
+    await db.Database.MigrateAsync();
+}, app.Logger, "Database migration failed on startup");
+
+// TEMPORARY: start-up used to be aborted on failure, but that took production down (502) - the cause of the failure
+// has to be read from the deploy logs first. Until then the failure is logged loudly, recorded in StartupStatus
+// (visible on /health/ready) and the app keeps starting.
+await startupStatus.RunAsync(Api.Health.StartupStep.Seed, async () =>
 {
-    // TEMPORARY: start-up used to be aborted here, but that took production down (502) - the cause of the failure has
-    // to be read from the deploy logs first. Until then the failure is logged loudly and the app keeps starting.
-    app.Logger.LogCritical(ex, "Database migration/seed failed on startup");
-}
+    using var seedScope = app.Services.CreateScope();
+    var db = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var passwordHasher = seedScope.ServiceProvider.GetRequiredService<Application.Interfaces.IPasswordHasher>();
+    await SeedData.SeedAsync(db, passwordHasher, app.Configuration, app.Logger, app.Environment.IsDevelopment());
+}, app.Logger, "Database seed failed on startup");
 
 // Uploaded-image URLs saved before the move to the shop's own domain still carry the old host: move them to the
 // configured public base URL (UPDATE in place, idempotent, only our own upload shape). Skipped when not configured.
-try
+// A malformed Uploads:PublicBaseUrl is a configuration error: it stops the start-up.
+var publicBaseUrl = Infrastructure.Storage.UploadsLocation.ResolvePublicBaseUrl(app.Configuration);
+if (publicBaseUrl is not null)
 {
-    var publicBaseUrl = Infrastructure.Storage.UploadsLocation.ResolvePublicBaseUrl(app.Configuration);
-    if (publicBaseUrl is not null)
+    await startupStatus.RunAsync(Api.Health.StartupStep.UploadUrls, async () =>
     {
         using var urlScope = app.Services.CreateScope();
         await Infrastructure.Persistence.UploadUrlNormalizer.NormalizeAsync(
             urlScope.ServiceProvider.GetRequiredService<AppDbContext>(), publicBaseUrl, app.Logger);
-    }
-}
-catch (InvalidOperationException)
-{
-    throw; // a malformed Uploads:PublicBaseUrl is a configuration error: fail the start-up
-}
-catch (Exception ex)
-{
-    app.Logger.LogError(ex, "Normalizing uploaded image URLs failed on startup");
+    }, app.Logger, "Normalizing uploaded image URLs failed on startup");
 }
 
 // Configure the HTTP request pipeline.
@@ -238,14 +234,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Minimal liveness/readiness probe for the hosting platform (Render/Railway) to detect a dead
-// container and restart it — no dedicated health-check package needed for a single DB check.
-app.MapGet("/health", async (AppDbContext db, CancellationToken cancellationToken) =>
-{
-    var healthy = await db.Database.CanConnectAsync(cancellationToken);
-    return healthy
-        ? Results.Ok(new { status = "healthy" })
-        : Results.Json(new { status = "unhealthy" }, statusCode: StatusCodes.Status503ServiceUnavailable);
-}).AllowAnonymous();
+// /health: liveness (database reachable), /health/ready: did start-up finish cleanly (see HealthEndpoints).
+app.MapFamilyShopHealth();
 
 app.Run();
