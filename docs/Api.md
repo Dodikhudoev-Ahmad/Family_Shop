@@ -11,7 +11,7 @@
 |---|---|---|---|
 | GET `/products` | Г | общий | фильтры, пагинация, сортировка |
 | GET `/products/{id}` | Г | общий | |
-| GET `/categories` | Г | общий | |
+| GET `/categories` | Г | общий | `[{id, name, slug, parentCategoryId, hasSizes, sortOrder}]`, порядок `sortOrder`, затем `id` (порядок меню); новая категория из админки получает `max(sortOrder)+10`, редактирования порядка в админке пока нет |
 | GET `/promo-banners/active` | Г | общий | |
 | GET `/products/{productId}/reviews`, `/summary` | Г | общий | |
 | GET `/products/{productId}/reviews/mine` | П | общий | |

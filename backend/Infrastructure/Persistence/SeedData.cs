@@ -96,10 +96,16 @@ public static class SeedData
         {
             if (!categoriesBySlug.ContainsKey(slug))
             {
-                var category = new Category { Name = name, Slug = slug, HasSizes = hasSizes };
+                var category = new Category { Name = name, Slug = slug, HasSizes = hasSizes, SortOrder = CategorySortOrder.BySlug.GetValueOrDefault(slug) };
                 context.Categories.Add(category);
                 await context.SaveChangesAsync(cancellationToken);
                 categoriesBySlug[slug] = category;
+            }
+            else if (categoriesBySlug[slug].SortOrder == 0 && CategorySortOrder.BySlug.TryGetValue(slug, out var order))
+            {
+                // Only a category that has not been placed yet: a non-zero order (set by hand or by the migration) is kept.
+                categoriesBySlug[slug].SortOrder = order;
+                await context.SaveChangesAsync(cancellationToken);
             }
         }
 

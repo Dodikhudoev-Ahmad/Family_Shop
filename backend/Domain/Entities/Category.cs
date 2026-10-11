@@ -8,4 +8,7 @@ public class Category
     public int? ParentCategoryId { get; set; }
     public Category? ParentCategory { get; set; }
     public bool HasSizes { get; set; } = true;
+
+    /// <summary>Display order of the category in menus and lists (ascending, ties by Id). 0 = not placed yet.</summary>
+    public int SortOrder { get; set; }
 }

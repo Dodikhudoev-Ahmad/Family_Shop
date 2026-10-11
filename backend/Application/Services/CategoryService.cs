@@ -19,6 +19,8 @@ public class CategoryService : ICategoryService
     {
         var categories = await _unitOfWork.Categories.GetAllAsync(cancellationToken);
         return categories
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.Id)
             .Select(ToDto)
             .ToList();
     }
@@ -42,7 +44,9 @@ public class CategoryService : ICategoryService
             Name = dto.Name.Trim(),
             Slug = slug,
             ParentCategoryId = dto.ParentCategoryId,
-            HasSizes = dto.HasSizes
+            HasSizes = dto.HasSizes,
+            // A new category goes to the end of the list (the admin form has no order field yet).
+            SortOrder = (await _unitOfWork.Categories.GetAllAsync(cancellationToken)).Select(c => c.SortOrder).DefaultIfEmpty(0).Max() + CategorySortOrder.Step
         };
 
         await _unitOfWork.Categories.AddAsync(category, cancellationToken);
@@ -111,5 +115,5 @@ public class CategoryService : ICategoryService
         return Result<bool>.Success(true);
     }
 
-    private static CategoryDto ToDto(Category c) => new(c.Id, c.Name, c.Slug, c.ParentCategoryId, c.HasSizes);
+    private static CategoryDto ToDto(Category c) => new(c.Id, c.Name, c.Slug, c.ParentCategoryId, c.HasSizes, c.SortOrder);
 }
