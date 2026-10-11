@@ -5,6 +5,8 @@ export interface Category {
   name: string;
   slug: string;
   hasSizes: boolean;
+  /** Display order from the server (ascending, ties by id); absent in fixtures. */
+  sortOrder?: number;
 }
 
 export interface Product {

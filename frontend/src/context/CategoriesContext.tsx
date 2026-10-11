@@ -9,6 +9,11 @@ interface CategoriesContextValue {
   error: string | null;
 }
 
+/** The server already sends the list in display order; sorting again keeps it right for a cached or older response. */
+export function sortCategories(list: Category[]): Category[] {
+  return [...list].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || Number(a.id) - Number(b.id));
+}
+
 const CategoriesContext = createContext<CategoriesContextValue | null>(null);
 
 export function CategoriesProvider({ children }: { children: ReactNode }) {
@@ -22,7 +27,7 @@ export function CategoriesProvider({ children }: { children: ReactNode }) {
     fetchCategories()
       .then((dtos) => {
         if (cancelled) return;
-        setCategories(dtos.map(mapCategory));
+        setCategories(sortCategories(dtos.map(mapCategory)));
       })
       .catch((err: Error) => {
         if (cancelled) return;

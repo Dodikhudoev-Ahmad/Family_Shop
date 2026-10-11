@@ -36,6 +36,8 @@ export interface CategoryDto {
   slug: string;
   parentCategoryId: number | null;
   hasSizes: boolean;
+  /** Display order (ascending); absent from an API that predates the field. */
+  sortOrder?: number;
 }
 
 export type ProductSortBy = 0 | 1 | 2 | 3; // 0=Newest, 1=PriceAsc, 2=PriceDesc, 3=Popular

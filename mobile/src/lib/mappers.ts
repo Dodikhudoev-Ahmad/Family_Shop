@@ -22,7 +22,12 @@ const SHOE_TYPES = ['Ботинки', 'Кроссовки'];
 const SIZELESS_TYPES = ['Сумки', 'Рюкзаки'];
 
 export function mapCategory(dto: CategoryDto): Category {
-  return { id: String(dto.id), name: dto.name, slug: dto.slug, hasSizes: dto.hasSizes };
+  return { id: String(dto.id), name: dto.name, slug: dto.slug, hasSizes: dto.hasSizes, sortOrder: dto.sortOrder ?? 0 };
+}
+
+/** The server already sends the list in display order; sorting again keeps it right for an older or cached response. */
+export function sortCategories(list: Category[]): Category[] {
+  return [...list].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || Number(a.id) - Number(b.id));
 }
 
 /** Size grid by what the product is: shoes and bags live in the gender categories next to clothes. */
