@@ -30,7 +30,8 @@ const GENDER_OPTIONS: ApiGender[] = [0, 1, 2];
 
 // Categories "Женское"/"Мужское"/"Детское" already say who the product is for, so Gender
 // there would just duplicate the category - only categories with no gender of their own
-// (e.g. "Бытовая техника") need the field shown so an admin can set it explicitly.
+// (e.g. "Аксессуары") need the field shown so an admin can set it explicitly. Categories without sizes
+// (техника, посуда...) aren't about who wears it, so there the field is hidden too.
 const CATEGORY_SLUG_TO_GENDER: Partial<Record<string, ApiGender>> = { women: 1, men: 0, kids: 2 };
 
 function impliedGender(categories: CategoryDto[], categoryId: string): ApiGender | undefined {
@@ -554,6 +555,7 @@ function ProductFormDrawer({
   useLockBodyScroll(open);
   const categoryGender = impliedGender(categories, form.categoryId);
   const category = categoryOf(categories, form.categoryId);
+  const showGender = categoryGender === undefined && category?.hasSizes !== false;
   // A product whose stored type isn't on the list (legacy data) still shows it, so saving doesn't silently change it.
   const typeOptions = [...new Set([...productTypesFor(category?.slug), ...(form.productType ? [form.productType] : [])])];
   const sizeGrid = sizeGridFor(category, form.productType || null);
@@ -594,15 +596,17 @@ function ProductFormDrawer({
               </Field>
 
               <div className="admin-form-row">
-                <Field label="Категория" error={fieldErrors.categoryId} fullWidth={categoryGender !== undefined}>
+                <Field label="Категория" error={fieldErrors.categoryId} fullWidth={!showGender}>
                   <select
                     value={form.categoryId}
                     onChange={(e) => {
                       const categoryId = e.target.value;
                       const nextGender = impliedGender(categories, categoryId);
+                      const genderHidden = categoryOf(categories, categoryId)?.hasSizes === false;
                       setForm((prev) => ({
                         ...withCategoryAndType(prev, categories, categoryId, prev.productType),
-                        gender: nextGender ?? prev.gender,
+                        // A hidden field keeps an edited product's gender; a new product falls back to the default.
+                        gender: nextGender ?? (genderHidden && prev.id === null ? 0 : prev.gender),
                       }));
                     }}
                   >
@@ -615,7 +619,7 @@ function ProductFormDrawer({
                   </select>
                 </Field>
 
-                {categoryGender === undefined && (
+                {showGender && (
                   <Field label="Пол">
                     <select
                       value={form.gender}

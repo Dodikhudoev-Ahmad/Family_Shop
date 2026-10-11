@@ -4,11 +4,11 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { HomePage } from './HomePage';
 import type { Product } from '../types/product';
 
-const state = vi.hoisted(() => ({ products: [] as Product[], isLoading: false, recent: [] as string[] }));
+const state = vi.hoisted(() => ({ products: [] as Product[], isLoading: false, recent: [] as string[], categories: [] as { id: string; hasSizes: boolean }[] }));
 vi.mock('../context/ProductsContext', () => ({
   useProducts: () => ({ products: state.products, isLoading: state.isLoading, error: null }),
 }));
-vi.mock('../context/CategoriesContext', () => ({ useCategories: () => ({ categories: [] }) }));
+vi.mock('../context/CategoriesContext', () => ({ useCategories: () => ({ categories: state.categories }) }));
 vi.mock('../context/FavoritesContext', () => ({ useFavorites: () => ({ isFavorite: () => false, toggleFavorite: vi.fn() }) }));
 vi.mock('../context/QuickViewContext', () => ({ useQuickView: () => ({ open: vi.fn() }) }));
 vi.mock('../context/RecentlyViewedContext', () => ({ useRecentlyViewed: () => ({ recentIds: state.recent }) }));
@@ -47,6 +47,7 @@ beforeEach(() => {
   sessionStorage.clear();
   state.isLoading = false;
   state.recent = [];
+  state.categories = [];
   state.products = [
     product('1', { name: 'Платье свежее', createdAt: daysAgo(2) }),
     product('2', { name: 'Куртка со скидкой', discountPrice: 5000 }),
@@ -143,5 +144,31 @@ describe('home page: variants', () => {
     state.recent = ['1'];
     const { container } = renderHome('/?variant=a');
     expect(bands(container).map((b) => b.dataset.tone)).toEqual(['alt', 'plain', 'alt', 'plain']);
+  });
+});
+
+describe('home page: "Хиты" bands by gender', () => {
+  const heading = (name: string) => screen.queryByRole('heading', { name });
+
+  it('keeps bestsellers of apparel categories in the women/men bands', () => {
+    state.categories = [{ id: '1', hasSizes: true }];
+    renderHome();
+    expect(heading('Хиты продаж · Женское')).toBeInTheDocument();
+    expect(heading('Хиты продаж · Мужское')).toBeInTheDocument();
+  });
+
+  it('keeps bestsellers of non-apparel categories (appliances, tableware) out of them', () => {
+    state.categories = [{ id: '1', hasSizes: true }, { id: '4', hasSizes: false }];
+    state.products = [
+      product('10', { name: 'Чайник хит', isBestseller: true, gender: 'female', categoryId: '4' }),
+      product('11', { name: 'Тостер хит', isBestseller: true, gender: 'male', categoryId: '4' }),
+      product('12', { name: 'Пальто хит', isBestseller: true, gender: 'female', categoryId: '1' }),
+    ];
+    const { container } = renderHome();
+    const hitBands = bands(container).filter((b) => b.textContent?.includes('Хиты продаж ·'));
+    expect(hitBands).toHaveLength(1);
+    expect(within(hitBands[0]).getByText('Пальто хит')).toBeInTheDocument();
+    expect(heading('Хиты продаж · Мужское')).not.toBeInTheDocument();
+    for (const b of hitBands) expect(within(b).queryByText(/Чайник хит|Тостер хит/)).not.toBeInTheDocument();
   });
 });

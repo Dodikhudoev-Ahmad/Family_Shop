@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { heroImages } from '../data/heroImages';
 import { useProducts } from '../context/ProductsContext';
+import { useCategories } from '../context/CategoriesContext';
 import { ProductCard } from '../components/ProductCard/ProductCard';
 import { ProductCardSkeleton } from '../components/ProductCard/ProductCardSkeleton';
 import { Slider } from '../components/Slider/Slider';
@@ -17,6 +18,7 @@ import { useJsonLd } from '../hooks/useJsonLd';
 import { organizationLd, webSiteLd } from '../utils/jsonLd';
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_TELEGRAM, CONTACT_WHATSAPP, SOCIAL_LINKS } from '../data/contacts';
 import { useHomeVariant } from '../lib/homeVariant';
+import type { Product } from '../types/product';
 import { pickProducts, type QuickFilter } from '../utils/productFlags';
 import { SITE_NAME, SITE_URL } from '../data/seo';
 import { API_BASE_URL } from '../lib/config';
@@ -47,8 +49,11 @@ export function HomePage() {
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('new');
 
   const picks = pickProducts(products, quickFilter);
-  const bestWomen = products.filter((p) => p.gender === 'female' && p.isBestseller);
-  const bestMen = products.filter((p) => p.gender === 'male' && p.isBestseller);
+  // Gender only means something for apparel-style categories (hasSizes): a kettle must not land in "Хиты: Женское".
+  const { categories } = useCategories();
+  const hasGender = (p: Product) => categories.find((c) => c.id === p.categoryId)?.hasSizes ?? true;
+  const bestWomen = products.filter((p) => p.gender === 'female' && p.isBestseller && hasGender(p));
+  const bestMen = products.filter((p) => p.gender === 'male' && p.isBestseller && hasGender(p));
 
   // Bands alternate plain/alt down the page; in variant B the "Хиты" bands are dark instead.
   const hitsTone = (index: number): BandTone => (variant === 'b' ? 'dark' : alternatingTone(index));
