@@ -27,7 +27,7 @@
 
 @media (hover: hover) {
   .back-to-top:hover {
-    color: var(--color-accent);
+    color: var(--accent-text);
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px) scale(1);
   }

@@ -84,7 +84,7 @@
 }
 
 .search-overlay__hint svg {
-  color: var(--color-accent);
+  color: var(--accent-text);
   opacity: 0.7;
   margin-bottom: var(--space-1);
 }
@@ -145,7 +145,7 @@
 .search-result__price {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 @keyframes search-fade {

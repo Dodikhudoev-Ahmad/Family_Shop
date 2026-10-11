@@ -20,7 +20,7 @@ export function sortSizes(sizes: string[]): string[] {
 }
 
 export function mapCategory(dto: CategoryDto): Category {
-  return { id: String(dto.id), name: dto.name, slug: dto.slug, hasSizes: dto.hasSizes };
+  return { id: String(dto.id), name: dto.name, slug: dto.slug, hasSizes: dto.hasSizes, sortOrder: dto.sortOrder ?? 0 };
 }
 const SHOE_TYPES = ['Ботинки', 'Кроссовки'];
 // Bags come in one size; they sit in the gender categories now, so they must not inherit

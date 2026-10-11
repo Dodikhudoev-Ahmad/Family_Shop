@@ -72,6 +72,7 @@
     "men": "Men",
     "kids": "Kids",
     "bytovaya-tehnika": "Appliances",
+    "dom-i-byt": "Home & Living",
     "sport": "Sports",
     "posuda": "Tableware",
     "aksessuary": "Accessories"
@@ -121,7 +122,11 @@
     "Сумки": "Bags",
     "Украшения": "Jewelry",
     "Часы": "Watches",
-    "Чехлы": "Cases"
+    "Чехлы": "Cases",
+    "Этажерки": "Shelving units",
+    "Органайзеры": "Organizers",
+    "Системы хранения": "Storage systems",
+    "Декор": "Decor"
   },
   "search": {
     "placeholder": "What are you looking for?",

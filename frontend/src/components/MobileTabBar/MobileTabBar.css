@@ -48,7 +48,7 @@
   }
 
   .mobile-tabbar__item.is-active {
-    color: var(--color-accent);
+    color: var(--accent-text);
   }
 
   .mobile-tabbar__item.is-active .mobile-tabbar__pill {

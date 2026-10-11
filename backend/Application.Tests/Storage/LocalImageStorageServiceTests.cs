@@ -24,13 +24,15 @@ public class LocalImageStorageServiceTests : IDisposable
     [Fact]
     public async Task SaveImageAsync_WithValidJpegSignature_Succeeds()
     {
-        byte[] jpegBytes = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01];
-        using var stream = new MemoryStream(jpegBytes);
+        using var bitmap = new SkiaSharp.SKBitmap(32, 32);
+        using var image = SkiaSharp.SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 90);
+        using var stream = new MemoryStream(data.ToArray());
 
         var result = await _sut.SaveImageAsync(stream, "photo.jpg", "image/jpeg");
 
         Assert.True(result.IsSuccess);
-        Assert.EndsWith(".jpg", result.Value);
+        Assert.EndsWith(".webp", result.Value); // always re-encoded, see ImageReencodingTests
     }
 
     [Fact]

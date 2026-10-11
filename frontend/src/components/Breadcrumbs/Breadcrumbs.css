@@ -33,7 +33,7 @@
 }
 
 .breadcrumbs__link:hover {
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .breadcrumbs__current {

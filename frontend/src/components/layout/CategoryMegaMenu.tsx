@@ -14,6 +14,8 @@ interface CategoryMegaMenuProps {
 // The catalog is flat (no real subcategories yet), so the mega menu groups the
 // existing top-level categories into themed columns purely for browsing —
 // "Одежда"/"Дом"/"Спорт и аксессуары" aren't real categories, just labels.
+// Only the membership of a column is defined here; the order of the links inside it
+// is the server's category order (`sortOrder`), i.e. the order of the `categories` prop.
 const GROUPS = [
   { label: 'clothing', slugs: ['women', 'men', 'kids'] },
   { label: 'home', slugs: ['bytovaya-tehnika', 'dom-i-byt', 'posuda'] },
@@ -65,7 +67,6 @@ export function CategoryMegaMenu({ categories, isLoading, onOpenChange }: Catego
 
   useEffect(() => () => window.clearTimeout(closeTimeoutRef.current), []);
 
-  const byslug = new Map(categories.map((c) => [c.slug, c]));
 
   return (
     <div className="header__catalog" ref={containerRef} onMouseEnter={openNow} onMouseLeave={closeSoon}>
@@ -96,7 +97,8 @@ export function CategoryMegaMenu({ categories, isLoading, onOpenChange }: Catego
         ) : (
           <div className="mega-menu__grid">
             {GROUPS.map((group, i) => {
-              const items = group.slugs.map((slug) => byslug.get(slug)).filter((c): c is Category => Boolean(c));
+              const members: readonly string[] = group.slugs;
+              const items = categories.filter((c) => members.includes(c.slug));
               if (items.length === 0) return null;
 
               return (

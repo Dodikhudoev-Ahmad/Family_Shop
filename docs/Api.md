@@ -11,7 +11,7 @@
 |---|---|---|---|
 | GET `/products` | Г | общий | фильтры, пагинация, сортировка |
 | GET `/products/{id}` | Г | общий | |
-| GET `/categories` | Г | общий | |
+| GET `/categories` | Г | общий | `[{id, name, slug, parentCategoryId, hasSizes, sortOrder}]`, порядок `sortOrder`, затем `id` (порядок меню); новая категория из админки получает `max(sortOrder)+10`, редактирования порядка в админке пока нет |
 | GET `/promo-banners/active` | Г | общий | |
 | GET `/products/{productId}/reviews`, `/summary` | Г | общий | |
 | GET `/products/{productId}/reviews/mine` | П | общий | |
@@ -20,6 +20,15 @@
 | POST `/promo-codes/validate` | Г | 15/мин | предпросмотр скидки |
 | POST `/orders` | П | 10/мин | заголовок `Idempotency-Key` |
 | GET `/orders` | П | общий | свои заказы |
+
+## Здоровье сервиса (без префикса `/api/v1`)
+
+Оба — гость, общий лимит 100/мин на IP, ответ JSON без `ApiResponse`, без кеша.
+
+| Метод и путь | Ответ | Примечание |
+|---|---|---|
+| GET `/health` | `200 {"status":"healthy"}` / `503 {"status":"unhealthy"}` | liveness: только доступность БД (`CanConnectAsync`). Для healthcheck Railway; **не** отличает полумигрированную схему от здоровой |
+| GET `/health/ready` | `200 {"status":"ready"}` / `503 {"status":"degraded","migrations":"failed\|ok","seed":"failed\|ok"}` | старт завершился без сбоев (миграции, сидер, перенос хоста URL фото). Читается из памяти (`StartupStatus`), БД не трогает. Текст ошибки не отдаётся; при сбое переноса URL фото в ответ добавляется `"uploadUrls":"failed"`. Для внешнего монитора (UptimeRobot/BetterStack) |
 
 ## SEO: sitemap и страницы для ботов (без префикса `/api/v1`)
 
@@ -56,9 +65,10 @@ Access-токен привязан к сессии (claim `sid`): после log
 
 | Путь | Действия |
 |---|---|
-| `/admin/products` | POST, PUT `{id}`, DELETE `{id}`, POST `images` (загрузка фото) |
+| `/admin/products` | POST, PUT `{id}`, DELETE `{id}`, POST `images` (загрузка фото: JPEG/PNG/WEBP/GIF до 5 МБ; файл **перекодируется** и всегда сохраняется как `/uploads/products/{guid}.webp`, качество 85, длинная сторона не более 2000 px без увеличения, метаданные EXIF не сохраняются, у GIF берётся первый кадр; сторона > 10000 px или > 40 млн пикселей, повреждённый файл и всё остальное — 400 с общим текстом ru/kk/en; обработка не дольше 5 с, не более 2 одновременно) |
 | `/admin/categories` | POST, PUT, DELETE |
 | `/admin/promo-banners` | GET, POST, PUT, DELETE |
+| `/admin/diagnostics/client-ip` | GET: `{remoteIp, xForwardedForEntries, cfConnectingIpPresent, cloudflareTrusted, scheme}` — какой адрес клиента видит API (значения заголовков не отдаются, ответ `no-store`); общий лимит |
 | `/admin/promo-codes` | GET, POST, PUT, DELETE |
 | `/admin/orders` | GET (фильтры, даты в поясе магазина) |
 | `/admin/orders/stats` | GET (карточки, см. `Money.md`; `ordersToday` — доставлено сегодня, `revenueToday`, `newToday` — оформлено сегодня без отменённых, `newOrdersCount`, `totalOrders`) |

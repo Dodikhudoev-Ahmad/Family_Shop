@@ -14,7 +14,7 @@
   font-size: 120px;
   font-weight: 800;
   line-height: 1;
-  color: var(--color-accent);
+  color: var(--accent-text);
   letter-spacing: -0.03em;
 }
 

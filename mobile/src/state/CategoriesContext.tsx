@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { fetchCategories } from '../lib/api/endpoints';
-import { mapCategory } from '../lib/mappers';
+import { mapCategory, sortCategories } from '../lib/mappers';
 import type { Category } from '../lib/types';
 
 interface CategoriesContextValue {
@@ -23,7 +23,7 @@ export function CategoriesProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const dtos = await fetchCategories();
-      setCategories(dtos.map(mapCategory));
+      setCategories(sortCategories(dtos.map(mapCategory)));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'error');
     } finally {

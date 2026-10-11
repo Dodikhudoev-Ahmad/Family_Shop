@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { formatPrice } from '../../utils/formatPrice';
 import './PriceRangeSlider.css';
 
@@ -9,6 +10,7 @@ interface PriceRangeSliderProps {
 }
 
 export function PriceRangeSlider({ min, max, value, onChange }: PriceRangeSliderProps) {
+  const { t } = useTranslation();
   const [from, to] = value;
 
   return (
@@ -20,6 +22,7 @@ export function PriceRangeSlider({ min, max, value, onChange }: PriceRangeSlider
       <div className="price-slider__track">
         <input
           type="range"
+          aria-label={t('filters.priceFrom')}
           min={min}
           max={max}
           value={from}
@@ -27,6 +30,7 @@ export function PriceRangeSlider({ min, max, value, onChange }: PriceRangeSlider
         />
         <input
           type="range"
+          aria-label={t('filters.priceTo')}
           min={min}
           max={max}
           value={to}

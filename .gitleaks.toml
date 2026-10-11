@@ -1,0 +1,19 @@
+# Secret scanning (see .github/workflows/gitleaks.yml). The default ruleset is used as is; the only exceptions are
+# test fixtures that hold obviously fake values (fake passwords for the password-policy tests, strings that the
+# pre-commit hook's own test feeds to the hook, an idempotency-key example). Paths are exact, so a real secret
+# anywhere else - or a new file - is still reported.
+title = "Family Shop"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Fake values in test fixtures"
+condition = "AND"
+paths = [
+  '''^backend/Application\.Tests/Integration/SeedLegacyPasswordTests\.cs$''',
+  '''^backend/Application\.Tests/Security/BreachedPasswordTests\.cs$''',
+  '''^\.githooks/test-pre-commit\.sh$''',
+  '''^mobile/__tests__/idempotency\.test\.ts$''',
+]
+rules = ["generic-api-key"]

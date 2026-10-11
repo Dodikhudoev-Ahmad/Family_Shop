@@ -106,14 +106,14 @@
 }
 
 .product-page__price-new {
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .product-page__stock-warning {
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-accent);
+  color: var(--accent-text);
   margin-top: var(--space-2);
 }
 
@@ -141,7 +141,7 @@
 }
 
 .product-page__in-cart-note:hover {
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .quantity-stepper {
@@ -208,7 +208,7 @@
 }
 
 .product-page__fav-btn.is-active {
-  color: var(--color-accent);
+  color: var(--accent-text);
   border-color: var(--color-accent);
 }
 

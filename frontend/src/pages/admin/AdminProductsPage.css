@@ -92,7 +92,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--color-accent);
+  color: var(--accent-text);
   background: color-mix(in srgb, var(--color-accent) 14%, transparent);
   padding: 3px 8px;
   border-radius: 999px;
@@ -294,7 +294,7 @@
 .admin-sizes__group {
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .admin-sizes__actions {
@@ -317,7 +317,7 @@
 
 .admin-sizes__actions button:hover {
   border-color: var(--color-accent);
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 
 .admin-sizes__grid {
@@ -357,7 +357,7 @@
 .admin-sizes__item.is-checked {
   border-color: var(--color-accent);
   background: color-mix(in srgb, var(--color-accent) 14%, transparent);
-  color: var(--color-accent);
+  color: var(--accent-text);
   font-weight: 600;
 }
 

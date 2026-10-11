@@ -40,6 +40,22 @@ describe('dictionaries', () => {
   });
 });
 
+describe('home & living', () => {
+  const TYPES = ['Этажерки', 'Органайзеры', 'Системы хранения', 'Декор'];
+
+  it('has the category name and its four product types in ru, kk and en', () => {
+    const expected = { ru: 'Дом и быт', kk: 'Үй және тұрмыс', en: 'Home & Living' } as const;
+    for (const [lang, dict] of [['ru', ru], ['kk', kk], ['en', en]] as const) {
+      expect(dict.categories['dom-i-byt']).toBe(expected[lang]);
+      for (const type of TYPES) {
+        expect((dict.productTypes as Record<string, string>)[type]?.length).toBeGreaterThan(0);
+      }
+    }
+    expect((en.productTypes as Record<string, string>)['Этажерки']).toBe('Shelving units');
+    expect((kk.productTypes as Record<string, string>)['Системы хранения']).toBe('Сақтау жүйелері');
+  });
+});
+
 describe('language', () => {
   it('defaults to Russian regardless of the device', () => {
     expect(DEFAULT_LANGUAGE).toBe('ru');

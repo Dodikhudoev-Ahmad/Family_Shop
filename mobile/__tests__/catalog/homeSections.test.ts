@@ -62,6 +62,12 @@ describe('categoryCover', () => {
     expect(categoryCover(list, cat('6', 'posuda'), rules)).toBe('img-7');
   });
 
+  it('"Дом и быт" has its own explicit rule, not the fallback', () => {
+    expect(CATEGORY_COVERS['dom-i-byt']).toEqual({ types: ['Этажерки', 'Органайзеры', 'Системы хранения', 'Декор'] });
+    const list = [item('1', '8', 'Чехлы'), item('2', '8', 'Декор'), item('3', '8', 'Этажерки')];
+    expect(categoryCover(list, cat('8', 'dom-i-byt'))).toBe('img-3'); // first type of the rule wins, not the first product
+  });
+
   it('a fixed image wins over everything', () => {
     expect(categoryCover([item('1', '6', 'Чайники')], cat('6', 'posuda'), { posuda: { image: 'https://x.test/a.jpg', types: ['Чайники'] } })).toBe('https://x.test/a.jpg');
   });
@@ -78,7 +84,7 @@ describe('categoryCover', () => {
       if (rule.image) continue;
       expect(rule.types?.length).toBeGreaterThan(0);
       expect((rule.types ?? []).filter((t) => COVER_FALLBACK_EXCLUDED_TYPES.includes(t))).toEqual([]);
-      expect(['bytovaya-tehnika', 'sport', 'posuda', 'aksessuary']).toContain(slug);
+      expect(['bytovaya-tehnika', 'dom-i-byt', 'sport', 'posuda', 'aksessuary']).toContain(slug);
     }
   });
 });

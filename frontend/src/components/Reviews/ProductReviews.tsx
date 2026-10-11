@@ -143,7 +143,7 @@ export function ProductReviews({ productId }: { productId: number }) {
 
       {authLoading ? null : !user ? (
         <p className="reviews__login-prompt">
-          <Trans i18nKey="reviews.loginPrompt" components={{ link: <Link to="/login" /> }} />
+          <Trans i18nKey="reviews.loginPrompt" components={{ signin: <Link to="/login" /> }} />
         </p>
       ) : myReview === undefined ? null : myReview ? (
         <MyReviewCard review={myReview} onDelete={() => setConfirmingDelete(true)} />

@@ -31,14 +31,25 @@
 	# Обычные браузеры сюда не попадают и получают сайт как раньше.
 	@seoProduct {
 		method GET HEAD
-		header_regexp bot User-Agent (?i)(whatsapp|telegrambot|facebookexternalhit|twitterbot|yandexbot|slackbot|linkedinbot)
+		header_regexp bot User-Agent (?i)(whatsapp|telegrambot|facebookexternalhit|twitterbot|yandexbot|slackbot|linkedinbot|discordbot|applebot|duckduckbot|baiduspider|bingbot)
 		path_regexp product ^/product/([0-9]+)/?$
 	}
 	@seoCategory {
 		method GET HEAD
-		header_regexp bot User-Agent (?i)(whatsapp|telegrambot|facebookexternalhit|twitterbot|yandexbot|slackbot|linkedinbot)
+		header_regexp bot User-Agent (?i)(whatsapp|telegrambot|facebookexternalhit|twitterbot|yandexbot|slackbot|linkedinbot|discordbot|applebot|duckduckbot|baiduspider|bingbot)
 		path_regexp category ^/catalog/([A-Za-z0-9_-]+)/?$
 	}
+
+	# Устаревший slug из закладок и старых ссылок: человека на /catalog переводит сам сайт (App.tsx), бот получает тот же
+	# переход постоянным редиректом, а не 404 от API. Googlebot в списке ботов нет: он исполняет JavaScript и видит редирект сайта.
+	@seoLegacy {
+		method GET HEAD
+		header_regexp bot User-Agent (?i)(whatsapp|telegrambot|facebookexternalhit|twitterbot|yandexbot|slackbot|linkedinbot|discordbot|applebot|duckduckbot|baiduspider|bingbot)
+		path /catalog/shoes-bags /catalog/shoes-bags/
+	}
+
+	# Страницы, содержимое которых зависит от User-Agent (бот получает мету, человек — SPA): кеши обязаны различать ответы.
+	@uaDependent path_regexp ^/(product/[0-9]+|catalog/[A-Za-z0-9_-]+)/?$
 
 	# Security headers
 	header {
@@ -68,6 +79,10 @@
 		respond 200
 	}
 
+	handle @seoLegacy {
+		redir * /catalog 301
+	}
+
 	handle @seoProduct {
 		rewrite * /seo/product/{re.product.1}
 		reverse_proxy {$SEO_API_ORIGIN:https://api.familyshop10.kz} {
@@ -78,7 +93,7 @@
 			header_down +Vary User-Agent
 			transport http {
 				dial_timeout 3s
-				response_header_timeout 8s
+				response_header_timeout 5s
 			}
 			# Ответы API, при которых бот получает обычный index.html (общая мета сайта) вместо ошибки: сбой API (5xx),
 			# отказ по Host/лимиту/доступу (400, 401, 403, 429). 404 идёт как есть: это настоящее «нет такого» с noindex.
@@ -102,7 +117,7 @@
 			header_down +Vary User-Agent
 			transport http {
 				dial_timeout 3s
-				response_header_timeout 8s
+				response_header_timeout 5s
 			}
 			# Ответы API, при которых бот получает обычный index.html (общая мета сайта) вместо ошибки: сбой API (5xx),
 			# отказ по Host/лимиту/доступу (400, 401, 403, 429). 404 идёт как есть: это настоящее «нет такого» с noindex.
@@ -148,6 +163,7 @@
 		header @assets Cache-Control "public, max-age=31536000, immutable"
 		@notAssets not path /assets/*
 		header @notAssets Cache-Control "no-cache"
+		header @uaDependent +Vary User-Agent
 
 		# Handle static files
 		file_server {

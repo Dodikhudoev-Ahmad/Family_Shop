@@ -155,6 +155,8 @@
     "type": "Type",
     "size": "Size",
     "price": "Price",
+    "priceFrom": "Price from",
+    "priceTo": "Price to",
     "discountOnly": "Discounted only",
     "typeAria": "Product type",
     "sizeGroups": {
@@ -265,7 +267,7 @@
     "deleted": "Review deleted",
     "deleteFailed": "Couldn't delete the review.",
     "title": "Reviews",
-    "loginPrompt": "<link>Log in</link> to leave a review.",
+    "loginPrompt": "<signin>Log in</signin> to leave a review.",
     "count_one": "{{count}} review",
     "count_other": "{{count}} reviews",
     "empty": "No reviews for this product yet. Be the first!",
