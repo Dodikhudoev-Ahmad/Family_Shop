@@ -68,6 +68,7 @@ Access-токен привязан к сессии (claim `sid`): после log
 | `/admin/products` | POST, PUT `{id}`, DELETE `{id}`, POST `images` (загрузка фото) |
 | `/admin/categories` | POST, PUT, DELETE |
 | `/admin/promo-banners` | GET, POST, PUT, DELETE |
+| `/admin/diagnostics/client-ip` | GET: `{remoteIp, xForwardedForEntries, cfConnectingIpPresent, cloudflareTrusted, scheme}` — какой адрес клиента видит API (значения заголовков не отдаются, ответ `no-store`); общий лимит |
 | `/admin/promo-codes` | GET, POST, PUT, DELETE |
 | `/admin/orders` | GET (фильтры, даты в поясе магазина) |
 | `/admin/orders/stats` | GET (карточки, см. `Money.md`; `ordersToday` — доставлено сегодня, `revenueToday`, `newToday` — оформлено сегодня без отменённых, `newOrdersCount`, `totalOrders`) |

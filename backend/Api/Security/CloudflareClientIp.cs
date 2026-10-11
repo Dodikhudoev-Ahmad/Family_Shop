@@ -19,6 +19,12 @@ public static class CloudflareClientIp
 {
     public const string HeaderName = "CF-Connecting-IP";
 
+    /// <summary><c>HttpContext.Items</c> key set (to <c>true</c>) when the middleware replaced the address with the header's one.</summary>
+    public const string AppliedItemKey = "CloudflareClientIp.Applied";
+
+    /// <summary>Whether the request carries the header at all (for diagnostics only; the value is never exposed or used).</summary>
+    public static bool HeaderPresent(HttpRequest request) => request.Headers.ContainsKey(HeaderName);
+
     /// <summary>Extra ranges (comma/space separated CIDRs) on top of the built-in list, e.g. <c>Cloudflare__ExtraRanges</c>.</summary>
     public const string ExtraRangesKey = "Cloudflare:ExtraRanges";
 
@@ -62,6 +68,7 @@ public static class CloudflareClientIp
                 && IsCloudflare(context.Connection.RemoteIpAddress, ranges))
             {
                 context.Connection.RemoteIpAddress = visitor;
+                context.Items[AppliedItemKey] = true;
             }
             await next();
         });
