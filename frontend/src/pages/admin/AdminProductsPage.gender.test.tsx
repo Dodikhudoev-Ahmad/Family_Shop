@@ -21,6 +21,7 @@ const categories: CategoryDto[] = [
   { id: 4, name: 'Бытовая техника', slug: 'bytovaya-tehnika', parentCategoryId: null, hasSizes: false },
   { id: 5, name: 'Посуда', slug: 'posuda', parentCategoryId: null, hasSizes: false },
   { id: 6, name: 'Новинки сезона', slug: 'new-season', parentCategoryId: null, hasSizes: true },
+  { id: 7, name: 'Дом и быт', slug: 'dom-i-byt', parentCategoryId: null, hasSizes: false },
 ];
 
 const product = (over: Partial<ProductDto>): ProductDto => ({
@@ -59,6 +60,19 @@ describe('product form - gender field', () => {
 
     fireEvent.change(categorySelect(), { target: { value: '5' } });
     expect(genderField()).not.toBeInTheDocument();
+  });
+
+  it('is hidden for "Дом и быт", which offers only its own types and no sizes', async () => {
+    await openEdit('Чайник электрический');
+    fireEvent.change(categorySelect(), { target: { value: '7' } });
+    expect(genderField()).not.toBeInTheDocument();
+
+    const typeOptions = within(screen.getByLabelText('Тип товара')).getAllByRole('option').map((o) => (o as HTMLOptionElement).value);
+    expect(typeOptions).toEqual(expect.arrayContaining(['Этажерки', 'Органайзеры', 'Системы хранения', 'Декор']));
+    expect(typeOptions).not.toContain('Холодильники');
+
+    fireEvent.change(screen.getByLabelText('Тип товара'), { target: { value: 'Этажерки' } });
+    expect(screen.getByText('Для этого типа товаров размеры не используются')).toBeInTheDocument();
   });
 
   it('is shown for a category with sizes that has no gender of its own', async () => {
