@@ -130,7 +130,12 @@ public static class SeedData
             ("aksessuary", id => BuildAccessories(id).Concat(BuildAccessoriesExtra(id))),
         };
 
-        var existingByKey = await context.Products.ToDictionaryAsync(p => (p.CategoryId, p.Name), cancellationToken);
+        // (CategoryId, Name) is not unique in the database (the admin can create a same-named product), so a plain
+        // ToDictionary would throw on the first duplicate and take the whole seed down. The oldest row of a group
+        // is the one the seed maintains; the duplicates are neither changed nor removed.
+        var existingByKey = (await context.Products.ToListAsync(cancellationToken))
+            .GroupBy(p => (p.CategoryId, p.Name))
+            .ToDictionary(g => g.Key, g => g.OrderBy(p => p.Id).First());
         var catalogChanged = false;
 
         foreach (var (slug, build) in catalogBuilders)
@@ -223,7 +228,7 @@ public static class SeedData
         // guard above) - otherwise reviews silently never seed on a DB that already has a catalog.
         if (!await context.Reviews.AnyAsync(cancellationToken))
         {
-            await SeedReviewsAsync(context, passwordHasher, women13, men13, kids13, shoesBags13, cancellationToken);
+            await SeedReviewsAsync(context, passwordHasher, logger, women13, men13, kids13, shoesBags13, cancellationToken);
         }
     }
 
@@ -260,28 +265,69 @@ public static class SeedData
     private static async Task SeedReviewsAsync(
         AppDbContext context,
         IPasswordHasher passwordHasher,
+        ILogger logger,
         List<Product> women13,
         List<Product> men13,
         List<Product> kids13,
         List<Product> shoesBags13,
         CancellationToken cancellationToken)
     {
-        var reviewers = ReviewerSeeds
-            .Select(r => new User { Email = new Email(r.Email), Name = r.Name, PasswordHash = passwordHasher.Hash(GenerateRandomPassword()), Role = UserRole.Customer })
-            .ToList();
+        // The demo reviewers may already exist (their reviews were deleted, the accounts stayed): Users.Email is
+        // unique, so an existing account is reused and only the missing ones are created.
+        var reviewerEmails = ReviewerSeeds.Select(r => new Email(r.Email)).ToList();
+        var existingReviewers = await context.Users
+            .Where(u => reviewerEmails.Contains(u.Email))
+            .ToListAsync(cancellationToken);
+        var reviewers = new List<User>();
+        var created = new List<User>();
+        foreach (var (name, email) in ReviewerSeeds)
+        {
+            var existing = existingReviewers.FirstOrDefault(u => u.Email == new Email(email));
+            if (existing is not null)
+            {
+                reviewers.Add(existing);
+                continue;
+            }
 
-        context.Users.AddRange(reviewers);
-        await context.SaveChangesAsync(cancellationToken);
+            var user = new User { Email = new Email(email), Name = name, PasswordHash = passwordHasher.Hash(GenerateRandomPassword()), Role = UserRole.Customer };
+            reviewers.Add(user);
+            created.Add(user);
+        }
+
+        if (created.Count > 0)
+        {
+            context.Users.AddRange(created);
+            await context.SaveChangesAsync(cancellationToken);
+        }
 
         // 18 products across all four categories get 2-5 reviews each, mixing positive and
         // mixed feedback so the catalog/product-page demo isn't empty or artificially perfect.
-        var reviewedProducts = new List<Product>
+        // A position that does not exist (fewer products than the seed expects, e.g. some were deleted by the admin)
+        // is skipped with a log line instead of failing the whole seed.
+        var reviewedProducts = new List<Product>();
+        void Pick(string group, List<Product> source, params int[] positions)
         {
-            women13[0], women13[2], women13[3], women13[4], women13[5], women13[8],
-            men13[0], men13[1], men13[3], men13[7],
-            kids13[1], kids13[3], kids13[5],
-            shoesBags13[0], shoesBags13[1], shoesBags13[4], shoesBags13[6], shoesBags13[9],
-        };
+            foreach (var position in positions)
+            {
+                if (position < source.Count)
+                {
+                    // (ProductId, UserId) is unique: a product that is already picked is not picked twice.
+                    if (!reviewedProducts.Contains(source[position]))
+                    {
+                        reviewedProducts.Add(source[position]);
+                    }
+                }
+                else
+                {
+                    logger.LogWarning("Seed reviews: {Group} has {Count} products, position {Position} skipped.", group, source.Count, position);
+                }
+            }
+        }
+
+        Pick("women", women13, 0, 2, 3, 4, 5, 8);
+        Pick("men", men13, 0, 1, 3, 7);
+        Pick("kids", kids13, 1, 3, 5);
+        Pick("shoes and bags", shoesBags13, 0, 1, 4, 6, 9);
 
         var reviewCounts = new[] { 2, 3, 4, 5, 3, 2, 4, 5, 3, 2, 3, 4, 2, 5, 3, 4, 2, 3 };
         var reviews = new List<Review>();
