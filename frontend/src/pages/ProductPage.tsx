@@ -19,6 +19,7 @@ import { ProductCard } from '../components/ProductCard/ProductCard';
 import { Slider } from '../components/Slider/Slider';
 import { Accordion } from '../components/Accordion/Accordion';
 import { SizeSelector } from '../components/SizeSelector/SizeSelector';
+import { audienceKey, shoeRange } from '../utils/shoeAudience';
 import { Button } from '../components/Button/Button';
 import { FadeImage } from '../components/FadeImage/FadeImage';
 import { StarRating } from '../components/StarRating/StarRating';
@@ -162,6 +163,9 @@ export function ProductPage() {
 
   // The whole grid is shown; the ones missing from product.sizes are muted and can't be picked.
   const gridSizes = product.gridSizes ?? product.sizes;
+  // Shoes name their size grid under the buttons (EU 27–37); kids' and teen shoes also say who they are for.
+  const audience = audienceKey(product);
+  const gridRange = product.shoeSegment ? shoeRange(gridSizes) : null;
   // Nothing can be added until an available size is picked (the button stays focusable: pressing it says why).
   const needsSize = gridSizes.length > 0 && !(selectedSize && product.sizes.includes(selectedSize));
 
@@ -205,6 +209,9 @@ export function ProductPage() {
           {productCategory?.hasSizes !== false && (
             <span className="product-page__category">{t(`gender.${product.gender}`)}</span>
           )}
+          {audience && (
+            <span className="product-page__audience">{t(`shoes.audience.${audience}` as 'shoes.audience.kids')}</span>
+          )}
           <h1 className="product-page__name">{product.name}</h1>
           {product.reviewCount > 0 && (
             <div className="product-page__rating">
@@ -242,6 +249,7 @@ export function ProductPage() {
                   ) : null;
                 }}
               />
+              {gridRange && <p className="product-page__grid-caption">{t('shoes.gridCaption', gridRange)}</p>}
               <p className="product-page__size-note" role="status" aria-live="polite">
                 {unavailableSize ? t('product.sizeUnavailableNote', { size: unavailableSize }) : ''}
               </p>

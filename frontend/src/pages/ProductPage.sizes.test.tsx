@@ -172,3 +172,51 @@ describe('ProductPage - sizes', () => {
     }
   });
 });
+
+describe('ProductPage - shoes by segment', () => {
+  const grid = (sizes: string[], offered: string[]) => sizes.map((size) => ({ size, available: offered.includes(size) }));
+  const teenShoes = (over: Partial<ProductDto> = {}) =>
+    dto({
+      id: 9, name: 'Кроссовки подростковые', categoryId: 3, gender: 2, productType: 'Кроссовки', shoeSegment: 3, childGender: 0,
+      availableSizes: ['37', '38'], sizes: grid(['37', '38', '39', '40', '41'], ['37', '38']), ...over,
+    });
+
+  it('shows the grid the server sent, marks the sizes not sold, and names the grid under the buttons', () => {
+    renderPage(teenShoes());
+
+    expect(labels()).toEqual(['37', '38', '39', '40', '41']);
+    expect(unavailable()).toEqual(['39', '40', '41']);
+    expect(screen.getByText('Размерная сетка: EU 37–41')).toBeInTheDocument();
+    expect(screen.getByText('Подросткам (м)')).toBeInTheDocument();
+  });
+
+  it('gives size 37 to the kids grid as well, with its own range', () => {
+    renderPage(
+      teenShoes({ shoeSegment: 2, childGender: 1, availableSizes: null, sizes: grid(['35', '36', '37'], ['35', '36', '37']) }),
+    );
+
+    expect(labels()).toEqual(['35', '36', '37']);
+    expect(unavailable()).toEqual([]);
+    expect(screen.getByText('Размерная сетка: EU 35–37')).toBeInTheDocument();
+    expect(screen.getByText('Девочкам')).toBeInTheDocument();
+  });
+
+  it('does not select an unavailable size and moves focus along the row with the arrow keys', () => {
+    renderPage(teenShoes());
+    const [first, second, third] = sizeButtons();
+
+    fireEvent.click(third);
+    expect(third).toHaveAttribute('aria-pressed', 'false');
+
+    first.focus();
+    fireEvent.keyDown(first, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(second);
+    fireEvent.keyDown(second, { key: 'ArrowLeft' });
+    expect(document.activeElement).toBe(first);
+  });
+
+  it('puts the sizes in a labelled group', () => {
+    renderPage(teenShoes());
+    expect(screen.getByRole('group', { name: 'Размеры' })).toBeInTheDocument();
+  });
+});
