@@ -86,3 +86,28 @@ describe('ProductCard "Новинка" badge', () => {
     expect(screen.queryByText('Новинка')).not.toBeInTheDocument();
   });
 });
+
+describe('ProductCard shoe audience', () => {
+  const shoe = (over: Partial<Product> = {}) =>
+    product({ shoeSegment: 'kids', childGender: 'boy', gridSizes: ['27', '28', '36', '37'], ...over });
+
+  it('shows who kids shoes are for and the size range from the server grid', () => {
+    renderCard(shoe());
+    expect(screen.getByText('Мальчикам')).toBeInTheDocument();
+    expect(screen.getByText('EU 27–37')).toBeInTheDocument();
+  });
+
+  it('marks teen shoes with the boy/girl', () => {
+    renderCard(shoe({ shoeSegment: 'teen', childGender: 'girl', gridSizes: ['37', '38', '41'] }));
+    expect(screen.getByText('Подросткам (д)')).toBeInTheDocument();
+    expect(screen.getByText('EU 37–41')).toBeInTheDocument();
+  });
+
+  it('shows nothing extra for adult shoes and other products', () => {
+    renderCard(shoe({ shoeSegment: 'men', childGender: undefined }));
+    expect(screen.queryByText(/EU /)).not.toBeInTheDocument();
+    cleanup();
+    renderCard(product());
+    expect(screen.queryByText(/EU /)).not.toBeInTheDocument();
+  });
+});

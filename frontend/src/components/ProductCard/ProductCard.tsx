@@ -9,6 +9,7 @@ import { StarRating } from '../StarRating/StarRating';
 import { formatPrice } from '../../utils/formatPrice';
 import { isLowStock, isOutOfStock } from '../../utils/stock';
 import { discountPercentOf, isNewProduct } from '../../utils/productFlags';
+import { audienceKey, shoeRange } from '../../utils/shoeAudience';
 import './ProductCard.css';
 import { useTranslation } from 'react-i18next';
 
@@ -33,6 +34,9 @@ export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCa
   const isNew = isNewProduct(product);
   const outOfStock = isOutOfStock(product.stock);
   const lowStock = isLowStock(product.stock);
+  // Kids' and teen shoes say who they are for and in which sizes: the grid comes from the server with the product.
+  const audience = audienceKey(product);
+  const range = audience ? shoeRange(product.gridSizes) : null;
 
   const handleFavoriteClick = (e: MouseEvent) => {
     e.preventDefault();
@@ -114,6 +118,12 @@ export function ProductCard({ product, onRequestRemoveFromFavorites }: ProductCa
 
       <Link to={`/product/${product.id}`} className="product-card__info">
         {showGenderLabel && <span className="product-card__category">{t(`gender.${product.gender}`)}</span>}
+        {audience && (
+          <span className="product-card__audience">
+            <span className="product-card__audience-badge">{t(`shoes.audience.${audience}` as 'shoes.audience.kids')}</span>
+            {range && <span className="product-card__range">{t('shoes.range', range)}</span>}
+          </span>
+        )}
         <span className="product-card__name" title={product.name}>
           {product.name}
         </span>
