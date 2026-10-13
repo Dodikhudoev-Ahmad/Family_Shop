@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Domain.Entities;
 using Domain.Interfaces;
@@ -21,6 +22,9 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
         int page,
         int pageSize,
         string? productType,
+        ShoeSegment? shoeSegment,
+        ChildGender? childGender,
+        string? size,
         CancellationToken cancellationToken = default)
     {
         var query = DbSet.AsQueryable();
@@ -38,6 +42,21 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
         if (!string.IsNullOrWhiteSpace(productType))
         {
             query = query.Where(p => p.ProductType == productType);
+        }
+
+        if (shoeSegment is not null)
+        {
+            query = query.Where(p => p.ShoeSegment == shoeSegment);
+        }
+
+        if (childGender is not null)
+        {
+            query = query.Where(p => p.ChildGender == childGender);
+        }
+
+        if (!string.IsNullOrWhiteSpace(size))
+        {
+            query = query.Where(OffersSize(size.Trim()));
         }
 
         if (minPrice is not null)
@@ -82,6 +101,21 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
             .ToListAsync(cancellationToken);
 
         return (items, totalCount);
+    }
+
+    /// <summary>The products a customer can pick this size for: the admin's selection when there is one, otherwise the
+    /// whole grid of the product - the segment's for shoes, the clothing one for other sized products.</summary>
+    private static Expression<Func<Product, bool>> OffersSize(string size)
+    {
+        var segmentsWithSize = SizeGrids.ShoesBySegment.Where(grid => grid.Value.Contains(size)).Select(grid => (ShoeSegment?)grid.Key).ToList();
+        var clothingHasSize = SizeGrids.Clothing.Contains(size);
+        var nonClothingTypes = SizeGrids.NonClothingTypes.ToList();
+
+        return p => p.AvailableSizes != null
+            ? p.AvailableSizes.Contains(size)
+            : p.ShoeSegment != null
+                ? segmentsWithSize.Contains(p.ShoeSegment)
+                : clothingHasSize && p.Category!.HasSizes && (p.ProductType == null || !nonClothingTypes.Contains(p.ProductType));
     }
 
     public Task<bool> AnyByCategoryIdAsync(int categoryId, CancellationToken cancellationToken = default)

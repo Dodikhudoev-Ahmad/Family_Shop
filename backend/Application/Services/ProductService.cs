@@ -36,12 +36,25 @@ public class ProductService : IProductService
             filter.Page,
             filter.PageSize,
             filter.ProductType,
+            filter.ShoeSegment,
+            filter.ChildGender,
+            filter.Size,
             cancellationToken);
 
         var categories = (await _unitOfWork.Categories.GetAllAsync(cancellationToken)).ToDictionary(c => c.Id);
         var dtos = items.Select(p => ToDto(p, categories.GetValueOrDefault(p.CategoryId))).ToList();
         return new PagedResult<ProductDto>(dtos, totalCount, filter.Page, filter.PageSize);
     }
+
+    public SizeGridsDto GetSizeGrids() =>
+        new(SizeGrids.ShoesBySegment
+            .OrderBy(grid => grid.Key)
+            .Select(grid => new ShoeSizeGridDto(
+                grid.Key,
+                ShoeSegments.GenderOf(grid.Key),
+                grid.Value,
+                ShoeSegments.HasChildGender(grid.Key) ? [ChildGender.Boy, ChildGender.Girl] : []))
+            .ToList());
 
     public async Task<ProductDto?> GetProductByIdAsync(int id, CancellationToken cancellationToken = default)
     {

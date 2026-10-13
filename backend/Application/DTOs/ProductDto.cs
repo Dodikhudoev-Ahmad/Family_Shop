@@ -39,3 +39,13 @@ public record ProductUpsertDto(
     List<string>? AvailableSizes = null,
     ShoeSegment? ShoeSegment = null,
     ChildGender? ChildGender = null);
+
+/// <summary>The size grid of one shoe segment as the server defines it: the one place clients take the ranges from.
+/// <see cref="ChildGenders"/> is empty for adult segments, boy and girl for kids and teen.</summary>
+public record ShoeSizeGridDto(
+    ShoeSegment Segment,
+    Gender Gender,
+    IReadOnlyList<string> Sizes,
+    IReadOnlyList<ChildGender> ChildGenders);
+
+public record SizeGridsDto(IReadOnlyList<ShoeSizeGridDto> Shoes);

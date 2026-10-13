@@ -25,6 +25,9 @@ public static class SizeGrids
     private static IReadOnlyList<string> Range(int from, int to) =>
         Enumerable.Range(from, to - from + 1).Select(n => n.ToString()).ToList();
 
+    /// <summary>Types that never take the clothing grid: shoes have their own, bags have none.</summary>
+    public static IReadOnlyList<string> NonClothingTypes { get; } = [.. ShoeTypes, .. SizelessTypes];
+
     /// <summary>Whether shoes of this type in this category are sold in sizes (and so carry a segment).</summary>
     public static bool IsSizedShoe(Category? category, string? productType) =>
         category is { HasSizes: true } && productType is not null && ShoeTypes.Contains(productType);

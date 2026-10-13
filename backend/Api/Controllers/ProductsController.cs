@@ -23,7 +23,7 @@ public class ProductsController : ControllerBase
         _filterValidator = filterValidator;
     }
 
-    /// <summary>Список товаров с фильтрацией по полу, категории, цене и поисковой строке (name/description), сортировкой и пагинацией.</summary>
+    /// <summary>Список товаров с фильтрацией по полу, категории, цене, сегменту обуви, полу ребёнка, размеру и поисковой строке (name/description), сортировкой и пагинацией.</summary>
     [AllowAnonymous]
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResult<ProductDto>>>> GetProducts(
@@ -36,9 +36,12 @@ public class ProductsController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 8,
         [FromQuery] string? productType = null,
+        [FromQuery] ShoeSegment? shoeSegment = null,
+        [FromQuery] ChildGender? childGender = null,
+        [FromQuery] string? size = null,
         CancellationToken cancellationToken = default)
     {
-        var filter = new ProductFilterDto(gender, categoryId, minPrice, maxPrice, search, sortBy, page, pageSize, productType);
+        var filter = new ProductFilterDto(gender, categoryId, minPrice, maxPrice, search, sortBy, page, pageSize, productType, shoeSegment, childGender, size);
         var errors = await _filterValidator.ValidateOrNullAsync(filter, cancellationToken);
         if (errors is not null)
         {
@@ -48,6 +51,12 @@ public class ProductsController : ControllerBase
         var result = await _productService.GetProductsAsync(filter, cancellationToken);
         return Ok(ApiResponse<PagedResult<ProductDto>>.Ok(result));
     }
+
+    /// <summary>Размерные сетки обуви по сегментам (мужская, женская, детская, подростковая): единственный источник диапазонов для клиентов.</summary>
+    [AllowAnonymous]
+    [HttpGet("size-grids")]
+    public ActionResult<ApiResponse<SizeGridsDto>> GetSizeGrids() =>
+        Ok(ApiResponse<SizeGridsDto>.Ok(_productService.GetSizeGrids()));
 
     /// <summary>Карточка товара по идентификатору.</summary>
     [AllowAnonymous]
