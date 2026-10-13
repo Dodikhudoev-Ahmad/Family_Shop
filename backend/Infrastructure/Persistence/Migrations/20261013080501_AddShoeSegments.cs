@@ -10,9 +10,8 @@ namespace Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Additive and idempotent: two nullable columns, no existing row is touched here.
-            migrationBuilder.Sql("ALTER TABLE \"Products\" ADD COLUMN IF NOT EXISTS \"ShoeSegment\" integer NULL;");
-            migrationBuilder.Sql("ALTER TABLE \"Products\" ADD COLUMN IF NOT EXISTS \"ChildGender\" integer NULL;");
+            // Additive and idempotent (see ShoeSegmentsScript): two nullable columns and a fill of rows that have no value.
+            migrationBuilder.Sql(ShoeSegmentsScript.Sql);
         }
 
         /// <inheritdoc />
