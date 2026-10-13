@@ -88,11 +88,11 @@ public class OrderServiceTests
     [Fact]
     public async Task CreateOrderAsync_ReducesProductStockByOrderedQuantity()
     {
-        var product = new Product { Id = 1, Name = "Shoes", Price = new Money(2000), Stock = 10, ProductType = "Кроссовки" };
+        var product = new Product { Id = 1, Name = "Shoes", Price = new Money(2000), Stock = 10, ProductType = "Кроссовки", ShoeSegment = ShoeSegment.Men };
         Register(product, sized: true);
 
         var request = new CreateOrderRequestDto(
-            [new CreateOrderItemDto(1, 3, "38")],
+            [new CreateOrderItemDto(1, 3, "41")],
             "Bob",
             "+7 700 000 00 01",
             DeliveryMethod.Pickup,

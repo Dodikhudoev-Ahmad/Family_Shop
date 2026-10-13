@@ -38,13 +38,21 @@ public class ProductService : IProductService
             filter.ProductType,
             cancellationToken);
 
-        return new PagedResult<ProductDto>(items.Select(ToDto).ToList(), totalCount, filter.Page, filter.PageSize);
+        var categories = (await _unitOfWork.Categories.GetAllAsync(cancellationToken)).ToDictionary(c => c.Id);
+        var dtos = items.Select(p => ToDto(p, categories.GetValueOrDefault(p.CategoryId))).ToList();
+        return new PagedResult<ProductDto>(dtos, totalCount, filter.Page, filter.PageSize);
     }
 
     public async Task<ProductDto?> GetProductByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var product = await _unitOfWork.Products.GetByIdAsync(id, cancellationToken);
-        return product is null ? null : ToDto(product);
+        if (product is null)
+        {
+            return null;
+        }
+
+        var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId, cancellationToken);
+        return ToDto(product, category);
     }
 
     public async Task<Result<ProductDto>> CreateProductAsync(ProductUpsertDto dto, CancellationToken cancellationToken = default)
@@ -56,7 +64,13 @@ public class ProductService : IProductService
         }
 
         var type = ResolveType(dto, existingType: null);
-        var sizes = ProductSizeRules.Normalize(dto.AvailableSizes, SizeGrids.For(category, type));
+        var audience = ShoeAudienceRules.Resolve(category, type, dto.Gender, dto.ShoeSegment, dto.ChildGender);
+        if (!audience.IsSuccess)
+        {
+            return Result<ProductDto>.Failure(audience.Errors);
+        }
+
+        var sizes = ProductSizeRules.Normalize(dto.AvailableSizes, SizeGrids.For(category, type, audience.Value.Segment));
         if (!sizes.IsSuccess)
         {
             return Result<ProductDto>.Failure(sizes.Errors);
@@ -76,6 +90,8 @@ public class ProductService : IProductService
             IsBestseller = dto.IsBestseller,
             ProductType = type,
             AvailableSizes = sizes.Value,
+            ShoeSegment = audience.Value.Segment,
+            ChildGender = audience.Value.ChildGender,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -83,7 +99,7 @@ public class ProductService : IProductService
         await _unitOfWork.Products.AddAsync(product, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result<ProductDto>.Success(ToDto(product));
+        return Result<ProductDto>.Success(ToDto(product, category));
     }
 
     public async Task<Result<ProductDto>> UpdateProductAsync(int id, ProductUpsertDto dto, CancellationToken cancellationToken = default)
@@ -101,7 +117,13 @@ public class ProductService : IProductService
         }
 
         var type = ResolveType(dto, existingType: product.ProductType);
-        var sizes = ProductSizeRules.Normalize(dto.AvailableSizes, SizeGrids.For(category, type));
+        var audience = ShoeAudienceRules.Resolve(category, type, dto.Gender, dto.ShoeSegment, dto.ChildGender);
+        if (!audience.IsSuccess)
+        {
+            return Result<ProductDto>.Failure(audience.Errors);
+        }
+
+        var sizes = ProductSizeRules.Normalize(dto.AvailableSizes, SizeGrids.For(category, type, audience.Value.Segment));
         if (!sizes.IsSuccess)
         {
             return Result<ProductDto>.Failure(sizes.Errors);
@@ -118,12 +140,14 @@ public class ProductService : IProductService
         product.IsBestseller = dto.IsBestseller;
         product.ProductType = type;
         product.AvailableSizes = sizes.Value;
+        product.ShoeSegment = audience.Value.Segment;
+        product.ChildGender = audience.Value.ChildGender;
         product.UpdatedAt = DateTime.UtcNow;
 
         _unitOfWork.Products.Update(product);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result<ProductDto>.Success(ToDto(product));
+        return Result<ProductDto>.Success(ToDto(product, category));
     }
 
     public async Task<Result<bool>> DeleteProductAsync(int id, CancellationToken cancellationToken = default)
@@ -152,6 +176,17 @@ public class ProductService : IProductService
             ? dto.ProductType.Trim()
             : existingType ?? ProductTypeClassifier.Infer(dto.Name);
 
-    private static ProductDto ToDto(Domain.Entities.Product p) =>
-        new(p.Id, p.Name, p.Description, p.Price.Amount, p.DiscountPrice?.Amount, p.Stock, p.CategoryId, p.Gender, p.Images, p.CreatedAt, p.IsBestseller, p.AverageRating, p.ReviewCount, p.ProductType, p.AvailableSizes);
+    private static ProductDto ToDto(Product p, Category? category)
+    {
+        var grid = SizeGrids.For(category, p.ProductType, p.ShoeSegment);
+        var offered = SizeGrids.Effective(p, category);
+        var sizes = grid.Select(size => new ProductSizeDto(size, p.Stock > 0 && offered.Contains(size))).ToList();
+
+        // A shoe gets its offered sizes spelled out (not "null = the whole grid"): a client that still carries the old
+        // grids in its own code then never offers a size this product does not have.
+        var availableSizes = p.ShoeSegment is null ? p.AvailableSizes : offered.ToList();
+
+        return new(p.Id, p.Name, p.Description, p.Price.Amount, p.DiscountPrice?.Amount, p.Stock, p.CategoryId, p.Gender, p.Images,
+            p.CreatedAt, p.IsBestseller, p.AverageRating, p.ReviewCount, p.ProductType, availableSizes, p.ShoeSegment, p.ChildGender, sizes);
+    }
 }

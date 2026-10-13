@@ -17,7 +17,13 @@ public record ProductDto(
     decimal AverageRating,
     int ReviewCount,
     string? ProductType = null,
-    List<string>? AvailableSizes = null);
+    List<string>? AvailableSizes = null,
+    ShoeSegment? ShoeSegment = null,
+    ChildGender? ChildGender = null,
+    List<ProductSizeDto>? Sizes = null);
+
+/// <summary>One size of the product's grid and whether it can be bought now (offered by the admin and in stock).</summary>
+public record ProductSizeDto(string Size, bool Available);
 
 public record ProductUpsertDto(
     string Name,
@@ -30,4 +36,6 @@ public record ProductUpsertDto(
     List<string> Images,
     bool IsBestseller,
     string? ProductType = null,
-    List<string>? AvailableSizes = null);
+    List<string>? AvailableSizes = null,
+    ShoeSegment? ShoeSegment = null,
+    ChildGender? ChildGender = null);
