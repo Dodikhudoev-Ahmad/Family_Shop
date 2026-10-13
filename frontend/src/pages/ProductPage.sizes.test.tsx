@@ -68,11 +68,18 @@ describe('ProductPage - sizes', () => {
     expect(sizeButtons()[1]).not.toHaveAttribute('aria-disabled');
   });
 
-  it('children\'s shoes with 27, 28 and 30 withdrawn still show 26-35', () => {
-    renderPage(dto({ id: 9, categoryId: 3, productType: 'Ботинки', availableSizes: ['26', '29', '31', '32', '33', '34', '35'] }));
+  it('children\'s shoes with 28, 29 and 31 withdrawn still show the whole 27-37 grid', () => {
+    const all = Array.from({ length: 11 }, (_, i) => String(27 + i));
+    const offered = all.filter((s) => !['28', '29', '31'].includes(s));
+    renderPage(
+      dto({
+        id: 9, categoryId: 3, productType: 'Ботинки', shoeSegment: 2, childGender: 0, availableSizes: offered,
+        sizes: all.map((size) => ({ size, available: offered.includes(size) })),
+      }),
+    );
 
-    expect(labels()).toEqual(['26', '27', '28', '29', '30', '31', '32', '33', '34', '35']);
-    expect(unavailable()).toEqual(['27', '28', '30']);
+    expect(labels()).toEqual(all);
+    expect(unavailable()).toEqual(['28', '29', '31']);
   });
 
   it('an unavailable size cannot be selected: it explains itself (live region, no toast) and keeps "В корзину" inactive', () => {

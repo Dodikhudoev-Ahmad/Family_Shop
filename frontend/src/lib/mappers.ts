@@ -6,8 +6,6 @@ const SEGMENT_MAP: Record<ApiShoeSegment, ShoeSegment> = { 0: 'men', 1: 'women',
 const CHILD_GENDER_MAP: Record<ApiChildGender, ChildGender> = { 0: 'boy', 1: 'girl' };
 
 export const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
-export const KIDS_SHOE_SIZES = ['26', '27', '28', '29', '30', '31', '32', '33', '34', '35'];
-export const SHOE_SIZES = ['36', '37', '38', '39', '40'];
 
 /** Sorts a mixed list of sizes (clothing or shoe): clothing in its canonical order (not alphabetically, which would
  * put '2XL' before 'L'), then shoe sizes by number. */
@@ -29,12 +27,13 @@ const SHOE_TYPES = ['Ботинки', 'Кроссовки'];
 // the clothing grid from them.
 const SIZELESS_TYPES = ['Сумки', 'Рюкзаки'];
 
-/** Size grid by what the product is, not by which category it sits in: shoes and bags live
- * in Женское/Мужское/Детское next to clothes. */
+/** Fallback grid for a product that comes without the server's one: by what the product is, not by which category it
+ * sits in (shoes and bags live in Женское/Мужское/Детское next to clothes). Shoes get none here - their ranges are the
+ * server's, sent with each product. */
 export function sizesFor(categoryId: number, categories: Category[], productType?: string | null): string[] {
   const category = categories.find((c) => c.id === String(categoryId));
   if (!category?.hasSizes) return [];
-  if (productType && SHOE_TYPES.includes(productType)) return category.slug === 'kids' ? KIDS_SHOE_SIZES : SHOE_SIZES;
+  if (productType && SHOE_TYPES.includes(productType)) return [];
   if (productType && SIZELESS_TYPES.includes(productType)) return [];
   return CLOTHING_SIZES;
 }

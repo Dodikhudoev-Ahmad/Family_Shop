@@ -10,13 +10,23 @@ import {
   createAdminProduct,
   deleteAdminProduct,
   fetchCategories,
+  fetchSizeGrids,
   fetchProductsPage,
   updateAdminProduct,
   uploadAdminProductImage,
   type ProductUpsertRequest,
 } from '../../lib/api';
-import type { ApiGender, CategoryDto, ProductDto } from '../../types/api';
-import { productTypesFor, sizeGridFor, summarizeSizes } from '../../utils/sizeGrids';
+import { CHILD_GENDER, type ApiChildGender, type ApiGender, type ApiShoeSegment, type CategoryDto, type ProductDto, type ShoeSizeGridDto } from '../../types/api';
+import {
+  isShoeType,
+  pickShoeGrid,
+  productTypesFor,
+  segmentLabel,
+  shoeGridsForGender,
+  sizeGridFor,
+  summarizeSizes,
+} from '../../utils/sizeGrids';
+import { splitServerErrors } from '../../utils/productServerErrors';
 import { ProductSizesField } from './ProductSizesField';
 import './AdminProductsPage.css';
 
@@ -61,7 +71,15 @@ interface FormState {
   productType: string;
   /** The ticked sizes of the grid; meaningless (and not sent) when the type has no grid. */
   sizes: string[];
+  /** Kids or teen, where the gender allows both; ignored (and not sent) for anything but sized shoes. */
+  shoeSegment: ApiShoeSegment | null;
+  /** Boy or girl of a kids' or teen shoe; ignored (and not sent) for anything else. */
+  childGender: ApiChildGender | null;
 }
+
+const CHILD_GENDER_LABEL: Record<ApiChildGender, string> = { [CHILD_GENDER.Boy]: 'Мальчик', [CHILD_GENDER.Girl]: 'Девочка' };
+const CHILD_GENDER_OPTIONS: ApiChildGender[] = [CHILD_GENDER.Boy, CHILD_GENDER.Girl];
+const CHILD_GENDER_REQUIRED = 'Укажите, для кого обувь: мальчик или девочка.';
 
 function emptyForm(defaultCategoryId: string): FormState {
   return {
@@ -77,6 +95,8 @@ function emptyForm(defaultCategoryId: string): FormState {
     images: [],
     productType: '',
     sizes: [],
+    shoeSegment: null,
+    childGender: null,
   };
 }
 
@@ -84,19 +104,44 @@ function categoryOf(categories: CategoryDto[], categoryId: string): CategoryDto 
   return categories.find((c) => String(c.id) === categoryId);
 }
 
+/** What the form says about the shoe grid: the chosen category and type, the gender they imply, and from the server's
+ * grids the segments that fit it (several only for children) and the one in force. Non-shoes have none. */
+function shoeContextOf(form: FormState, categories: CategoryDto[], shoeGrids: ShoeSizeGridDto[]) {
+  const category = categoryOf(categories, form.categoryId);
+  const gender = impliedGender(categories, form.categoryId) ?? form.gender;
+  const isSizedShoe = category?.hasSizes === true && isShoeType(form.productType);
+  const candidates = isSizedShoe ? shoeGridsForGender(shoeGrids, gender) : [];
+  const shoeGrid = isSizedShoe ? pickShoeGrid(shoeGrids, gender, form.shoeSegment) : null;
+  return { category, candidates, shoeGrid, grid: sizeGridFor(category, form.productType || null, shoeGrid) };
+}
+
 /** The form after the category and/or type changed: sizes start over as the whole new grid (nothing is carried over
  * from a different grid), and a type the new category doesn't offer is cleared. */
-function withCategoryAndType(form: FormState, categories: CategoryDto[], categoryId: string, productType: string): FormState {
+function withCategoryAndType(
+  form: FormState,
+  categories: CategoryDto[],
+  shoeGrids: ShoeSizeGridDto[],
+  categoryId: string,
+  productType: string,
+): FormState {
   const category = categoryOf(categories, categoryId);
   const type = productTypesFor(category?.slug).includes(productType) ? productType : '';
-  const grid = sizeGridFor(category, type || null);
-  return { ...form, categoryId, productType: type, sizes: grid ? [...grid.sizes] : [] };
+  const next = { ...form, categoryId, productType: type };
+  const { shoeGrid, grid } = shoeContextOf(next, categories, shoeGrids);
+  return {
+    ...next,
+    sizes: grid ? [...grid.sizes] : [],
+    shoeSegment: shoeGrid?.segment ?? null,
+    childGender: shoeGrid && shoeGrid.childGenders.length > 0 ? form.childGender : null,
+  };
 }
 
 export function AdminProductsPage() {
   const { showToast } = useToast();
 
   const [categories, setCategories] = useState<CategoryDto[]>([]);
+  // The shoe size grids as the server defines them (one place for the ranges); empty until they arrive.
+  const [shoeGrids, setShoeGrids] = useState<ShoeSizeGridDto[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -124,6 +169,12 @@ export function AdminProductsPage() {
     fetchCategories()
       .then(setCategories)
       .catch(() => showToast('Не удалось загрузить категории.', 'error'));
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchSizeGrids()
+      .then((grids) => setShoeGrids(grids.shoes))
+      .catch(() => showToast('Не удалось загрузить размерные сетки обуви.', 'error'));
   }, [showToast]);
 
   useEffect(() => {
@@ -174,7 +225,7 @@ export function AdminProductsPage() {
   };
 
   const openEdit = (product: ProductDto) => {
-    setForm({
+    const base: FormState = {
       id: product.id,
       name: product.name,
       description: product.description,
@@ -185,11 +236,9 @@ export function AdminProductsPage() {
       gender: product.gender,
       isBestseller: product.isBestseller,
       productType: product.productType ?? '',
-      sizes: (() => {
-        const grid = sizeGridFor(categoryOf(categories, String(product.categoryId)), product.productType);
-        if (!grid) return [];
-        return product.availableSizes ? grid.sizes.filter((s) => product.availableSizes!.includes(s)) : [...grid.sizes];
-      })(),
+      sizes: [],
+      shoeSegment: product.shoeSegment ?? null,
+      childGender: product.childGender ?? null,
       images: product.images.map((url, i) => ({
         id: `existing-${i}-${url}`,
         previewUrl: url,
@@ -197,7 +246,10 @@ export function AdminProductsPage() {
         uploading: false,
         error: null,
       })),
-    });
+    };
+    const { grid } = shoeContextOf(base, categories, shoeGrids);
+    const sizes = !grid ? [] : product.availableSizes ? grid.sizes.filter((s) => product.availableSizes!.includes(s)) : [...grid.sizes];
+    setForm({ ...base, sizes });
     setFieldErrors({});
     setFormErrors([]);
     setDrawerOpen(true);
@@ -218,8 +270,9 @@ export function AdminProductsPage() {
     if (form.stock === '' || Number.isNaN(stock) || stock < 0) errors.stock = 'Укажите остаток (0 или больше).';
     if (!form.categoryId) errors.categoryId = 'Выберите категорию.';
     if (!form.productType) errors.productType = 'Выберите тип товара.';
-    const grid = sizeGridFor(categoryOf(categories, form.categoryId), form.productType || null);
+    const { grid, shoeGrid } = shoeContextOf(form, categories, shoeGrids);
     if (grid && form.sizes.length === 0) errors.sizes = 'Выберите хотя бы один размер.';
+    if (shoeGrid && shoeGrid.childGenders.length > 0 && form.childGender === null) errors.childGender = CHILD_GENDER_REQUIRED;
     if (form.images.length === 0) errors.images = 'Добавьте хотя бы одно изображение.';
     else if (form.images.some((img) => img.uploading)) errors.images = 'Дождитесь загрузки изображений.';
     return errors;
@@ -233,6 +286,7 @@ export function AdminProductsPage() {
     setIsSaving(true);
     setFormErrors([]);
 
+    const { grid: sizeGrid, shoeGrid } = shoeContextOf(form, categories, shoeGrids);
     const request: ProductUpsertRequest = {
       name: form.name.trim(),
       description: form.description.trim(),
@@ -245,9 +299,10 @@ export function AdminProductsPage() {
       isBestseller: form.isBestseller,
       productType: form.productType,
       // A type without sizes sends none; for a sized one the server stores null when every size is ticked.
-      availableSizes: sizeGridFor(categoryOf(categories, form.categoryId), form.productType)
-        ? form.sizes
-        : null,
+      availableSizes: sizeGrid ? form.sizes : null,
+      // Only a shoe has them; the server also takes the segment from the gender when it is not sent.
+      shoeSegment: shoeGrid?.segment ?? null,
+      childGender: shoeGrid && shoeGrid.childGenders.length > 0 ? form.childGender : null,
     };
 
     const promise = form.id === null ? createAdminProduct(request) : updateAdminProduct(form.id, request);
@@ -259,7 +314,14 @@ export function AdminProductsPage() {
         loadProducts();
       })
       .catch((err: unknown) => {
-        setFormErrors([err instanceof ApiError ? err.message : 'Не удалось сохранить товар.']);
+        if (!(err instanceof ApiError)) {
+          setFormErrors(['Не удалось сохранить товар.']);
+          return;
+        }
+        // What the server rejects about sizes or the audience is shown at that field, the rest at the top.
+        const { fields, rest } = splitServerErrors(err.message);
+        setFieldErrors((prev) => ({ ...prev, ...fields }));
+        setFormErrors(rest);
       })
       .finally(() => setIsSaving(false));
   };
@@ -354,6 +416,7 @@ export function AdminProductsPage() {
               <ProductsTable
                 products={products}
                 categoryById={categoryById}
+                shoeGrids={shoeGrids}
                 onEdit={openEdit}
                 onDelete={setPendingDelete}
               />
@@ -361,6 +424,7 @@ export function AdminProductsPage() {
               <ProductsCards
                 products={products}
                 categoryById={categoryById}
+                shoeGrids={shoeGrids}
                 onEdit={openEdit}
                 onDelete={setPendingDelete}
               />
@@ -389,6 +453,7 @@ export function AdminProductsPage() {
         formErrors={formErrors}
         isSaving={isSaving}
         categories={categories}
+        shoeGrids={shoeGrids}
         onSubmit={handleSubmit}
         onClose={() => setDrawerOpen(false)}
       />
@@ -408,11 +473,13 @@ export function AdminProductsPage() {
 function ProductsTable({
   products,
   categoryById,
+  shoeGrids,
   onEdit,
   onDelete,
 }: {
   products: ProductDto[];
   categoryById: Map<number, CategoryDto>;
+  shoeGrids: ShoeSizeGridDto[];
   onEdit: (product: ProductDto) => void;
   onDelete: (product: ProductDto) => void;
 }) {
@@ -447,7 +514,7 @@ function ProductsTable({
               <td>
                 <PriceCell product={product} />
               </td>
-              <td className="admin-products__sizes">{sizeSummary(product, categoryById)}</td>
+              <td className="admin-products__sizes">{sizeSummary(product, categoryById, shoeGrids)}</td>
               <td>
                 <StockCell stock={product.stock} />
               </td>
@@ -472,11 +539,13 @@ function ProductsTable({
 function ProductsCards({
   products,
   categoryById,
+  shoeGrids,
   onEdit,
   onDelete,
 }: {
   products: ProductDto[];
   categoryById: Map<number, CategoryDto>;
+  shoeGrids: ShoeSizeGridDto[];
   onEdit: (product: ProductDto) => void;
   onDelete: (product: ProductDto) => void;
 }) {
@@ -492,7 +561,7 @@ function ProductsCards({
             <span className="admin-product-card__category">{categoryById.get(product.categoryId)?.name ?? '—'}</span>
             <h3>{product.name}</h3>
             <PriceCell product={product} />
-            <span className="admin-products__sizes">Размеры: {sizeSummary(product, categoryById)}</span>
+            <span className="admin-products__sizes">Размеры: {sizeSummary(product, categoryById, shoeGrids)}</span>
             <StockCell stock={product.stock} />
           </div>
           <div className="admin-product-card__actions">
@@ -509,8 +578,9 @@ function ProductsCards({
   );
 }
 
-function sizeSummary(product: ProductDto, categoryById: Map<number, CategoryDto>): string {
-  return summarizeSizes(product.availableSizes, sizeGridFor(categoryById.get(product.categoryId), product.productType));
+function sizeSummary(product: ProductDto, categoryById: Map<number, CategoryDto>, shoeGrids: ShoeSizeGridDto[]): string {
+  const shoeGrid = isShoeType(product.productType) ? pickShoeGrid(shoeGrids, product.gender, product.shoeSegment ?? null) : null;
+  return summarizeSizes(product.availableSizes, sizeGridFor(categoryById.get(product.categoryId), product.productType, shoeGrid));
 }
 
 function PriceCell({ product }: { product: ProductDto }) {
@@ -539,6 +609,7 @@ function ProductFormDrawer({
   formErrors,
   isSaving,
   categories,
+  shoeGrids,
   onSubmit,
   onClose,
 }: {
@@ -549,6 +620,7 @@ function ProductFormDrawer({
   formErrors: string[];
   isSaving: boolean;
   categories: CategoryDto[];
+  shoeGrids: ShoeSizeGridDto[];
   onSubmit: () => void;
   onClose: () => void;
 }) {
@@ -558,7 +630,7 @@ function ProductFormDrawer({
   const showGender = categoryGender === undefined && category?.hasSizes !== false;
   // A product whose stored type isn't on the list (legacy data) still shows it, so saving doesn't silently change it.
   const typeOptions = [...new Set([...productTypesFor(category?.slug), ...(form.productType ? [form.productType] : [])])];
-  const sizeGrid = sizeGridFor(category, form.productType || null);
+  const { candidates, shoeGrid, grid: sizeGrid } = shoeContextOf(form, categories, shoeGrids);
 
   return (
     <>
@@ -604,7 +676,7 @@ function ProductFormDrawer({
                       const nextGender = impliedGender(categories, categoryId);
                       const genderHidden = categoryOf(categories, categoryId)?.hasSizes === false;
                       setForm((prev) => ({
-                        ...withCategoryAndType(prev, categories, categoryId, prev.productType),
+                        ...withCategoryAndType(prev, categories, shoeGrids, categoryId, prev.productType),
                         // A hidden field keeps an edited product's gender; a new product falls back to the default.
                         gender: nextGender ?? (genderHidden && prev.id === null ? 0 : prev.gender),
                       }));
@@ -638,7 +710,9 @@ function ProductFormDrawer({
               <Field label="Тип товара" error={fieldErrors.productType}>
                 <select
                   value={form.productType}
-                  onChange={(e) => setForm((prev) => withCategoryAndType(prev, categories, prev.categoryId, e.target.value))}
+                  onChange={(e) =>
+                    setForm((prev) => withCategoryAndType(prev, categories, shoeGrids, prev.categoryId, e.target.value))
+                  }
                 >
                   <option value="">Выберите тип</option>
                   {typeOptions.map((type) => (
@@ -648,6 +722,46 @@ function ProductFormDrawer({
                   ))}
                 </select>
               </Field>
+
+              {candidates.length > 1 && (
+                <Field label="Возрастная группа" error={fieldErrors.shoeSegment}>
+                  <select
+                    value={shoeGrid?.segment ?? ''}
+                    onChange={(e) => {
+                      const segment = Number(e.target.value) as ApiShoeSegment;
+                      const next = candidates.find((g) => g.segment === segment);
+                      // The size grid differs between the groups, so the ticked sizes start over as the new grid.
+                      setForm((prev) => ({ ...prev, shoeSegment: segment, sizes: next ? [...next.sizes] : [] }));
+                    }}
+                  >
+                    {candidates.map((g) => (
+                      <option key={g.segment} value={g.segment}>
+                        {segmentLabel(g.segment)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+
+              {shoeGrid && shoeGrid.childGenders.length > 0 && (
+                <fieldset className={`admin-sizes admin-segmented ${fieldErrors.childGender ? 'has-error' : ''}`}>
+                  <legend>Для кого</legend>
+                  <div className="admin-segmented__options" role="radiogroup" aria-label="Для кого обувь">
+                    {CHILD_GENDER_OPTIONS.filter((g) => shoeGrid.childGenders.includes(g)).map((g) => (
+                      <label key={g} className={`admin-sizes__item ${form.childGender === g ? 'is-checked' : ''}`}>
+                        <input
+                          type="radio"
+                          name="childGender"
+                          checked={form.childGender === g}
+                          onChange={() => setForm((prev) => ({ ...prev, childGender: g }))}
+                        />
+                        <span>{CHILD_GENDER_LABEL[g]}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {fieldErrors.childGender && <span className="admin-form-field__error">{fieldErrors.childGender}</span>}
+                </fieldset>
+              )}
 
               <ProductSizesField
                 grid={sizeGrid}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CLOTHING_SIZES, KIDS_SHOE_SIZES, SHOE_SIZES, mapProduct, sizesFor, sortSizes, productSizes } from './mappers';
+import { CLOTHING_SIZES, mapProduct, sizesFor, sortSizes, productSizes } from './mappers';
 import type { Category } from '../types/product';
 
 const categories: Category[] = [
@@ -14,27 +14,23 @@ describe('sizesFor', () => {
     expect(sizesFor(1, categories, null)).toEqual(CLOTHING_SIZES);
   });
 
-  it('keeps the separate shoe-size grid for shoes now living in a gender category', () => {
-    expect(sizesFor(1, categories, 'Ботинки')).toEqual(SHOE_SIZES);
-    expect(sizesFor(1, categories, 'Кроссовки')).toEqual(SHOE_SIZES);
+  it('leaves shoe grids to the server: a shoe that arrives without them has none here', () => {
+    expect(sizesFor(1, categories, 'Ботинки')).toEqual([]);
+    expect(sizesFor(3, categories, 'Кроссовки')).toEqual([]);
   });
 
   it('gives bags no sizes and sizeless categories none at all', () => {
     expect(sizesFor(1, categories, 'Сумки')).toEqual([]);
     expect(sizesFor(2, categories, 'Кроссовки')).toEqual([]);
+    expect(sizesFor(3, categories, 'Сумки')).toEqual([]);
   });
 
-  it('gives kids shoes the 26-35 grid, kids bags none and kids clothes the clothing grid', () => {
-    expect(sizesFor(3, categories, 'Ботинки')).toEqual(KIDS_SHOE_SIZES);
-    expect(sizesFor(3, categories, 'Кроссовки')).toEqual(KIDS_SHOE_SIZES);
-    expect(KIDS_SHOE_SIZES[0]).toBe('26');
-    expect(KIDS_SHOE_SIZES.at(-1)).toBe('35');
-    expect(sizesFor(3, categories, 'Сумки')).toEqual([]);
+  it('gives kids clothes the clothing grid', () => {
     expect(sizesFor(3, categories, 'Куртки')).toEqual(CLOTHING_SIZES);
   });
 
-  it('sorts kids shoe sizes numerically, before adult shoe sizes', () => {
-    expect(sortSizes(['36', '30', 'M', '26'])).toEqual(['M', '26', '30', '36']);
+  it('sorts clothing first, then shoe sizes by number', () => {
+    expect(sortSizes(['41', '36', 'M', '27', '9', 'XL'])).toEqual(['M', 'XL', '9', '27', '36', '41']);
   });
 });
 
@@ -48,8 +44,8 @@ describe('productSizes - the sizes a customer can pick', () => {
 
   it('null (every product before sizes became editable) = the whole grid of the type', () => {
     expect(productSizes(dto({}), cats)).toEqual(CLOTHING_SIZES);
-    expect(productSizes(dto({ productType: 'Кроссовки' }), cats)).toEqual(SHOE_SIZES);
-    expect(productSizes(dto({ categoryId: 3, productType: 'Кроссовки' }), cats)).toEqual(KIDS_SHOE_SIZES);
+    expect(productSizes(dto({ productType: 'Кроссовки', sizes: ['39', '40', '41'].map((size) => ({ size, available: true })) }), cats)).toEqual(['39', '40', '41']);
+    expect(productSizes(dto({ categoryId: 3, productType: 'Кроссовки', availableSizes: ['30'], sizes: ['29', '30'].map((size) => ({ size, available: size === '30' })) }), cats)).toEqual(['30']);
   });
 
   it('a selection limits the sizes, in grid order, and ignores anything outside the grid', () => {
