@@ -381,6 +381,28 @@ public class ProductSizesTests
         Assert.Equal(ResultErrorCodes.SizeUnavailable, (await sut.CreateOrderAsync(1, Order(1, null))).ErrorCode); // a sized product needs a size
     }
 
+    [Theory]
+    [InlineData(ShoeSegment.Teen, "36", false)]
+    [InlineData(ShoeSegment.Teen, "37", true)]
+    [InlineData(ShoeSegment.Teen, "42", false)]
+    [InlineData(ShoeSegment.Kids, "37", true)]
+    [InlineData(ShoeSegment.Kids, "38", false)]
+    [InlineData(ShoeSegment.Men, "38", false)]
+    [InlineData(ShoeSegment.Men, "39", true)]
+    public async Task AShoeIsOrderedOnlyInASizeOfItsSegment(ShoeSegment segment, string size, bool accepted)
+    {
+        var shoe = new Product { Id = 3, CategoryId = 1, Name = "Кроссовки", ProductType = "Кроссовки", Price = new Money(100), Stock = 9, ShoeSegment = segment };
+        var (sut, _) = OrderSetup(shoe, sized: true);
+
+        var result = await sut.CreateOrderAsync(1, Order(3, size));
+
+        Assert.Equal(accepted, result.IsSuccess);
+        if (!accepted)
+        {
+            Assert.Equal(ResultErrorCodes.SizeUnavailable, result.ErrorCode);
+        }
+    }
+
     [Fact]
     public async Task AProductWithoutSizes_TakesNoSize()
     {
