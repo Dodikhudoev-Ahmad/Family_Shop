@@ -37,6 +37,14 @@ public class Product
     /// product, shared by all its sizes.</summary>
     public List<string>? AvailableSizes { get; set; }
 
+    /// <summary>For shoes in a category with sizes: who they are made for, which decides the size grid (SizeGrids).
+    /// <c>null</c> for everything else.</summary>
+    public ShoeSegment? ShoeSegment { get; set; }
+
+    /// <summary>Boy or girl; set for kids and teen shoes only. <c>null</c> on such a shoe means "not decided yet"
+    /// (rows that predate the field); the admin has to choose when saving the card.</summary>
+    public ChildGender? ChildGender { get; set; }
+
     // Denormalized from Review rows and recomputed whenever a review is added/removed,
     // so catalog listing/sorting never has to aggregate Reviews per page.
     public decimal AverageRating { get; set; }
