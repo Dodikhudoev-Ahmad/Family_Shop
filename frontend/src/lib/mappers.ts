@@ -1,7 +1,9 @@
-import type { CategoryDto, ProductDto } from '../types/api';
-import type { Category, Gender, Product } from '../types/product';
+import type { ApiChildGender, ApiShoeSegment, CategoryDto, ProductDto } from '../types/api';
+import type { Category, ChildGender, Gender, Product, ShoeSegment } from '../types/product';
 
 const GENDER_MAP: Record<number, Gender> = { 0: 'male', 1: 'female', 2: 'kids' };
+const SEGMENT_MAP: Record<ApiShoeSegment, ShoeSegment> = { 0: 'men', 1: 'women', 2: 'kids', 3: 'teen' };
+const CHILD_GENDER_MAP: Record<ApiChildGender, ChildGender> = { 0: 'boy', 1: 'girl' };
 
 export const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 export const KIDS_SHOE_SIZES = ['26', '27', '28', '29', '30', '31', '32', '33', '34', '35'];
@@ -37,10 +39,15 @@ export function sizesFor(categoryId: number, categories: Category[], productType
   return CLOTHING_SIZES;
 }
 
+/** The whole grid of the product: the server's when it sends one (it owns the shoe ranges), else the local rule. */
+function gridSizesOf(dto: ProductDto, categories: Category[]): string[] {
+  return dto.sizes ? dto.sizes.map((s) => s.size) : sizesFor(dto.categoryId, categories, dto.productType);
+}
+
 /** What the customer can pick: the admin's selection (within the grid of the product's type), or the whole grid
  * when none was made (null - what every product had before sizes became editable). */
 export function productSizes(dto: ProductDto, categories: Category[]): string[] {
-  const grid = sizesFor(dto.categoryId, categories, dto.productType);
+  const grid = gridSizesOf(dto, categories);
   if (grid.length === 0 || !dto.availableSizes) return grid;
   return sortSizes(dto.availableSizes.filter((s) => grid.includes(s)));
 }
@@ -57,11 +64,13 @@ export function mapProduct(dto: ProductDto, categories: Category[]): Product {
     gender: GENDER_MAP[dto.gender] ?? 'female',
     images: dto.images,
     sizes: productSizes(dto, categories),
-    gridSizes: sizesFor(dto.categoryId, categories, dto.productType),
+    gridSizes: gridSizesOf(dto, categories),
     isBestseller: dto.isBestseller,
     createdAt: dto.createdAt,
     averageRating: dto.averageRating,
     reviewCount: dto.reviewCount,
     productType: dto.productType ?? undefined,
+    shoeSegment: dto.shoeSegment != null ? SEGMENT_MAP[dto.shoeSegment] : undefined,
+    childGender: dto.childGender != null ? CHILD_GENDER_MAP[dto.childGender] : undefined,
   };
 }

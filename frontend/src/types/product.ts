@@ -1,5 +1,9 @@
 export type Gender = 'female' | 'male' | 'kids';
 
+/** Who a pair of shoes is for; decides its size grid (37 belongs to both kids and teen). */
+export type ShoeSegment = 'men' | 'women' | 'kids' | 'teen';
+export type ChildGender = 'boy' | 'girl';
+
 export interface Category {
   id: string;
   name: string;
@@ -29,4 +33,8 @@ export interface Product {
   averageRating: number;
   reviewCount: number;
   productType?: string;
+  /** Shoes only. */
+  shoeSegment?: ShoeSegment;
+  /** Kids' and teen shoes only; absent where the shop has not decided yet. */
+  childGender?: ChildGender;
 }

@@ -1,4 +1,14 @@
-import type { ApiGender, ApiResponse, CategoryDto, PagedResult, ProductDto, ProductSortBy } from '../types/api';
+import type {
+  ApiChildGender,
+  ApiGender,
+  ApiResponse,
+  ApiShoeSegment,
+  CategoryDto,
+  PagedResult,
+  ProductDto,
+  ProductSortBy,
+  SizeGridsDto,
+} from '../types/api';
 import { getAccessToken, setAccessToken } from './authToken';
 import i18n from '../i18n';
 
@@ -143,6 +153,9 @@ export interface ProductQuery {
   page?: number;
   pageSize?: number;
   productType?: string;
+  shoeSegment?: ApiShoeSegment;
+  childGender?: ApiChildGender;
+  size?: string;
 }
 
 function buildProductParams(query: ProductQuery): URLSearchParams {
@@ -156,6 +169,9 @@ function buildProductParams(query: ProductQuery): URLSearchParams {
   if (query.page !== undefined) params.set('page', String(query.page));
   if (query.pageSize !== undefined) params.set('pageSize', String(query.pageSize));
   if (query.productType !== undefined) params.set('productType', query.productType);
+  if (query.shoeSegment !== undefined) params.set('shoeSegment', String(query.shoeSegment));
+  if (query.childGender !== undefined) params.set('childGender', String(query.childGender));
+  if (query.size !== undefined) params.set('size', query.size);
   return params;
 }
 
@@ -184,6 +200,10 @@ export function fetchProductsPage(query: ProductQuery = {}): Promise<PagedResult
 
 export function fetchProduct(id: number): Promise<ProductDto> {
   return apiFetch<ProductDto>(`/products/${id}`);
+}
+
+export function fetchSizeGrids(): Promise<SizeGridsDto> {
+  return apiFetch<SizeGridsDto>('/products/size-grids');
 }
 
 export function fetchCategories(): Promise<CategoryDto[]> {
@@ -575,6 +595,10 @@ export interface ProductUpsertRequest {
   productType: string;
   /** The sizes it is sold in; null for a type without sizes (the server also stores null for the whole grid). */
   availableSizes: string[] | null;
+  /** Shoes: who they are for; null lets the server take it from the gender. Other products: null. */
+  shoeSegment?: ApiShoeSegment | null;
+  /** Kids' and teen shoes: boy or girl; null for everything else. */
+  childGender?: ApiChildGender | null;
 }
 
 export function createAdminProduct(request: ProductUpsertRequest): Promise<ProductDto> {
