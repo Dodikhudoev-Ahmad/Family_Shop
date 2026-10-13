@@ -123,7 +123,7 @@ public static class SeedData
             // of their gender, alongside the clothes (ProductType tells them apart).
             ("women", id => BuildWomen(id).Concat(BuildWomenExtra(id)).Concat(ShoesAndBagsFor(id, Gender.Female))),
             ("men", id => BuildMen(id).Concat(BuildMenExtra(id)).Concat(ShoesAndBagsFor(id, Gender.Male))),
-            ("kids", id => BuildKids(id).Concat(BuildKidsExtra(id)).Concat(ShoesAndBagsFor(id, Gender.Kids))),
+            ("kids", id => BuildKids(id).Concat(BuildKidsExtra(id)).Concat(ShoesAndBagsFor(id, Gender.Kids)).Concat(BuildTeenShoes(id))),
             ("bytovaya-tehnika", id => BuildAppliances(id).Concat(BuildAppliancesExtra(id))),
             ("sport", id => BuildSport(id).Concat(BuildSportExtra(id))),
             ("posuda", id => BuildDishes(id).Concat(BuildDishesExtra(id))),
@@ -145,6 +145,8 @@ public static class SeedData
 
             foreach (var def in build(categoryId))
             {
+                AssignShoeSegment(def, categoriesBySlug[slug]);
+
                 if (existingByKey.TryGetValue((categoryId, def.Name), out var existing))
                 {
                     var newImage = def.Images[0];
@@ -157,6 +159,14 @@ public static class SeedData
                     if (existing.ProductType is null && def.ProductType is not null)
                     {
                         existing.ProductType = def.ProductType;
+                        catalogChanged = true;
+                    }
+
+                    // Only a missing segment is filled. An existing card's boy/girl is left to the admin: the seed does
+                    // not decide it for a product that is already in the shop.
+                    if (existing.ShoeSegment is null && def.ShoeSegment is not null)
+                    {
+                        existing.ShoeSegment = def.ShoeSegment;
                         catalogChanged = true;
                     }
                 }
@@ -445,6 +455,38 @@ public static class SeedData
         "Кроссовки детские серо-белые",
         "Кроссовки детские жёлтые на липучках",
     ];
+
+    private static readonly HashSet<string> ShoeTypes = ["Ботинки", "Кроссовки"];
+
+    /// <summary>A seeded shoe in a category with sizes belongs to the segment its gender says unless the definition
+    /// already chose one (the teen group is always chosen explicitly).</summary>
+    private static void AssignShoeSegment(Product product, Category category)
+    {
+        // Most definitions carry no explicit type: the same name-based inference that fills it afterwards decides here.
+        var type = product.ProductType ?? ProductTypeClassifier.Infer(product.Name);
+        if (product.ShoeSegment is null && category.HasSizes && type is not null && ShoeTypes.Contains(type))
+        {
+            product.ShoeSegment = ShoeSegments.DefaultFor(product.Gender);
+        }
+    }
+
+    private static Product TeenShoe(string name, string description, decimal price, decimal? discountPrice, int stock,
+        int categoryId, ChildGender childGender, string photoId)
+    {
+        var product = Make(name, description, price, discountPrice, stock, categoryId, Gender.Kids,
+            $"https://images.pexels.com/photos/{photoId}/pexels-photo-{photoId}.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+            "Кроссовки");
+        product.ShoeSegment = ShoeSegment.Teen;
+        product.ChildGender = childGender;
+        return product;
+    }
+
+    private static IEnumerable<Product> BuildTeenShoes(int categoryId)
+    {
+        yield return TeenShoe("Кроссовки подростковые белые холщовые", "Лёгкие холщовые кроссовки на шнуровке, резиновая подошва, для девочек-подростков.", 14900, 11900, 14, categoryId, ChildGender.Girl, "4296075");
+        yield return TeenShoe("Кроссовки подростковые синие холщовые", "Холщовые кроссовки на шнуровке с контрастными шнурками, для мальчиков-подростков.", 13900, null, 16, categoryId, ChildGender.Boy, "1447262");
+        yield return TeenShoe("Кроссовки подростковые серые холщовые", "Холщовые кроссовки на шнуровке, плотная резиновая подошва, для мальчиков-подростков.", 14500, 11600, 12, categoryId, ChildGender.Boy, "7916058");
+    }
 
     private static IEnumerable<Product> ShoesAndBagsFor(int categoryId, Gender gender) =>
         BuildShoesAndBags(categoryId).Concat(BuildShoesAndBagsExtra(categoryId)).Where(p => p.Gender == gender);

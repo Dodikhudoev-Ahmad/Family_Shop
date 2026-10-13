@@ -25,6 +25,9 @@ public interface IProductRepository : IRepository<Product>
         int page,
         int pageSize,
         string? productType,
+        ShoeSegment? shoeSegment,
+        ChildGender? childGender,
+        string? size,
         CancellationToken cancellationToken = default);
 
     Task<bool> AnyByCategoryIdAsync(int categoryId, CancellationToken cancellationToken = default);

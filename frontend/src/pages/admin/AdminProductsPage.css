@@ -366,6 +366,13 @@
   outline-offset: 2px;
 }
 
+/* Boy / girl of a children's shoe: the same boxed options as the sizes, a short row. */
+.admin-segmented__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .admin-sizes__note,
 .admin-sizes__hint {
   margin: 0;

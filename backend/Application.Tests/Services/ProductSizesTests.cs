@@ -20,13 +20,88 @@ public class ProductSizesTests
     [Theory]
     [InlineData("women", null, "S,M,L,XL,2XL,3XL,4XL")]
     [InlineData("men", "Худи", "S,M,L,XL,2XL,3XL,4XL")]
-    [InlineData("women", "Кроссовки", "36,37,38,39,40")]
-    [InlineData("men", "Ботинки", "36,37,38,39,40")]
-    [InlineData("kids", "Кроссовки", "26,27,28,29,30,31,32,33,34,35")]
     [InlineData("women", "Сумки", "")]
     [InlineData("kids", "Рюкзаки", "")]
     public void TheGridFollowsTheTypeAndNotTheCategory(string slug, string? type, string expected) =>
         Assert.Equal(expected, string.Join(",", SizeGrids.For(Cat(slug), type)));
+
+    [Theory]
+    [InlineData(ShoeSegment.Men, "39", "45", 7)]
+    [InlineData(ShoeSegment.Women, "35", "41", 7)]
+    [InlineData(ShoeSegment.Kids, "27", "37", 11)]
+    [InlineData(ShoeSegment.Teen, "37", "41", 5)]
+    public void EachShoeSegmentHasItsOwnRange(ShoeSegment segment, string first, string last, int count)
+    {
+        var grid = SizeGrids.For(Cat("women"), "Кроссовки", segment);
+
+        Assert.Equal(first, grid[0]);
+        Assert.Equal(last, grid[^1]);
+        Assert.Equal(count, grid.Count);
+    }
+
+    [Fact]
+    public void KidsAndTeenGridsShareSize37()
+    {
+        Assert.Contains("37", SizeGrids.For(Cat("kids"), "Ботинки", ShoeSegment.Kids));
+        Assert.Contains("37", SizeGrids.For(Cat("kids"), "Ботинки", ShoeSegment.Teen));
+        Assert.DoesNotContain("37", SizeGrids.For(Cat("men"), "Ботинки", ShoeSegment.Men));
+        Assert.DoesNotContain("38", SizeGrids.For(Cat("men"), "Ботинки", ShoeSegment.Men));
+        Assert.DoesNotContain("38", SizeGrids.For(Cat("kids"), "Ботинки", ShoeSegment.Kids));
+    }
+
+    [Fact]
+    public void GridsCoverEachSizeOnce()
+    {
+        var all = SizeGrids.ShoesBySegment.Values.SelectMany(g => g).Distinct().Select(int.Parse).Order().ToList();
+
+        Assert.Equal(Enumerable.Range(27, 19), all);
+    }
+
+    [Fact]
+    public void AShoeWithoutASegment_HasNoGrid()
+    {
+        Assert.Empty(SizeGrids.For(Cat("men"), "Кроссовки"));
+    }
+
+    // ---------- audience (segment and boy/girl) ----------
+
+    [Theory]
+    [InlineData(Gender.Male, null, null, ShoeSegment.Men, null)]
+    [InlineData(Gender.Female, null, null, ShoeSegment.Women, null)]
+    [InlineData(Gender.Kids, null, ChildGender.Boy, ShoeSegment.Kids, ChildGender.Boy)]
+    [InlineData(Gender.Kids, ShoeSegment.Teen, ChildGender.Girl, ShoeSegment.Teen, ChildGender.Girl)]
+    public void Audience_IsResolvedFromGenderOrTakenFromTheRequest(
+        Gender gender, ShoeSegment? segment, ChildGender? child, ShoeSegment expectedSegment, ChildGender? expectedChild)
+    {
+        var result = ShoeAudienceRules.Resolve(Cat("men"), "Кроссовки", gender, segment, child);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(new ShoeAudience(expectedSegment, expectedChild), result.Value);
+    }
+
+    [Theory]
+    [InlineData(Gender.Kids, null, null, ShoeAudienceRules.ChildGenderRequired)]
+    [InlineData(Gender.Kids, ShoeSegment.Teen, null, ShoeAudienceRules.ChildGenderRequired)]
+    [InlineData(Gender.Male, null, ChildGender.Boy, ShoeAudienceRules.ChildGenderForbidden)]
+    [InlineData(Gender.Female, ShoeSegment.Women, ChildGender.Girl, ShoeAudienceRules.ChildGenderForbidden)]
+    [InlineData(Gender.Male, ShoeSegment.Teen, ChildGender.Boy, ShoeAudienceRules.SegmentMismatch)]
+    [InlineData(Gender.Kids, ShoeSegment.Men, null, ShoeAudienceRules.SegmentMismatch)]
+    public void Audience_RejectsMissingForbiddenAndMismatchedValues(Gender gender, ShoeSegment? segment, ChildGender? child, string error)
+    {
+        var result = ShoeAudienceRules.Resolve(Cat("men"), "Кроссовки", gender, segment, child);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(error, result.Errors[0]);
+    }
+
+    [Fact]
+    public void Audience_IsNotAllowedForNonShoes_NorForShoesInACategoryWithoutSizes()
+    {
+        Assert.True(ShoeAudienceRules.Resolve(Cat("men"), "Худи", Gender.Male, null, null).IsSuccess);
+        Assert.False(ShoeAudienceRules.Resolve(Cat("men"), "Худи", Gender.Male, ShoeSegment.Men, null).IsSuccess);
+        Assert.False(ShoeAudienceRules.Resolve(Cat("sport", hasSizes: false), "Кроссовки", Gender.Male, ShoeSegment.Men, null).IsSuccess);
+        Assert.True(ShoeAudienceRules.Resolve(Cat("sport", hasSizes: false), "Кроссовки", Gender.Male, null, null).IsSuccess);
+    }
 
     [Fact]
     public void CategoriesWithoutSizes_AndUnknownCategories_HaveNoGrid()
@@ -97,7 +172,7 @@ public class ProductSizesTests
     [Fact]
     public void ASelectionOfTheWholeGridIsStoredAsNull()
     {
-        Assert.Null(ProductSizeRules.Normalize(SizeGrids.AdultShoes.Reverse().ToList(), SizeGrids.AdultShoes).Value);
+        Assert.Null(ProductSizeRules.Normalize(SizeGrids.ShoesBySegment[ShoeSegment.Men].Reverse().ToList(), SizeGrids.ShoesBySegment[ShoeSegment.Men]).Value);
     }
 
     // ---------- FluentValidation (structure) ----------
@@ -150,11 +225,14 @@ public class ProductSizesTests
     {
         var sut = Service(Cat("kids"));
 
-        Assert.False((await sut.CreateProductAsync(Dto(["38"], "Кроссовки"))).IsSuccess); // adult size, kids grid is 26-35
-        var ok = await sut.CreateProductAsync(Dto(["30", "31"], "Кроссовки"));
+        var kidsShoes = Dto(["38"], "Кроссовки") with { Gender = Gender.Kids, ChildGender = ChildGender.Boy };
+
+        Assert.False((await sut.CreateProductAsync(kidsShoes)).IsSuccess); // 38 is outside the kids grid 27-37
+        var ok = await sut.CreateProductAsync(kidsShoes with { AvailableSizes = ["30", "31"] });
 
         Assert.True(ok.IsSuccess);
         Assert.Equal("Кроссовки", ok.Value!.ProductType);
+        Assert.Equal(ShoeSegment.Kids, ok.Value.ShoeSegment);
     }
 
     [Fact]
@@ -179,11 +257,11 @@ public class ProductSizesTests
     public async Task Update_WithoutAType_KeepsTheExistingOne_AndChangingTheTypeRechecksTheSizes()
     {
         var sut = Service(Cat("women"));
-        var shoes = new Product { Id = 5, CategoryId = 1, ProductType = "Кроссовки", Name = "Обувь", Price = new Money(1), Images = ["a"], AvailableSizes = ["38"] };
+        var shoes = new Product { Id = 5, CategoryId = 1, ProductType = "Кроссовки", Name = "Обувь", Price = new Money(1), Images = ["a"], AvailableSizes = ["38"], ShoeSegment = ShoeSegment.Women };
         _products.GetByIdAsync(5, Arg.Any<CancellationToken>()).Returns(shoes);
 
         // A client that doesn't send a type must not reset it (the name says nothing about shoes).
-        var kept = await sut.UpdateProductAsync(5, Dto(["37", "38"]) with { Name = "Модель Икс" });
+        var kept = await sut.UpdateProductAsync(5, Dto(["37", "38"]) with { Name = "Модель Икс", Gender = Gender.Female });
         Assert.True(kept.IsSuccess);
         Assert.Equal("Кроссовки", shoes.ProductType);
         Assert.Equal(["37", "38"], shoes.AvailableSizes);
@@ -191,6 +269,66 @@ public class ProductSizesTests
         // Switched to clothes, the old shoe sizes are no longer valid.
         var switched = await sut.UpdateProductAsync(5, Dto(["37"], "Худи"));
         Assert.False(switched.IsSuccess);
+    }
+
+    [Theory]
+    [InlineData(Gender.Male, "men", "38", false)]
+    [InlineData(Gender.Male, "men", "39", true)]
+    [InlineData(Gender.Male, "men", "45", true)]
+    [InlineData(Gender.Male, "men", "46", false)]
+    [InlineData(Gender.Female, "women", "34", false)]
+    [InlineData(Gender.Female, "women", "35", true)]
+    [InlineData(Gender.Female, "women", "41", true)]
+    [InlineData(Gender.Female, "women", "42", false)]
+    public async Task AdultShoes_AcceptOnlySizesOfTheirOwnGrid(Gender gender, string slug, string size, bool accepted)
+    {
+        var sut = Service(Cat(slug));
+        var dto = Dto([size], "Кроссовки") with { Gender = gender };
+
+        Assert.Equal(accepted, (await sut.CreateProductAsync(dto)).IsSuccess);
+    }
+
+    [Theory]
+    [InlineData(ShoeSegment.Kids, "26", false)]
+    [InlineData(ShoeSegment.Kids, "27", true)]
+    [InlineData(ShoeSegment.Kids, "37", true)]
+    [InlineData(ShoeSegment.Kids, "38", false)]
+    [InlineData(ShoeSegment.Teen, "36", false)]
+    [InlineData(ShoeSegment.Teen, "37", true)]
+    [InlineData(ShoeSegment.Teen, "41", true)]
+    [InlineData(ShoeSegment.Teen, "42", false)]
+    public async Task ChildrensShoes_AcceptOnlySizesOfTheirSegment(ShoeSegment segment, string size, bool accepted)
+    {
+        var sut = Service(Cat("kids"));
+        var dto = Dto([size], "Кроссовки") with { Gender = Gender.Kids, ShoeSegment = segment, ChildGender = ChildGender.Girl };
+
+        Assert.Equal(accepted, (await sut.CreateProductAsync(dto)).IsSuccess);
+    }
+
+    [Fact]
+    public async Task ChildrensShoes_NeedBoyOrGirl_AndAdultShoesMustNotHaveOne()
+    {
+        var sut = Service(Cat("kids"));
+        var kids = Dto(null, "Кроссовки") with { Gender = Gender.Kids };
+
+        Assert.Equal(ShoeAudienceRules.ChildGenderRequired, (await sut.CreateProductAsync(kids)).Errors[0]);
+        Assert.True((await sut.CreateProductAsync(kids with { ChildGender = ChildGender.Boy })).IsSuccess);
+        Assert.Equal(ShoeAudienceRules.ChildGenderForbidden,
+            (await sut.CreateProductAsync(Dto(null, "Кроссовки") with { ChildGender = ChildGender.Boy })).Errors[0]);
+    }
+
+    [Fact]
+    public async Task TheProductCarriesItsSegmentTheGridAndWhichSizesAreAvailable()
+    {
+        var sut = Service(Cat("kids"));
+        var dto = Dto(["37", "39"], "Кроссовки") with { Gender = Gender.Kids, ShoeSegment = ShoeSegment.Teen, ChildGender = ChildGender.Boy };
+
+        var created = (await sut.CreateProductAsync(dto)).Value!;
+
+        Assert.Equal(ShoeSegment.Teen, created.ShoeSegment);
+        Assert.Equal(ChildGender.Boy, created.ChildGender);
+        Assert.Equal(["37", "38", "39", "40", "41"], created.Sizes!.Select(s => s.Size));
+        Assert.Equal(["37", "39"], created.Sizes!.Where(s => s.Available).Select(s => s.Size));
     }
 
     // ---------- orders ----------
@@ -241,6 +379,28 @@ public class ProductSizesTests
 
         Assert.Equal(ResultErrorCodes.SizeUnavailable, (await sut.CreateOrderAsync(1, Order(1, "38"))).ErrorCode);
         Assert.Equal(ResultErrorCodes.SizeUnavailable, (await sut.CreateOrderAsync(1, Order(1, null))).ErrorCode); // a sized product needs a size
+    }
+
+    [Theory]
+    [InlineData(ShoeSegment.Teen, "36", false)]
+    [InlineData(ShoeSegment.Teen, "37", true)]
+    [InlineData(ShoeSegment.Teen, "42", false)]
+    [InlineData(ShoeSegment.Kids, "37", true)]
+    [InlineData(ShoeSegment.Kids, "38", false)]
+    [InlineData(ShoeSegment.Men, "38", false)]
+    [InlineData(ShoeSegment.Men, "39", true)]
+    public async Task AShoeIsOrderedOnlyInASizeOfItsSegment(ShoeSegment segment, string size, bool accepted)
+    {
+        var shoe = new Product { Id = 3, CategoryId = 1, Name = "Кроссовки", ProductType = "Кроссовки", Price = new Money(100), Stock = 9, ShoeSegment = segment };
+        var (sut, _) = OrderSetup(shoe, sized: true);
+
+        var result = await sut.CreateOrderAsync(1, Order(3, size));
+
+        Assert.Equal(accepted, result.IsSuccess);
+        if (!accepted)
+        {
+            Assert.Equal(ResultErrorCodes.SizeUnavailable, result.ErrorCode);
+        }
     }
 
     [Fact]

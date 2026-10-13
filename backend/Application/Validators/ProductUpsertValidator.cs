@@ -17,6 +17,9 @@ public class ProductUpsertValidator : AbstractValidator<ProductUpsertDto>
         RuleFor(x => x.Stock).GreaterThanOrEqualTo(0);
         RuleFor(x => x.CategoryId).GreaterThan(0);
         RuleFor(x => x.Gender).IsInEnum();
+        // Whether a segment / boy-girl fits this product depends on its category and type: ShoeAudienceRules.
+        RuleFor(x => x.ShoeSegment).IsInEnum().When(x => x.ShoeSegment.HasValue);
+        RuleFor(x => x.ChildGender).IsInEnum().When(x => x.ChildGender.HasValue);
         RuleFor(x => x.ProductType).MaximumLength(50)
             .Must(t => string.IsNullOrWhiteSpace(t) || ProductTypeClassifier.KnownTypes.Contains(t!.Trim()))
             .WithMessage("Неизвестный тип товара.");

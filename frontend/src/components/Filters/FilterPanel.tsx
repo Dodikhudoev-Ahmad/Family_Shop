@@ -4,6 +4,7 @@ import { PriceRangeSlider } from '../PriceRangeSlider/PriceRangeSlider';
 import './FilterPanel.css';
 import { useTranslation } from 'react-i18next';
 import { useLabels } from '../../i18n/labels';
+import type { ShoeAudience } from '../../utils/shoeAudienceFilter';
 
 export interface Filters {
   categoryId: string | null;
@@ -23,9 +24,24 @@ interface FilterPanelProps {
   productTypes?: string[];
   productType?: string | null;
   onProductTypeChange?: (type: string | null) => void;
+  /** Kids' and teen shoes: who they are for. The group shows when there is more than nothing to choose from. */
+  audiences?: ShoeAudience[];
+  audience?: ShoeAudience | null;
+  onAudienceChange?: (audience: ShoeAudience | null) => void;
 }
 
-export function FilterPanel({ filters, onChange, sizeGroups, priceBounds, productTypes = [], productType = null, onProductTypeChange }: FilterPanelProps) {
+export function FilterPanel({
+  filters,
+  onChange,
+  sizeGroups,
+  priceBounds,
+  productTypes = [],
+  productType = null,
+  onProductTypeChange,
+  audiences = [],
+  audience = null,
+  onAudienceChange,
+}: FilterPanelProps) {
   const { t } = useTranslation();
   const { categoryName, productType: typeName } = useLabels();
   const { categories } = useCategories();
@@ -65,6 +81,24 @@ export function FilterPanel({ filters, onChange, sizeGroups, priceBounds, produc
                 onClick={() => onProductTypeChange(type)}
               >
                 {type ? typeName(type) : t('common.all')}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {audiences.length > 0 && onAudienceChange && (
+        <div className="filter-panel__group">
+          <h4 className="filter-panel__title">{t('shoes.filter.title')}</h4>
+          <div className="filter-panel__chips" role="group" aria-label={t('shoes.filter.aria')}>
+            {[null, ...audiences].map((value) => (
+              <button
+                key={value ?? 'all'}
+                className={`filter-chip ${audience === value ? 'is-active' : ''}`}
+                aria-pressed={audience === value}
+                onClick={() => onAudienceChange(value)}
+              >
+                {value ? t(`shoes.filter.${value}`) : t('common.all')}
               </button>
             ))}
           </div>

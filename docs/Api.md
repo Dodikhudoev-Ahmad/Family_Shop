@@ -9,7 +9,8 @@
 
 | Метод и путь | Доступ | Лимит | Примечание |
 |---|---|---|---|
-| GET `/products` | Г | общий | фильтры, пагинация, сортировка |
+| GET `/products` | Г | общий | фильтры (в т.ч. `shoeSegment` 0 Men / 1 Women / 2 Kids / 3 Teen, `childGender` 0 Boy / 1 Girl, `size`), пагинация, сортировка. В товаре: `shoeSegment`, `childGender`, `sizes[{size, available}]` (вся сетка товара; `available` = размер продаётся и товар на складе); для обуви `availableSizes` всегда явный список |
+| GET `/products/size-grids` | Г | общий | сетки обуви по сегментам `{shoes:[{segment, gender, sizes, childGenders}]}` — единственный источник диапазонов (Men 39–45, Women 35–41, Kids 27–37, Teen 37–41) |
 | GET `/products/{id}` | Г | общий | |
 | GET `/categories` | Г | общий | `[{id, name, slug, parentCategoryId, hasSizes, sortOrder}]`, порядок `sortOrder`, затем `id` (порядок меню); новая категория из админки получает `max(sortOrder)+10`, редактирования порядка в админке пока нет |
 | GET `/promo-banners/active` | Г | общий | |

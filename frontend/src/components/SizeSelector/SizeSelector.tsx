@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import './SizeSelector.css';
 
@@ -20,8 +20,26 @@ interface SizeSelectorProps {
 /** The size buttons of the product page and of the quick view: one source of markup, states and styles. */
 export function SizeSelector({ gridSizes, sizes, selected, onSelect, onUnavailable, renderBadge, className }: SizeSelectorProps) {
   const { t } = useTranslation();
+
+  // Every size stays a tab stop (an unavailable one explains itself when pressed); the arrow keys additionally walk
+  // along the row, so a long grid is not a long run of Tab presses.
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+    if (step === 0) return;
+    const buttons = [...e.currentTarget.querySelectorAll<HTMLButtonElement>('.size-btn')];
+    const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    if (index === -1) return;
+    e.preventDefault();
+    buttons[(index + step + buttons.length) % buttons.length].focus();
+  };
+
   return (
-    <div className={`size-selector ${className ?? ''}`.trim()}>
+    <div
+      className={`size-selector ${className ?? ''}`.trim()}
+      role="group"
+      aria-label={t('shoes.sizesAria')}
+      onKeyDown={handleKeyDown}
+    >
       {gridSizes.map((size) => {
         const unavailable = !sizes.includes(size);
         const isSelected = selected === size;

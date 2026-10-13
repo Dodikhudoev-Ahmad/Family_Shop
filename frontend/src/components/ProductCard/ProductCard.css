@@ -209,6 +209,33 @@
   color: var(--color-text-secondary);
 }
 
+/* Who a kids' or teen shoe is for, and its size range: one quiet line between the category and the name. */
+.product-card__audience {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 4px;
+}
+
+.product-card__audience-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.product-card__range {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
 .product-card__name {
   display: -webkit-box;
   -webkit-line-clamp: 2;

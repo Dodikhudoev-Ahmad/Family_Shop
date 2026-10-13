@@ -65,7 +65,7 @@ public class EndpointAuthorizationTests
             "AuthController.Refresh", "AuthController.Register", "AuthController.ResendConfirmation", "AuthController.ResetPassword",
             "CategoriesController.GetCategories",
             "MobileAuthController.Login", "MobileAuthController.Logout", "MobileAuthController.Refresh", "MobileAuthController.Register",
-            "ProductsController.GetProduct", "ProductsController.GetProducts",
+            "ProductsController.GetProduct", "ProductsController.GetProducts", "ProductsController.GetSizeGrids",
             "PromoBannersController.GetActive",
             "PromoCodesController.Validate",
             "ReviewsController.GetReviews", "ReviewsController.GetSummary",

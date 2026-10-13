@@ -84,6 +84,26 @@
     "male": "Men",
     "kids": "Kids"
   },
+  "shoes": {
+    "audience": {
+      "kids": "For kids",
+      "kidsBoy": "For boys",
+      "kidsGirl": "For girls",
+      "teen": "For teens",
+      "teenBoy": "For teens (boys)",
+      "teenGirl": "For teens (girls)"
+    },
+    "range": "EU {{from}}–{{to}}",
+    "gridCaption": "Size grid: EU {{from}}–{{to}}",
+    "sizesAria": "Sizes",
+    "filter": {
+      "title": "Shoes: for whom",
+      "aria": "Who the shoes are for",
+      "boys": "Boys",
+      "girls": "Girls",
+      "teens": "Teens"
+    }
+  },
   "productTypes": {
     "Костюмы": "Suits",
     "Платья": "Dresses",

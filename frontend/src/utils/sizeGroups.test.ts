@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { availableSizeGroups } from './sizeGroups';
-import { CLOTHING_SIZES, KIDS_SHOE_SIZES, SHOE_SIZES } from '../lib/mappers';
+import { CLOTHING_SIZES } from '../lib/mappers';
 import type { Product } from '../types/product';
+
+const SHOE_SIZES = ['39', '40', '41', '42', '43', '44', '45'];
+const KIDS_SHOE_SIZES = ['27', '28', '29', '30', '31', '36', '37'];
 
 const make = (id: number, categoryId: string, productType: string, sizes: string[]): Product =>
   ({ id: String(id), categoryId, productType, sizes }) as Product;

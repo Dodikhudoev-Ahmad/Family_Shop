@@ -17,5 +17,8 @@ public class ProductFilterValidator : AbstractValidator<ProductFilterDto>
         // Search text becomes an ILIKE pattern: unbounded input is an unbounded query.
         RuleFor(x => x.Search).MaximumLength(100);
         RuleFor(x => x.ProductType).MaximumLength(50);
+        RuleFor(x => x.ShoeSegment).IsInEnum().When(x => x.ShoeSegment.HasValue);
+        RuleFor(x => x.ChildGender).IsInEnum().When(x => x.ChildGender.HasValue);
+        RuleFor(x => x.Size).MaximumLength(16);
     }
 }
