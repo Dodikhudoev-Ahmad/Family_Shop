@@ -1,4 +1,4 @@
-import { CLOTHING_SIZES, KIDS_SHOE_SIZES, SHOE_SIZES, sortSizes } from '../lib/mappers';
+import { CLOTHING_SIZES, sortSizes } from '../lib/mappers';
 import type { Product } from '../types/product';
 
 export type SizeGroupId = 'clothing' | 'shoes' | 'other';
@@ -9,7 +9,8 @@ export interface SizeGroup {
 }
 
 const CLOTHING = new Set(CLOTHING_SIZES);
-const SHOES = new Set([...KIDS_SHOE_SIZES, ...SHOE_SIZES]);
+// Shoe sizes are European numbers; which ones exist is the server's call (its grids), not a list kept here.
+const isShoeSize = (size: string) => /^\d{2}$/.test(size);
 
 /**
  * Sizes a catalog visitor can filter by, from the products they are currently looking at:
@@ -31,8 +32,8 @@ export function availableSizeGroups(
 
   const sorted = sortSizes([...sizes]);
   const clothing = sorted.filter((s) => CLOTHING.has(s));
-  const shoes = sorted.filter((s) => SHOES.has(s));
-  const other = sorted.filter((s) => !CLOTHING.has(s) && !SHOES.has(s));
+  const shoes = sorted.filter(isShoeSize);
+  const other = sorted.filter((s) => !CLOTHING.has(s) && !isShoeSize(s));
 
   return [
     { id: 'clothing' as const, sizes: clothing },

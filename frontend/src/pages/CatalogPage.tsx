@@ -19,6 +19,7 @@ import { mapProduct } from '../lib/mappers';
 import { availableProductTypes } from '../utils/productTypes';
 import { availableSizeGroups } from '../utils/sizeGroups';
 import { priceBoundsFor, resetDependentFilters } from '../utils/catalogFilters';
+import { audienceQuery, availableAudiences, parseAudience, type ShoeAudience } from '../utils/shoeAudienceFilter';
 import type { Product } from '../types/product';
 import type { ProductSortBy } from '../types/api';
 import './CatalogPage.css';
@@ -45,7 +46,7 @@ export function CatalogPage() {
   const { t } = useTranslation();
   const { categoryName } = useLabels();
   const { slug } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { categories, isLoading: categoriesLoading } = useCategories();
   const { products: allProducts, isLoading: isCatalogLoading, error: catalogError } = useProducts();
   const activeCategory = categories.find((c) => c.slug === slug) ?? null;
@@ -83,7 +84,22 @@ export function CatalogPage() {
   // Price window of what is being browsed - a category's prices differ from the rest of the shop.
   const priceBounds = useMemo(() => priceBoundsFor(allProducts, categoryId), [allProducts, categoryId]);
 
-  const [size, setSize] = useState<string | null>(null);
+  // The size and the shoe audience live in the URL (a link or a reload keeps them); an unknown value reads as "none".
+  const size = searchParams.get('size');
+  const audience = parseAudience(searchParams.get('for'));
+  const setUrlParam = (name: 'size' | 'for', value: string | null) =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value) next.set(name, value);
+        else next.delete(name);
+        return next;
+      },
+      { replace: true },
+    );
+  const setSize = (value: string | null) => setUrlParam('size', value);
+  const setAudience = (value: ShoeAudience | null) => setUrlParam('for', value);
+
   const [priceRange, setPriceRange] = useState<[number, number]>(priceBounds);
   const [discountOnly, setDiscountOnly] = useState(() => searchParams.get('discount') === 'true');
   const [productType, setProductType] = useState<string | null>(null);
@@ -109,7 +125,6 @@ export function CatalogPage() {
     const reset = resetDependentFilters(priceBounds);
     setTrackedCategoryId(categoryId);
     setProductType(reset.productType);
-    setSize(reset.size);
     setPriceRange(reset.priceRange);
     setDebouncedPrice({ categoryId, range: reset.priceRange });
   }
@@ -158,11 +173,20 @@ export function CatalogPage() {
     [allProducts, categoryId, productType]
   );
 
-  // A size picked earlier may not exist for the newly chosen type (M, then "Кроссовки") - drop
-  // it instead of silently filtering everything out.
+  // Who the shoes are for: only what exists among the products being browsed.
+  const audiences = useMemo(
+    () => availableAudiences(allProducts, categoryId, productType),
+    [allProducts, categoryId, productType]
+  );
+
+  // A size or audience picked earlier may not exist for the newly chosen type (M, then "Кроссовки") - drop it
+  // instead of silently filtering everything out. Not before the catalogue is known: a link's value is still unproven.
   useEffect(() => {
+    if (isCatalogLoading) return;
     if (size && !sizeGroups.some((g) => g.sizes.includes(size))) setSize(null);
-  }, [sizeGroups, size]);
+    if (audience && !audiences.includes(audience)) setAudience(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sizeGroups, size, audiences, audience, isCatalogLoading]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedPrice({ categoryId, range: priceRange }), 350);
@@ -195,6 +219,8 @@ export function CatalogPage() {
     fetchProductsPage({
       categoryId: categoryIdNum,
       productType: productType ?? undefined,
+      ...(audience ? audienceQuery(audience) : {}),
+      size: size ?? undefined,
       minPrice: minPrice > priceBounds[0] ? minPrice : undefined,
       maxPrice: maxPrice < priceBounds[1] ? maxPrice : undefined,
       sortBy: sort ? SORT_TO_API[sort] : undefined,
@@ -219,7 +245,7 @@ export function CatalogPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryIdNum, productType, minPrice, maxPrice, sort, boundsReady, categories]);
+  }, [categoryIdNum, productType, audience, size, minPrice, maxPrice, sort, boundsReady, categories]);
 
   const loadMore = () => {
     // Guard with a ref (synchronous) rather than state alone: the IntersectionObserver
@@ -233,6 +259,8 @@ export function CatalogPage() {
     fetchProductsPage({
       categoryId: categoryIdNum,
       productType: productType ?? undefined,
+      ...(audience ? audienceQuery(audience) : {}),
+      size: size ?? undefined,
       minPrice: minPrice > priceBounds[0] ? minPrice : undefined,
       maxPrice: maxPrice < priceBounds[1] ? maxPrice : undefined,
       sortBy: sort ? SORT_TO_API[sort] : undefined,
@@ -273,15 +301,11 @@ export function CatalogPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMore, isLoadingMore, page]);
 
-  // Size and "discount only" have no server-side equivalent (sizes are client-synthesized),
-  // so they refine the already-fetched page(s) on the client.
-  const visibleProducts = useMemo(() => {
-    return pageProducts.filter((p) => {
-      if (size && !p.sizes.includes(size)) return false;
-      if (discountOnly && !p.discountPrice) return false;
-      return true;
-    });
-  }, [pageProducts, size, discountOnly]);
+  // "Discount only" has no server-side equivalent, so it refines the already-fetched page(s) on the client.
+  const visibleProducts = useMemo(
+    () => (discountOnly ? pageProducts.filter((p) => p.discountPrice) : pageProducts),
+    [pageProducts, discountOnly]
+  );
 
   return (
     <div className="catalog container">
@@ -322,6 +346,9 @@ export function CatalogPage() {
               productTypes={availableTypes}
               productType={productType}
               onProductTypeChange={setProductType}
+              audiences={audiences}
+              audience={audience}
+              onAudienceChange={setAudience}
             />
           )}
         </aside>
@@ -371,6 +398,9 @@ export function CatalogPage() {
             productTypes={availableTypes}
             productType={productType}
             onProductTypeChange={setProductType}
+            audiences={audiences}
+            audience={audience}
+            onAudienceChange={setAudience}
           />
         )}
         <button className="btn btn--primary btn--lg catalog__sheet-apply" onClick={() => setIsFilterSheetOpen(false)}>

@@ -9,16 +9,16 @@ export const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 export const KIDS_SHOE_SIZES = ['26', '27', '28', '29', '30', '31', '32', '33', '34', '35'];
 export const SHOE_SIZES = ['36', '37', '38', '39', '40'];
 
-/** Sorts a mixed list of sizes (clothing or shoe) into the canonical order above,
- * instead of alphabetically (which would put '2XL' before 'L', 'XL' before 'XS', etc). */
+/** Sorts a mixed list of sizes (clothing or shoe): clothing in its canonical order (not alphabetically, which would
+ * put '2XL' before 'L'), then shoe sizes by number. */
 export function sortSizes(sizes: string[]): string[] {
-  const order = [...CLOTHING_SIZES, ...KIDS_SHOE_SIZES, ...SHOE_SIZES];
-  return [...sizes].sort((a, b) => {
-    const ia = order.indexOf(a);
-    const ib = order.indexOf(b);
-    if (ia === -1 || ib === -1) return a.localeCompare(b);
-    return ia - ib;
-  });
+  const rank = (size: string) => {
+    const clothing = CLOTHING_SIZES.indexOf(size);
+    if (clothing !== -1) return clothing;
+    const number = Number(size);
+    return Number.isNaN(number) ? Infinity : CLOTHING_SIZES.length + number;
+  };
+  return [...sizes].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
 }
 
 export function mapCategory(dto: CategoryDto): Category {
